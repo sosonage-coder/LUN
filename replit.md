@@ -1,12 +1,12 @@
-# Next Engine
+# Lunari
 
 ## Overview
-Next Engine is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
+Lunari (Finance Stream) is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
 
 **Module Categories:**
-- Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization - 3-level drill-down hierarchy
+- Schedule Studio (Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization) - 3-level drill-down hierarchy
 - Cash Scheduler - Leveled architecture for cash flow tracking (Level 0: Dashboard, Level 1: Category Summary, Level 2: Movement Detail)
-- OneClose™ (Close Control System) - Governance-first close management with certification workflows and SoD controls
+- OneClose (Close Control System) - Governance-first close management with certification workflows and SoD controls
 
 ## User Preferences
 - Financial application styling with professional appearance
@@ -49,7 +49,7 @@ The application follows a client-server architecture.
 - Supports various events like `REBASIS_AMOUNT`, `CHANGE_DATES`, `RECLASSIFICATION`, and `ONBOARDING_BOUNDARY`.
 - Offers `CONTINUE_ONLY` and `CATCH_UP` onboarding modes.
 
-**OneClose™ (Close Control System):**
+**OneClose (Close Control System):**
 - **Close Schedules**: Period-end close management with tasklists and individual tasks
 - **Task Lifecycle**: NOT_STARTED → IN_PROGRESS → SUBMITTED → REVIEWED → APPROVED → LOCKED
 - **Certification Workflows**: Multi-level sign-offs for tasklists and schedules with formal attestation

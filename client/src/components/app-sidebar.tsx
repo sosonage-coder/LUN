@@ -188,8 +188,8 @@ export function AppSidebar() {
             <Calendar className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold">Next Engine</h1>
-            <p className="text-xs text-muted-foreground">v1.0</p>
+            <h1 className="text-sm font-semibold">Lunari</h1>
+            <p className="text-xs text-muted-foreground">Finance Stream</p>
           </div>
         </div>
       </SidebarHeader>
@@ -222,7 +222,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Close Control</SidebarGroupLabel>
+          <SidebarGroupLabel>OneClose</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -234,7 +234,7 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       isActive={location === "/close-control"}
                       data-testid="nav-close-control"
-                      tooltip="Close Control"
+                      tooltip="OneClose"
                     >
                       <Shield className="h-4 w-4" />
                       <span>Close Schedules</span>
@@ -339,7 +339,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Categories</SidebarGroupLabel>
+          <SidebarGroupLabel>Schedule Studio</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {categoryItems.map((item) => {
