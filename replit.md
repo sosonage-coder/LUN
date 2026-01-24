@@ -1,7 +1,7 @@
 # Non-Monetary Schedule Engine
 
 ## Overview
-A sophisticated financial accounting application for deterministic, auditable cost allocation over time. The system handles prepaid expenses, fixed assets, and accruals with time-based allocation, append-only event tracking, and derived FX rates.
+A sophisticated financial accounting application for deterministic, auditable cost allocation over time. The system handles prepaid expenses, fixed assets, accruals, and revenue recognition with time-based allocation, append-only event tracking, and derived FX rates.
 
 ## Core Principles
 
@@ -35,6 +35,7 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   │   │   ├── prepaids-dashboard.tsx     # Prepaids Category Dashboard
 │   │   │   ├── fixed-assets-dashboard.tsx # Fixed Assets Category Dashboard
 │   │   │   ├── accruals-dashboard.tsx     # Accruals Category Dashboard
+│   │   │   ├── revenue-dashboard.tsx      # Revenue & Contracts Dashboard
 │   │   │   └── not-found.tsx
 │   │   ├── lib/            # Utilities
 │   │   └── App.tsx         # Main app with routing
@@ -129,6 +130,19 @@ Calculated period allocations (not stored, rebuilt from events):
 | GET | /api/accruals/mix | Get accrual mix breakdown |
 | POST | /api/accruals | Create new accrual |
 
+### Revenue & Contracts Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/revenue | List all revenue schedules |
+| GET | /api/revenue/:id | Get single revenue schedule |
+| GET | /api/revenue/kpis | Get dashboard KPIs |
+| GET | /api/revenue/categories | Get category summaries |
+| GET | /api/revenue/trend | Get recognition trend |
+| GET | /api/revenue/rollforward | Get deferred revenue rollforward |
+| GET | /api/revenue/mix | Get revenue mix breakdown |
+| GET | /api/revenue/risks | Get risk panels |
+| POST | /api/revenue | Create new revenue schedule |
+
 ## Rebuild Algorithm
 
 The deterministic rebuild algorithm processes events in order to calculate period allocations:
@@ -171,6 +185,18 @@ The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH c
 - True-up applied on final period to eliminate rounding drift
 
 ## Recent Changes
+
+- 2026-01-24: Added Revenue & Contracts Category Dashboard
+  - Portfolio-level view at /revenue with ASC 606 / IFRS 15 compliance framework
+  - 6 KPI tiles: Revenue Recognized (Period), Deferred Revenue, Contract Assets, Active Contracts, Dormant Contracts, High-Judgment
+  - 3 charts: Recognition Trend (6-period bar), Deferred Revenue Rollforward (waterfall), Revenue Mix by Category
+  - Risk Panels section for exception management (Missing PO Detail, Manual Recognition, Large True-Ups, Not Reviewed)
+  - Category Summary table with aggregated metrics, risk levels, and review status
+  - Revenue categories: Subscriptions, Support & Maintenance, Usage-Based, Milestone-Based, Licensing, Other
+  - Recognition methods: Straight Line, Usage, Milestone, Point in Time, Over Time
+  - Judgment levels (High/Medium/Low) and performance obligation tracking
+  - Contract assets tracking for unbilled/recognized-not-billed revenue
+  - E2E testing passed
 
 - 2026-01-24: Added Accruals Category Dashboard
   - Category-level aggregation view at /accruals with period-aware snapshot
