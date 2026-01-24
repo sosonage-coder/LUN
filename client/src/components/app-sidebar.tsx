@@ -13,7 +13,8 @@ import {
   Receipt,
   TrendingUp,
   TrendingDown,
-  ChevronRight
+  ChevronRight,
+  Banknote
 } from "lucide-react";
 import {
   Sidebar,
@@ -129,6 +130,22 @@ const categoryItems = [
       { title: "Intercompany Loans", url: "/debt/intercompany-loans" },
       { title: "Lease Liabilities", url: "/debt/lease-liabilities" },
       { title: "Other", url: "/debt/other" },
+    ],
+  },
+  {
+    title: "Cash",
+    url: "/cash",
+    icon: Banknote,
+    subItems: [
+      { title: "Customer Receipts", url: "/cash/customer-receipts" },
+      { title: "Payroll", url: "/cash/payroll" },
+      { title: "Vendor Payments", url: "/cash/vendor-payments" },
+      { title: "Rent", url: "/cash/rent" },
+      { title: "Taxes", url: "/cash/taxes" },
+      { title: "Debt Service", url: "/cash/debt-service" },
+      { title: "Intercompany", url: "/cash/intercompany" },
+      { title: "Capital Expenditure", url: "/cash/capital-expenditure" },
+      { title: "Other", url: "/cash/other" },
     ],
   },
 ];

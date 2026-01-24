@@ -860,5 +860,173 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CASH SCHEDULE ROUTES =====
+
+  // Cash KPIs (Level 0)
+  app.get("/api/cash/kpis", async (req, res) => {
+    try {
+      const kpis = {
+        openingCashBank: 12500000,
+        closingCashBank: 14750000,
+        netCashMovement: 2250000,
+        fxImpact: -125000,
+        unclassifiedCashPercent: 2.3,
+        status: "NEEDS_REVIEW" as "COMPLETE" | "NEEDS_REVIEW" | "LOCKED" | "NO_TRANSACTIONS",
+      };
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching cash KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch cash KPIs" });
+    }
+  });
+
+  // Cash categories summary (Level 0)
+  app.get("/api/cash/categories", async (req, res) => {
+    try {
+      const categories = [
+        { category: "CUSTOMER_RECEIPTS" as const, inflows: 8500000, outflows: 0, netMovement: 8500000, status: "OK" as const },
+        { category: "PAYROLL" as const, inflows: 0, outflows: 3200000, netMovement: -3200000, status: "OK" as const },
+        { category: "VENDOR_PAYMENTS" as const, inflows: 0, outflows: 1850000, netMovement: -1850000, status: "NEEDS_REVIEW" as const },
+        { category: "RENT" as const, inflows: 0, outflows: 450000, netMovement: -450000, status: "OK" as const },
+        { category: "TAXES" as const, inflows: 0, outflows: 625000, netMovement: -625000, status: "LOCKED" as const },
+        { category: "DEBT_SERVICE" as const, inflows: 0, outflows: 375000, netMovement: -375000, status: "OK" as const },
+        { category: "INTERCOMPANY" as const, inflows: 500000, outflows: 250000, netMovement: 250000, status: "NEEDS_REVIEW" as const },
+        { category: "OTHER" as const, inflows: 125000, outflows: 125000, netMovement: 0, status: "NEEDS_REVIEW" as const },
+      ];
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching cash categories:", error);
+      res.status(500).json({ error: "Failed to fetch cash categories" });
+    }
+  });
+
+  // Cash mix breakdown (Level 0)
+  app.get("/api/cash/mix", async (req, res) => {
+    try {
+      const totalMovement = 8500000 + 3200000 + 1850000 + 450000 + 625000 + 375000 + 500000 + 250000 + 250000;
+      const mix = [
+        { category: "CUSTOMER_RECEIPTS" as const, amount: 8500000, percentage: (8500000 / totalMovement) * 100 },
+        { category: "PAYROLL" as const, amount: -3200000, percentage: (3200000 / totalMovement) * 100 },
+        { category: "VENDOR_PAYMENTS" as const, amount: -1850000, percentage: (1850000 / totalMovement) * 100 },
+        { category: "TAXES" as const, amount: -625000, percentage: (625000 / totalMovement) * 100 },
+        { category: "RENT" as const, amount: -450000, percentage: (450000 / totalMovement) * 100 },
+        { category: "DEBT_SERVICE" as const, amount: -375000, percentage: (375000 / totalMovement) * 100 },
+        { category: "INTERCOMPANY" as const, amount: 250000, percentage: (500000 / totalMovement) * 100 },
+      ];
+      res.json(mix);
+    } catch (error) {
+      console.error("Error fetching cash mix:", error);
+      res.status(500).json({ error: "Failed to fetch cash mix" });
+    }
+  });
+
+  // Cash movement summaries (Level 1) - One row = one movement category × period
+  app.get("/api/cash/movements", async (req, res) => {
+    try {
+      const { category } = req.query;
+      // Level 1 shows aggregated category summaries per period (not individual movements)
+      let movements = [
+        { id: "CM-RECEIPTS-2026-01", movementCategory: "CUSTOMER_RECEIPTS" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 8500000, outflows: 0, netMovement: 8500000, fxImpact: -73000, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-PAYROLL-2026-01", movementCategory: "PAYROLL" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 3200000, netMovement: -3200000, fxImpact: -12000, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-VENDOR-2026-01", movementCategory: "VENDOR_PAYMENTS" as const, cashFlowType: "OPERATING" as const, nature: "VARIABLE" as const, inflows: 0, outflows: 1850000, netMovement: -1850000, fxImpact: -18000, status: "NEEDS_REVIEW" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-RENT-2026-01", movementCategory: "RENT" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 450000, netMovement: -450000, fxImpact: 0, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-TAXES-2026-01", movementCategory: "TAXES" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 625000, netMovement: -625000, fxImpact: 0, status: "LOCKED" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-DEBT-2026-01", movementCategory: "DEBT_SERVICE" as const, cashFlowType: "FINANCING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 375000, netMovement: -375000, fxImpact: 0, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-INTERCO-2026-01", movementCategory: "INTERCOMPANY" as const, cashFlowType: "FINANCING" as const, nature: "ONE_OFF" as const, inflows: 500000, outflows: 250000, netMovement: 250000, fxImpact: -22000, status: "NEEDS_REVIEW" as const, period: "2026-01", entityId: "ALL" },
+      ];
+      
+      if (category) {
+        const categoryFilter = (category as string).toUpperCase().replace(/-/g, "_");
+        movements = movements.filter(m => m.movementCategory === categoryFilter);
+      }
+      
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching cash movements:", error);
+      res.status(500).json({ error: "Failed to fetch cash movements" });
+    }
+  });
+
+  // Cash movement details (Level 2) - Patterns for a specific movement ID
+  app.get("/api/cash/movements/:id/details", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Map movement IDs to their patterns
+      const detailsByMovementId: Record<string, any[]> = {
+        "CM-RECEIPTS-2026-01": [
+          { id: "CD-001", patternName: "Monthly Subscription Revenue", counterparty: "Enterprise Customers", direction: "INFLOW" as const, expected: true, amount: 5200000, varianceVsExpected: 125000, source: "BANK" as const, notes: null, movementCategory: "CUSTOMER_RECEIPTS" as const, period: "2026-01" },
+          { id: "CD-002", patternName: "Usage-Based Collections", counterparty: "SMB Customers", direction: "INFLOW" as const, expected: true, amount: 2400000, varianceVsExpected: -50000, source: "BANK" as const, notes: "Slightly below forecast", movementCategory: "CUSTOMER_RECEIPTS" as const, period: "2026-01" },
+          { id: "CD-003", patternName: "One-time License Fees", counterparty: null, direction: "INFLOW" as const, expected: false, amount: 900000, varianceVsExpected: 900000, source: "BANK" as const, notes: "Unplanned enterprise deal", movementCategory: "CUSTOMER_RECEIPTS" as const, period: "2026-01" },
+        ],
+        "CM-PAYROLL-2026-01": [
+          { id: "CD-004", patternName: "Monthly Payroll - US", counterparty: "ADP Payroll", direction: "OUTFLOW" as const, expected: true, amount: 2200000, varianceVsExpected: 50000, source: "BANK" as const, notes: null, movementCategory: "PAYROLL" as const, period: "2026-01" },
+          { id: "CD-005", patternName: "Monthly Payroll - EU", counterparty: "Paylocity EU", direction: "OUTFLOW" as const, expected: true, amount: 400000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "PAYROLL" as const, period: "2026-01" },
+          { id: "CD-006", patternName: "Bonus Payments Q4", counterparty: null, direction: "OUTFLOW" as const, expected: true, amount: 600000, varianceVsExpected: 100000, source: "BANK" as const, notes: "Higher than budgeted due to performance", movementCategory: "PAYROLL" as const, period: "2026-01" },
+        ],
+        "CM-VENDOR-2026-01": [
+          { id: "CD-007", patternName: "Cloud Infrastructure", counterparty: "AWS", direction: "OUTFLOW" as const, expected: true, amount: 850000, varianceVsExpected: 75000, source: "BANK" as const, notes: "Usage spike in December", movementCategory: "VENDOR_PAYMENTS" as const, period: "2026-01" },
+          { id: "CD-008", patternName: "Professional Services", counterparty: "Various Consultants", direction: "OUTFLOW" as const, expected: true, amount: 650000, varianceVsExpected: -25000, source: "BANK" as const, notes: null, movementCategory: "VENDOR_PAYMENTS" as const, period: "2026-01" },
+          { id: "CD-009", patternName: "Office Supplies", counterparty: "Staples", direction: "OUTFLOW" as const, expected: false, amount: 350000, varianceVsExpected: 200000, source: "BANK" as const, notes: "Unplanned office renovation", movementCategory: "VENDOR_PAYMENTS" as const, period: "2026-01" },
+        ],
+        "CM-RENT-2026-01": [
+          { id: "CD-010", patternName: "HQ Office Rent", counterparty: "Building Management LLC", direction: "OUTFLOW" as const, expected: true, amount: 350000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "RENT" as const, period: "2026-01" },
+          { id: "CD-011", patternName: "Regional Office Rent", counterparty: "Various Landlords", direction: "OUTFLOW" as const, expected: true, amount: 100000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "RENT" as const, period: "2026-01" },
+        ],
+        "CM-TAXES-2026-01": [
+          { id: "CD-012", patternName: "Federal Tax Payment", counterparty: "IRS", direction: "OUTFLOW" as const, expected: true, amount: 500000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "TAXES" as const, period: "2026-01" },
+          { id: "CD-013", patternName: "State Tax Payments", counterparty: "Various States", direction: "OUTFLOW" as const, expected: true, amount: 125000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "TAXES" as const, period: "2026-01" },
+        ],
+        "CM-DEBT-2026-01": [
+          { id: "CD-014", patternName: "Term Loan Principal", counterparty: "First National Bank", direction: "OUTFLOW" as const, expected: true, amount: 250000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "DEBT_SERVICE" as const, period: "2026-01" },
+          { id: "CD-015", patternName: "Term Loan Interest", counterparty: "First National Bank", direction: "OUTFLOW" as const, expected: true, amount: 125000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "DEBT_SERVICE" as const, period: "2026-01" },
+        ],
+        "CM-INTERCO-2026-01": [
+          { id: "CD-016", patternName: "Dividend from EU Sub", counterparty: "SUB-EU", direction: "INFLOW" as const, expected: false, amount: 500000, varianceVsExpected: 500000, source: "BANK" as const, notes: "Unplanned repatriation", movementCategory: "INTERCOMPANY" as const, period: "2026-01" },
+          { id: "CD-017", patternName: "Capital Injection to JP", counterparty: "SUB-JP", direction: "OUTFLOW" as const, expected: true, amount: 250000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "INTERCOMPANY" as const, period: "2026-01" },
+        ],
+      };
+      
+      const details = detailsByMovementId[id] || [];
+      res.json(details);
+    } catch (error) {
+      console.error("Error fetching cash movement details:", error);
+      res.status(500).json({ error: "Failed to fetch cash movement details" });
+    }
+  });
+
+  // Cash bank context (Level 3)
+  app.get("/api/cash/bank-context", async (req, res) => {
+    try {
+      const bankContext = [
+        { bankAccount: "****4521", currency: "USD", openingBalance: 8500000, closingBalance: 10200000, netMovement: 1700000, fxTranslationImpact: 0 },
+        { bankAccount: "****7832", currency: "EUR", openingBalance: 2200000, closingBalance: 2450000, netMovement: 250000, fxTranslationImpact: -85000 },
+        { bankAccount: "****1156", currency: "GBP", openingBalance: 1800000, closingBalance: 2100000, netMovement: 300000, fxTranslationImpact: -40000 },
+      ];
+      res.json(bankContext);
+    } catch (error) {
+      console.error("Error fetching bank context:", error);
+      res.status(500).json({ error: "Failed to fetch bank context" });
+    }
+  });
+
+  // Cash trend data
+  app.get("/api/cash/trend", async (req, res) => {
+    try {
+      const trend = [
+        { period: "2025-08", openingBalance: 10500000, closingBalance: 11200000, netMovement: 700000 },
+        { period: "2025-09", openingBalance: 11200000, closingBalance: 11800000, netMovement: 600000 },
+        { period: "2025-10", openingBalance: 11800000, closingBalance: 12100000, netMovement: 300000 },
+        { period: "2025-11", openingBalance: 12100000, closingBalance: 12500000, netMovement: 400000 },
+        { period: "2025-12", openingBalance: 12500000, closingBalance: 12500000, netMovement: 0 },
+        { period: "2026-01", openingBalance: 12500000, closingBalance: 14750000, netMovement: 2250000 },
+      ];
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching cash trend:", error);
+      res.status(500).json({ error: "Failed to fetch cash trend" });
+    }
+  });
+
   return httpServer;
 }

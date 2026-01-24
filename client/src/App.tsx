@@ -31,6 +31,9 @@ import InvestmentIncomeWorkspace from "@/pages/investment-income-workspace";
 import DebtDashboard from "@/pages/debt-dashboard";
 import DebtCategoryPage from "@/pages/debt-category";
 import DebtWorkspace from "@/pages/debt-workspace";
+import CashDashboard from "@/pages/cash-dashboard";
+import CashCategoryPage from "@/pages/cash-category";
+import CashMovementDetailPage from "@/pages/cash-movement-detail";
 
 function Router() {
   return (
@@ -58,6 +61,9 @@ function Router() {
       <Route path="/debt" component={DebtDashboard} />
       <Route path="/debt/:category" component={DebtCategoryPage} />
       <Route path="/debt/:category/instrument/:id" component={DebtWorkspace} />
+      <Route path="/cash" component={CashDashboard} />
+      <Route path="/cash/:category" component={CashCategoryPage} />
+      <Route path="/cash/:category/movement/:id" component={CashMovementDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

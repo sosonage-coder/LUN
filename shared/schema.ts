@@ -674,3 +674,107 @@ export const insertUserSchema = z.object({
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// ===== CASH SCHEDULE TYPES =====
+
+export type CashMovementCategory = 
+  | "PAYROLL"
+  | "RENT"
+  | "CUSTOMER_RECEIPTS"
+  | "VENDOR_PAYMENTS"
+  | "INTERCOMPANY"
+  | "TAXES"
+  | "DEBT_SERVICE"
+  | "CAPITAL_EXPENDITURE"
+  | "OTHER";
+
+export type CashFlowType = "OPERATING" | "INVESTING" | "FINANCING";
+export type CashNature = "RECURRING" | "VARIABLE" | "ONE_OFF";
+export type CashMovementStatus = "OK" | "NEEDS_REVIEW" | "LOCKED";
+export type CashScheduleStatus = "COMPLETE" | "NEEDS_REVIEW" | "LOCKED" | "NO_TRANSACTIONS";
+
+// Level 0 - Dashboard KPIs
+export interface CashKPIs {
+  openingCashBank: number;
+  closingCashBank: number;
+  netCashMovement: number;
+  fxImpact: number;
+  unclassifiedCashPercent: number;
+  status: CashScheduleStatus;
+}
+
+// Level 1 - Movement Summary (one row = one category × period)
+export interface CashMovementSummary {
+  id: string;
+  movementCategory: CashMovementCategory;
+  cashFlowType: CashFlowType;
+  nature: CashNature;
+  inflows: number;
+  outflows: number;
+  netMovement: number;
+  fxImpact: number;
+  status: CashMovementStatus;
+  period: string;
+  entityId: string;
+}
+
+// Level 2 - Movement Detail (one row = one pattern)
+export interface CashMovementDetail {
+  id: string;
+  patternName: string;
+  counterparty: string | null;
+  direction: "INFLOW" | "OUTFLOW";
+  expected: boolean;
+  amount: number;
+  varianceVsExpected: number;
+  source: "BANK" | "MANUAL";
+  notes: string | null;
+  movementCategory: CashMovementCategory;
+  period: string;
+}
+
+// Level 3 - Bank Account Context (read-only)
+export interface CashBankContext {
+  bankAccount: string; // Masked
+  currency: string;
+  openingBalance: number;
+  closingBalance: number;
+  netMovement: number;
+  fxTranslationImpact: number;
+}
+
+// Category summary for dashboard mix chart
+export interface CashCategorySummary {
+  category: CashMovementCategory;
+  inflows: number;
+  outflows: number;
+  netMovement: number;
+  status: CashMovementStatus;
+}
+
+// Cash trend point
+export interface CashTrendPoint {
+  period: string;
+  openingBalance: number;
+  closingBalance: number;
+  netMovement: number;
+}
+
+// Cash mix breakdown
+export interface CashMixBreakdown {
+  category: CashMovementCategory;
+  amount: number;
+  percentage: number;
+}
+
+export const insertCashMovementSchema = z.object({
+  movementCategory: z.enum(["PAYROLL", "RENT", "CUSTOMER_RECEIPTS", "VENDOR_PAYMENTS", "INTERCOMPANY", "TAXES", "DEBT_SERVICE", "CAPITAL_EXPENDITURE", "OTHER"]),
+  cashFlowType: z.enum(["OPERATING", "INVESTING", "FINANCING"]),
+  nature: z.enum(["RECURRING", "VARIABLE", "ONE_OFF"]),
+  entityId: z.string().min(1, "Entity is required"),
+  period: z.string().regex(/^\d{4}-\d{2}$/, "Must be YYYY-MM format"),
+  inflows: z.number().min(0, "Inflows cannot be negative"),
+  outflows: z.number().min(0, "Outflows cannot be negative"),
+});
+
+export type InsertCashMovement = z.infer<typeof insertCashMovementSchema>;
