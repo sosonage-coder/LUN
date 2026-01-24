@@ -1,79 +1,134 @@
 # Non-Monetary Schedule Engine
 
 ## Overview
+A sophisticated financial accounting application for deterministic, auditable cost allocation over time. The system handles prepaid expenses and fixed assets with time-based allocation, append-only event tracking, and derived FX rates.
 
-A deterministic, auditable scheduling engine for allocating non-monetary costs over time. The system manages prepaid expenses and fixed assets with full audit trails, supporting multi-currency display while maintaining reporting currency as the source of truth.
+## Core Principles
 
-Core capabilities:
-- Schedule creation with straight-line amortization
-- Event-driven adjustments (amount changes, timeline modifications)
-- Late onboarding support for mid-cycle schedule starts
-- Period-based allocation with closed period protection
-- Dual currency display (reporting currency for calculations, local currency for context)
+1. **Reporting Currency is Source of Truth**: All calculations are based on reporting currency amounts. Local currency amounts are secondary.
+
+2. **FX is Always Derived**: FX rate = Reporting Amount / Local Amount. The FX rate is never manually edited - it's always calculated from the two currency amounts.
+
+3. **Append-Only Events**: All modifications to schedules are recorded as immutable events. Events are sorted deterministically (by effective period, then creation time) for consistent rebuilds.
+
+4. **Closed Periods are Immutable**: Once a period is closed, no events can be added that affect it. All changes must be prospective only.
+
+## Project Structure
+
+```
+├── client/                  # React frontend
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   │   ├── ui/         # shadcn/ui components
+│   │   │   ├── app-sidebar.tsx
+│   │   │   ├── currency-display.tsx
+│   │   │   ├── event-log.tsx
+│   │   │   ├── period-schedule-table.tsx
+│   │   │   ├── theme-provider.tsx
+│   │   │   └── theme-toggle.tsx
+│   │   ├── pages/
+│   │   │   ├── dashboard.tsx
+│   │   │   ├── schedules-list.tsx
+│   │   │   ├── schedule-detail.tsx
+│   │   │   ├── create-schedule.tsx
+│   │   │   └── not-found.tsx
+│   │   ├── lib/            # Utilities
+│   │   └── App.tsx         # Main app with routing
+│   └── index.html
+├── server/                  # Express backend
+│   ├── index.ts            # Server entry point
+│   ├── routes.ts           # API endpoints
+│   ├── storage.ts          # In-memory storage with rebuild algorithm
+│   └── vite.ts             # Vite integration
+└── shared/
+    └── schema.ts           # Data models and types
+```
+
+## Key Data Models
+
+### ScheduleMaster
+The main entity representing a prepaid expense or fixed asset schedule:
+- scheduleId, scheduleType (PREPAID | FIXED_ASSET)
+- entityId, description
+- localCurrency, reportingCurrency
+- startDate, endDate (YYYY-MM format)
+- totalAmountLocalInitial, totalAmountReportingInitial
+- impliedFxInitial (derived: reporting / local)
+- recognitionPeriods, systemPostingStartPeriod
+
+### ScheduleEvent
+Append-only events that modify schedules:
+- eventType: AMOUNT_ADJUSTMENT, TIMELINE_EXTENSION, TIMELINE_REDUCTION, ONBOARDING_BOUNDARY
+- effectivePeriod, eventPayload
+- reason, createdAt, createdBy
+
+### PeriodLine
+Calculated period allocations (not stored, rebuilt from events):
+- period (YYYY-MM), state (EXTERNAL | SYSTEM_BASE | SYSTEM_ADJUSTED | CLOSED)
+- amountReporting, amountLocal, effectiveFx
+- cumulativeAmountReporting, remainingAmountReporting
+- adjustmentDelta, explanation
+
+## Period States
+
+| State | Description |
+|-------|-------------|
+| EXTERNAL | Before systemPostingStartPeriod (late onboarding) |
+| SYSTEM_BASE | Standard system-generated allocation |
+| SYSTEM_ADJUSTED | Has adjustments from events |
+| CLOSED | Period has been closed, immutable |
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/schedules | List all schedules |
+| GET | /api/schedules/summary | Get summary statistics |
+| GET | /api/schedules/:id | Get schedule with events and periods |
+| POST | /api/schedules | Create new schedule |
+| POST | /api/schedules/:id/events | Add event to schedule |
+| POST | /api/schedules/:id/rebuild | Rebuild schedule periods |
+| GET | /api/entities | List entities |
+| GET | /api/entities/:id/periods | Get period statuses |
+| POST | /api/entities/:id/periods/:period/close | Close a period |
+
+## Rebuild Algorithm
+
+The deterministic rebuild algorithm processes events in order to calculate period allocations:
+
+1. Initialize with schedule's initial amounts
+2. Sort events by (effectivePeriod, createdAt)
+3. Apply each event to accumulate adjustments
+4. Calculate base amount per period
+5. Generate period lines with appropriate states
+6. Apply true-up on last period to eliminate rounding drift
+
+## Development
+
+### Running the Application
+```bash
+npm run dev
+```
+
+This starts both the Express backend and Vite frontend on port 5000.
+
+### Key Technologies
+- **Frontend**: React, TypeScript, TanStack Query, Wouter, Tailwind CSS, shadcn/ui
+- **Backend**: Express, TypeScript
+- **Data**: In-memory storage (MemStorage)
+
+## Recent Changes
+
+- 2026-01-24: Initial implementation complete
+  - Full schema with Schedule Master, Events, Period Lines
+  - Professional financial UI with dark mode support
+  - Deterministic rebuild algorithm with proper period state management
+  - All API endpoints implemented
+  - E2E testing passed
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
-
-## System Architecture
-
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight client-side routing)
-- **State Management**: TanStack React Query for server state
-- **UI Components**: shadcn/ui built on Radix UI primitives
-- **Styling**: Tailwind CSS with CSS variables for theming
-- **Build Tool**: Vite with path aliases (@/, @shared/, @assets/)
-
-### Backend Architecture
-- **Runtime**: Node.js with Express 5
-- **Language**: TypeScript with ESM modules
-- **API Pattern**: REST endpoints under /api prefix
-- **Development**: Vite middleware for HMR in development
-- **Production**: Static file serving from dist/public
-
-### Data Layer
-- **ORM**: Drizzle ORM with PostgreSQL dialect
-- **Schema**: Shared TypeScript types in /shared/schema.ts
-- **Validation**: Zod schemas with drizzle-zod integration
-- **Storage**: Interface-based storage abstraction (IStorage)
-
-### Key Design Patterns
-
-**Immutable Recognition Snapshots**: Initial schedule data is never modified. All changes are recorded as append-only events that adjust future periods.
-
-**Derived FX Rates**: Exchange rates are calculated as reporting amount divided by local amount, never user-editable.
-
-**Prospective Adjustments Only**: Changes apply to open periods going forward. Closed periods remain immutable.
-
-**Period State Machine**: Periods transition through states (EXTERNAL → SYSTEM_BASE → SYSTEM_ADJUSTED → CLOSED), with each state having specific rules.
-
-### Project Structure
-```
-client/src/          # React frontend
-  components/        # UI components (app-specific and shadcn/ui)
-  pages/            # Route components
-  hooks/            # Custom React hooks
-  lib/              # Utilities and query client
-server/             # Express backend
-  routes.ts         # API endpoint definitions
-  storage.ts        # Data access layer
-shared/             # Shared types and schemas
-  schema.ts         # Drizzle schema and Zod validators
-```
-
-## External Dependencies
-
-### Database
-- PostgreSQL (via DATABASE_URL environment variable)
-- Drizzle Kit for migrations (npm run db:push)
-
-### UI Framework
-- Radix UI primitives for accessible components
-- Tailwind CSS for styling
-- Lucide React for icons
-
-### Development Tools
-- Replit-specific Vite plugins for error overlay and dev banner
-- TSX for TypeScript execution
-- esbuild for production server bundling
+- Financial application styling with professional appearance
+- Clear currency formatting with proper decimal places
+- Dark mode support
+- Period state visual indicators (badges with colors)
