@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -730,6 +730,133 @@ export async function registerRoutes(
       }
       console.error("Error creating investment income schedule:", error);
       res.status(500).json({ error: "Failed to create investment income schedule" });
+    }
+  });
+
+  // ======================
+  // Loan & Debt Amortization Dashboard Routes
+  // ======================
+
+  // Get debt dashboard KPIs
+  app.get("/api/debt/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getDebtDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching debt KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch debt KPIs" });
+    }
+  });
+
+  // Get category summaries
+  app.get("/api/debt/categories", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const summaries = await storage.getDebtCategorySummaries(entityId);
+      res.json(summaries);
+    } catch (error) {
+      console.error("Error fetching debt category summaries:", error);
+      res.status(500).json({ error: "Failed to fetch debt category summaries" });
+    }
+  });
+
+  // Get outstanding principal trend
+  app.get("/api/debt/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getDebtTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching debt trend:", error);
+      res.status(500).json({ error: "Failed to fetch debt trend" });
+    }
+  });
+
+  // Get principal vs interest split
+  app.get("/api/debt/split", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const split = await storage.getPrincipalInterestSplit(entityId, periods);
+      res.json(split);
+    } catch (error) {
+      console.error("Error fetching principal/interest split:", error);
+      res.status(500).json({ error: "Failed to fetch principal/interest split" });
+    }
+  });
+
+  // Get debt mix breakdown
+  app.get("/api/debt/mix", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const mix = await storage.getDebtMixBreakdown(entityId);
+      res.json(mix);
+    } catch (error) {
+      console.error("Error fetching debt mix:", error);
+      res.status(500).json({ error: "Failed to fetch debt mix" });
+    }
+  });
+
+  // Get risk panels
+  app.get("/api/debt/risks", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const panels = await storage.getDebtRiskPanels(entityId);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching debt risk panels:", error);
+      res.status(500).json({ error: "Failed to fetch debt risk panels" });
+    }
+  });
+
+  // Get all debt schedules (for drilldown)
+  app.get("/api/debt", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const category = req.query.category as DebtCategory | undefined;
+      const debts = await storage.getDebtSchedules(entityId, category);
+      res.json(debts);
+    } catch (error) {
+      console.error("Error fetching debt schedules:", error);
+      res.status(500).json({ error: "Failed to fetch debt schedules" });
+    }
+  });
+
+  // Get single debt schedule
+  app.get("/api/debt/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const debt = await storage.getDebtSchedule(id);
+      
+      if (!debt) {
+        return res.status(404).json({ error: "Debt schedule not found" });
+      }
+
+      res.json(debt);
+    } catch (error) {
+      console.error("Error fetching debt schedule:", error);
+      res.status(500).json({ error: "Failed to fetch debt schedule" });
+    }
+  });
+
+  // Create new debt schedule
+  app.post("/api/debt", async (req, res) => {
+    try {
+      const validatedData = insertDebtScheduleSchema.parse(req.body);
+      const debt = await storage.createDebtSchedule(validatedData);
+      res.status(201).json(debt);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating debt schedule:", error);
+      res.status(500).json({ error: "Failed to create debt schedule" });
     }
   });
 
