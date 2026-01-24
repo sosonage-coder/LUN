@@ -1,0 +1,297 @@
+🧾 CATEGORY DASHBOARD SPEC — PREPAIDS (SCHEDULER)
+
+Product: Scheduler
+Category: Prepaids
+Audience: Preparer, Reviewer, Controller
+Purpose: Give a truthful, period-aware snapshot of prepaid activity with drill-down into schedules, lines, and evidence.
+
+1️⃣ Scope & Philosophy (lock this first)
+What this dashboard IS
+
+A summary control surface for all prepaid schedules
+
+A decision screen, not a data dump
+
+The starting point before drilling into individual schedules
+
+What this dashboard is NOT
+
+❌ A journal posting screen
+
+❌ A replacement for individual schedule workspaces
+
+❌ A forecasting tool
+
+❌ A reconciliation engine
+
+If a user needs line-level math → they drill down.
+
+2️⃣ Entry Points & Navigation
+URL
+/scheduler/prepaids
+
+Navigation context
+
+Top Nav: Scheduler (active)
+
+Left Sidebar: Categories
+
+Prepaids (active)
+
+Insurance
+
+Rent
+
+Software
+
+Other
+
+Fixed Assets
+
+Accruals
+
+Revenue Schedules
+
+Main Area: Prepaids Dashboard
+
+3️⃣ Page Layout (Visual Hierarchy)
+┌──────────────────────────────────────────┐
+│ Header (Title + Period + Entity)         │
+├──────────────────────────────────────────┤
+│ KPI Summary Tiles                        │
+├──────────────────────────────────────────┤
+│ Charts & Trends                          │
+├──────────────────────────────────────────┤
+│ Operational Status & Exceptions          │
+├──────────────────────────────────────────┤
+│ Prepaid Schedules Table (Drilldown)      │
+└──────────────────────────────────────────┘
+
+4️⃣ Header Section
+Elements
+
+Title: Prepaids
+
+Context Bar:
+
+Entity selector
+
+Period selector (Month / Quarter / Year)
+
+Status badge (Open / In Progress / Closed)
+
+Actions (right-aligned)
+
+➕ New Prepaid Schedule
+
+📄 New Template
+
+⬇ Export Summary (PDF / Excel)
+
+5️⃣ KPI Summary Tiles (Top row)
+
+Purpose: Answer “what’s the state of prepaids right now?”
+
+Tile	Definition
+Total Prepaid Balance	Ending balance as of selected period
+Active Schedules	# of schedules currently amortizing
+Expense This Period	Total expense recognized in the period
+Remaining Balance	Unamortized portion
+Upcoming Expirations	# expiring in next 30 / 60 / 90 days
+Behavior
+
+Clicking a tile filters the table below
+
+Hover shows definition tooltip (accounting clarity)
+
+6️⃣ Charts & Trends Section
+Chart 1: Amortization Trend
+
+Line or stacked bar
+
+Last 6–12 periods
+
+Shows expense recognized over time
+
+Drilldown: click a period → list schedules contributing to that amount
+
+Chart 2: Balance Composition
+
+Donut or stacked bar
+
+Breakdown by:
+
+Insurance
+
+Rent
+
+Software
+
+Other
+
+Drilldown: click segment → subcategory dashboard
+
+Chart 3 (optional, Phase 2): Remaining Term Heatmap
+
+Visualizes remaining months by schedule
+
+Flags short-term vs long-term exposure
+
+7️⃣ Operational Status & Exceptions
+
+Purpose: Surface risk, not totals.
+
+Panels
+
+⚠ Schedules missing evidence
+
+⏱ Schedules not updated for current period
+
+🔄 Schedules with manual overrides
+
+❌ Schedules failing validation rules
+
+Each item:
+
+Count
+
+Severity
+
+“View affected schedules” link
+
+8️⃣ Prepaid Schedules Table (Core Drilldown)
+Default columns
+Column	Description
+Schedule Name	Click → schedule workspace
+Subcategory	Insurance / Rent / Software
+Start Date	Amortization start
+End Date	Amortization end
+Original Amount	Initial prepaid value
+Monthly Expense	Recognized per period
+Remaining Balance	As of selected period
+Status	Active / Completed / On Hold
+Evidence	Attached / Missing
+Owner	Preparer
+Table behaviors
+
+Sortable
+
+Filterable
+
+Searchable
+
+Saved views (Controller vs Preparer)
+
+Row actions
+
+View
+
+Duplicate
+
+Archive
+
+Jump to Evidence
+
+9️⃣ Drilldown Path (Critical)
+Level 1 → Category Dashboard (this page)
+
+“Prepaids overview”
+
+Level 2 → Subcategory
+/scheduler/prepaids/insurance
+
+
+Same dashboard layout
+
+Filtered to insurance schedules only
+
+Level 3 → Individual Schedule
+/scheduler/prepaids/insurance/schedule/123
+
+🔍 Individual Schedule Workspace (linked but separate)
+
+Tabs
+
+Overview
+
+Amortization Lines
+
+Rules & Assumptions
+
+Evidence
+
+Audit Trail
+
+This keeps the dashboard clean.
+
+🔐 Controls & Permissions
+Role behavior
+Role	Access
+Preparer	View + edit assigned schedules
+Reviewer	View all + comment
+Controller	Full access + export
+Audit controls
+
+Period locking disables edits
+
+Changes logged in audit trail
+
+Evidence required flag enforced
+
+11️⃣ Empty & Edge States
+No prepaids exist
+
+Friendly empty state
+
+CTA: “Create your first prepaid schedule”
+
+Link to templates
+
+Period not selected
+
+Disabled dashboard
+
+Prompt to select period
+
+Data incomplete
+
+Banner explaining what’s missing
+
+12️⃣ Technical Notes (for engineers)
+Inputs
+
+Schedule master data
+
+Amortization lines
+
+Evidence metadata
+
+Period context
+
+Outputs
+
+Aggregated balances
+
+Period expense totals
+
+Validation status
+
+Drilldown filters
+
+⚠️ No journal posting logic lives here
+
+13️⃣ Why this dashboard matters (product truth)
+
+This dashboard:
+
+Replaces Excel summary tabs
+
+Replaces “what changed this month?” emails
+
+Gives Controllers confidence before close
+
+Trains users to think in categories, not transactions
+
+14️⃣ One-sentence explanation (use this everywhere)
+
+“The Prepaids dashboard gives a period-aware snapshot of prepaid balances, expense recognition, and risk, with drilldowns into schedules and evidence.”
