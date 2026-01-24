@@ -243,6 +243,17 @@ export function AppSidebar() {
                           </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                          asChild 
+                          isActive={location === "/close-control/templates"}
+                          data-testid="nav-close-control-templates"
+                        >
+                          <Link href="/close-control/templates">
+                            <span>Templates</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                       {(() => {
                         const scheduleMatch = location.match(/\/close-control\/schedule\/([^/]+)/);
                         if (scheduleMatch) {

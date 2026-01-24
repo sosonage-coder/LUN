@@ -39,12 +39,14 @@ import CashManualTaggingPage from "@/pages/cash-manual-tagging";
 import CloseControlDashboard from "@/pages/close-control-dashboard";
 import CloseControlSchedulePage from "@/pages/close-control-schedule";
 import CloseControlTasklistPage from "@/pages/close-control-tasklist";
+import CloseControlTemplatesPage from "@/pages/close-control-templates";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/close-control" component={CloseControlDashboard} />
+      <Route path="/close-control/templates" component={CloseControlTemplatesPage} />
       <Route path="/close-control/schedule/:id" component={CloseControlSchedulePage} />
       <Route path="/close-control/tasklist/:id" component={CloseControlTasklistPage} />
       <Route path="/schedules" component={SchedulesList} />

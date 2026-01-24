@@ -1212,5 +1212,216 @@ export async function registerRoutes(
     }
   });
 
+  // Close Control Templates
+  app.get("/api/close-control/templates", async (req, res) => {
+    try {
+      const templates = [
+        {
+          id: "TPL-MONTH-END-LEAN",
+          name: "Lean Month-End Close",
+          description: "Streamlined month-end close process with essential tasks only. Best for smaller organizations or interim periods.",
+          periodType: "MONTHLY" as const,
+          templateType: "SCHEDULE" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 24,
+          estimatedDays: 5,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-MONTH-END-FULL",
+          name: "Full Month-End Close",
+          description: "Comprehensive month-end close with all reconciliations, variance analysis, and management reporting. Suitable for larger organizations.",
+          periodType: "MONTHLY" as const,
+          templateType: "SCHEDULE" as const,
+          isSystemTemplate: true,
+          version: 3,
+          taskCount: 48,
+          estimatedDays: 8,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-QUARTER-END",
+          name: "Quarter-End Close",
+          description: "Quarterly close template including additional quarterly adjustments, external reporting preparation, and board reporting packages.",
+          periodType: "QUARTERLY" as const,
+          templateType: "SCHEDULE" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 62,
+          estimatedDays: 12,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-YEAR-END",
+          name: "Year-End Close",
+          description: "Annual close template with year-end adjustments, audit preparation, annual report compilation, and regulatory filings.",
+          periodType: "ANNUAL" as const,
+          templateType: "SCHEDULE" as const,
+          isSystemTemplate: true,
+          version: 1,
+          taskCount: 96,
+          estimatedDays: 20,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-CASH-CLOSE",
+          name: "Cash Close Tasklist",
+          description: "Standard cash close activities: bank reconciliations, intercompany cash, FX translation, and cash variance analysis.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 4,
+          taskCount: 5,
+          estimatedDays: 2,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-REVENUE-CLOSE",
+          name: "Revenue Close Tasklist",
+          description: "Revenue recognition procedures: contract review, deferred revenue adjustments, ASC 606 compliance checks.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 3,
+          taskCount: 6,
+          estimatedDays: 3,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-ACCRUALS-CLOSE",
+          name: "Accruals Close Tasklist",
+          description: "Accrual review and adjustments: expense accruals, payroll accruals, bonus provisions, and aging analysis.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 4,
+          estimatedDays: 2,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-FIXED-ASSETS-CLOSE",
+          name: "Fixed Assets Close Tasklist",
+          description: "Fixed asset procedures: depreciation run, asset additions/disposals, impairment review, and subledger reconciliation.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 3,
+          estimatedDays: 1,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-PREPAIDS-CLOSE",
+          name: "Prepaids Close Tasklist",
+          description: "Prepaid expense amortization: schedule review, new prepaid setup, balance reconciliation, and aged items cleanup.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 4,
+          estimatedDays: 1,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-VARIANCE-ANALYSIS",
+          name: "Variance Analysis Tasklist",
+          description: "Monthly variance analysis: budget vs actual, flux analysis, management commentary, and KPI reporting.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 3,
+          taskCount: 4,
+          estimatedDays: 2,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-INTERCOMPANY",
+          name: "Intercompany Tasklist",
+          description: "Intercompany reconciliation and elimination: IC balance matching, elimination entries, and transfer pricing documentation.",
+          periodType: "MONTHLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 1,
+          taskCount: 5,
+          estimatedDays: 2,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        {
+          id: "TPL-TAX-PROVISION",
+          name: "Tax Provision Tasklist",
+          description: "Quarterly tax provision calculation: current/deferred tax, effective tax rate analysis, and tax account reconciliation.",
+          periodType: "QUARTERLY" as const,
+          templateType: "TASKLIST" as const,
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 6,
+          estimatedDays: 3,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+      ];
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+      res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
+  // Single Template
+  app.get("/api/close-control/templates/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const templates: Record<string, any> = {
+        "TPL-MONTH-END-LEAN": {
+          id: "TPL-MONTH-END-LEAN",
+          name: "Lean Month-End Close",
+          description: "Streamlined month-end close process with essential tasks only. Best for smaller organizations or interim periods.",
+          periodType: "MONTHLY",
+          templateType: "SCHEDULE",
+          isSystemTemplate: true,
+          version: 2,
+          taskCount: 24,
+          estimatedDays: 5,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+        "TPL-CASH-CLOSE": {
+          id: "TPL-CASH-CLOSE",
+          name: "Cash Close Tasklist",
+          description: "Standard cash close activities: bank reconciliations, intercompany cash, FX translation, and cash variance analysis.",
+          periodType: "MONTHLY",
+          templateType: "TASKLIST",
+          isSystemTemplate: true,
+          version: 4,
+          taskCount: 5,
+          estimatedDays: 2,
+          createdAt: "2024-01-15T00:00:00Z",
+          createdBy: "System",
+        },
+      };
+      const template = templates[id];
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Failed to fetch template" });
+    }
+  });
+
   return httpServer;
 }
