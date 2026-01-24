@@ -49,9 +49,14 @@ const navigationItems = [
     icon: ClipboardCheck,
   },
   {
+    title: "Calendar View",
+    url: "/close-control/calendar",
+    icon: Calendar,
+  },
+  {
     title: "Schedules",
     url: "/schedules",
-    icon: Calendar,
+    icon: Clock,
   },
   {
     title: "Prepaid Calculator",
