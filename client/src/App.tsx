@@ -53,12 +53,16 @@ import CloseControlCalendarPage from "@/pages/close-control-calendar";
 import CloseControlNewPage from "@/pages/close-control-new";
 import CloseControlCertificationPage from "@/pages/close-control-certification";
 import MyTasksPage from "@/pages/my-tasks";
+import ReconciliationTemplatesPage from "@/pages/reconciliation-templates";
+import ReconciliationWorkspacePage from "@/pages/reconciliation-workspace";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/reconciliations" component={ReconciliationsPage} />
+      <Route path="/reconciliations/templates" component={ReconciliationTemplatesPage} />
+      <Route path="/reconciliations/workspace/:id" component={ReconciliationWorkspacePage} />
       <Route path="/policies" component={PoliciesPage} />
       <Route path="/walkthroughs" component={WalkthroughsPage} />
       <Route path="/reports" component={ReportsPage} />

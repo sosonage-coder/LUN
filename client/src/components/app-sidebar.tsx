@@ -145,6 +145,11 @@ const oneCloseNav = [
   { title: "Certification & SoD", url: "/close-control/certification", icon: Shield },
 ];
 
+const reconciliationsNav = [
+  { title: "Dashboard", url: "/reconciliations", icon: LayoutDashboard },
+  { title: "Templates", url: "/reconciliations/templates", icon: FileText },
+];
+
 const systemItems = [
   { title: "Period Status", url: "/periods", icon: Clock },
   { title: "Audit Log", url: "/audit", icon: FileText },
@@ -154,7 +159,7 @@ const systemItems = [
 const productInfo = {
   "schedule-studio": { name: "Schedule Studio", icon: Calculator, description: "Cost Allocation" },
   "oneclose": { name: "OneClose", icon: Shield, description: "Close Management" },
-  "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Coming Soon" },
+  "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Account Reconciliation" },
   "policies": { name: "Policies", icon: FileText, description: "Coming Soon" },
   "walkthroughs": { name: "Walkthroughs", icon: ClipboardCheck, description: "Coming Soon" },
   "reports": { name: "Reports", icon: FileText, description: "Coming Soon" },
@@ -347,6 +352,34 @@ export function AppSidebar() {
     </>
   );
 
+  const renderReconciliations = () => (
+    <SidebarGroup>
+      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {reconciliationsNav.map((item) => {
+            const isActive = location === item.url || 
+              (item.url !== "/reconciliations" && location.startsWith(item.url));
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={isActive}
+                  data-testid={`nav-reconciliations-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <Link href={item.url}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+
   const renderComingSoon = () => (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -378,7 +411,8 @@ export function AppSidebar() {
       <SidebarContent>
         {activeProduct === "schedule-studio" && renderScheduleStudio()}
         {activeProduct === "oneclose" && renderOneClose()}
-        {!["schedule-studio", "oneclose"].includes(activeProduct) && renderComingSoon()}
+        {activeProduct === "reconciliations" && renderReconciliations()}
+        {!["schedule-studio", "oneclose", "reconciliations"].includes(activeProduct) && renderComingSoon()}
         
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
