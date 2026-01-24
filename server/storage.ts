@@ -63,7 +63,9 @@ import type {
   InsertCloseTemplate,
   InsertCloseTemplateTask,
   UpdateCloseTemplate,
-  UpdateCloseTemplateTask
+  UpdateCloseTemplateTask,
+  CloseTask,
+  InsertCloseTask
 } from "@shared/schema";
 
 export interface IStorage {
@@ -167,6 +169,12 @@ export interface IStorage {
   updateCloseTemplateTask(id: string, data: UpdateCloseTemplateTask): Promise<CloseTemplateTask>;
   deleteCloseTemplateTask(id: string): Promise<boolean>;
   reorderCloseTemplateTasks(templateId: string, taskIds: string[]): Promise<CloseTemplateTask[]>;
+  
+  // Close Tasks (active tasks in close schedules)
+  getCloseTasklistTasks(tasklistId: string): Promise<CloseTask[]>;
+  getCloseTask(id: string): Promise<CloseTask | undefined>;
+  createCloseTask(data: Partial<CloseTask> & { tasklistId: string; name: string }): Promise<CloseTask>;
+  updateCloseTask(id: string, data: Partial<CloseTask>): Promise<CloseTask>;
 }
 
 // Helper functions
@@ -211,6 +219,7 @@ export class MemStorage implements IStorage {
   private debtSchedules: Map<string, DebtSchedule>;
   private closeTemplates: Map<string, CloseTemplate>;
   private closeTemplateTasks: Map<string, CloseTemplateTask>;
+  private closeTasks: Map<string, CloseTask>;
 
   constructor() {
     this.schedules = new Map();
@@ -224,11 +233,13 @@ export class MemStorage implements IStorage {
     this.revenueSchedules = new Map();
     this.closeTemplates = new Map();
     this.closeTemplateTasks = new Map();
+    this.closeTasks = new Map();
     this.investmentIncomeSchedules = new Map();
     this.debtSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
+    this.seedCloseTasks();
   }
 
   private seedData() {
@@ -3993,6 +4004,87 @@ export class MemStorage implements IStorage {
     return this.getCloseTemplateTasks(templateId);
   }
 
+  // Close Tasks (active tasks in close schedules)
+  async getCloseTasklistTasks(tasklistId: string): Promise<CloseTask[]> {
+    const tasks: CloseTask[] = [];
+    this.closeTasks.forEach((task) => {
+      if (task.tasklistId === tasklistId) {
+        tasks.push(task);
+      }
+    });
+    return tasks.sort((a, b) => a.order - b.order);
+  }
+
+  async getCloseTask(id: string): Promise<CloseTask | undefined> {
+    return this.closeTasks.get(id);
+  }
+
+  async createCloseTask(data: Partial<CloseTask> & { tasklistId: string; name: string }): Promise<CloseTask> {
+    const id = `TSK-${Date.now()}`;
+    const now = new Date().toISOString();
+    const task: CloseTask = {
+      id,
+      tasklistId: data.tasklistId,
+      closeScheduleId: data.closeScheduleId || "",
+      name: data.name,
+      description: data.description || "",
+      status: data.status || "NOT_STARTED",
+      priority: data.priority || "MEDIUM",
+      preparerId: data.preparerId || null,
+      preparerName: data.preparerName || null,
+      reviewerId: data.reviewerId || null,
+      reviewerName: data.reviewerName || null,
+      dueDate: data.dueDate || "",
+      completedAt: null,
+      approvedAt: null,
+      approvedBy: null,
+      evidenceStatus: data.evidenceStatus || "MISSING",
+      evidenceCount: data.evidenceCount || 0,
+      linkedSchedules: data.linkedSchedules || [],
+      dependencies: data.dependencies || [],
+      order: data.order || 0,
+      period: data.period || "",
+      createdAt: now,
+    };
+    this.closeTasks.set(id, task);
+    return task;
+  }
+
+  async updateCloseTask(id: string, data: Partial<CloseTask>): Promise<CloseTask> {
+    const task = this.closeTasks.get(id);
+    if (!task) {
+      throw new Error(`Task not found: ${id}`);
+    }
+    const updated = { ...task, ...data };
+    this.closeTasks.set(id, updated);
+    return updated;
+  }
+
+  private seedCloseTasks() {
+    // Seed sample close tasks for tasklist TL-001 (Cash Close)
+    const cashCloseTasks: CloseTask[] = [
+      { id: "TSK-001", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Bank Reconciliation", description: "Complete bank reconciliations for all accounts", status: "APPROVED", priority: "HIGH", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T15:30:00Z", approvedAt: "2026-01-29T10:00:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED", evidenceCount: 3, linkedSchedules: [{ type: "CASH", scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: [], order: 1, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-002", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Intercompany Cash Review", description: "Review intercompany cash movements", status: "APPROVED", priority: "MEDIUM", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T16:00:00Z", approvedAt: "2026-01-29T10:15:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED", evidenceCount: 2, linkedSchedules: [], dependencies: ["TSK-001"], order: 2, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-003", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "FX Translation", description: "Calculate FX translation impact", status: "SUBMITTED", priority: "HIGH", preparerId: "U003", preparerName: "Sarah Analyst", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "PENDING", evidenceCount: 1, linkedSchedules: [], dependencies: ["TSK-001"], order: 3, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-004", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Cash Variance Analysis", description: "Analyze cash variances vs budget", status: "IN_PROGRESS", priority: "MEDIUM", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING", evidenceCount: 0, linkedSchedules: [{ type: "CASH", scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: ["TSK-001", "TSK-003"], order: 4, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-005", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Final Cash Sign-off", description: "Final controller review and sign-off", status: "NOT_STARTED", priority: "CRITICAL", preparerId: null, preparerName: null, reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING", evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-004"], order: 5, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+    ];
+
+    // Seed sample close tasks for tasklist TL-003 (Accruals Close)
+    const accrualsCloseTasks: CloseTask[] = [
+      { id: "TSK-ACC-001", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Accrued Expenses Review", description: "Review and update accrued expense schedules for utilities, services, and professional fees", status: "APPROVED", priority: "HIGH", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-27", completedAt: "2026-01-26T14:00:00Z", approvedAt: "2026-01-27T09:00:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED", evidenceCount: 4, linkedSchedules: [{ type: "ACCRUAL", scheduleId: "ACC-2026-01", scheduleName: "Accruals Schedule Jan 2026", period: "2026-01" }], dependencies: [], order: 1, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-ACC-002", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Accrued Payroll Reconciliation", description: "Reconcile accrued wages, bonuses, commissions, and payroll taxes", status: "APPROVED", priority: "HIGH", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-27", completedAt: "2026-01-26T16:00:00Z", approvedAt: "2026-01-27T10:00:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED", evidenceCount: 3, linkedSchedules: [], dependencies: [], order: 2, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-ACC-003", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Accrued Interest Calculation", description: "Calculate and record accrued interest on debt instruments", status: "SUBMITTED", priority: "MEDIUM", preparerId: "U003", preparerName: "Sarah Analyst", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-28", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "PENDING", evidenceCount: 2, linkedSchedules: [], dependencies: [], order: 3, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-ACC-004", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Bonus & Commission Accruals", description: "Calculate period-end bonus and commission accruals based on performance metrics", status: "IN_PROGRESS", priority: "HIGH", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-28", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING", evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-ACC-002"], order: 4, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-ACC-005", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Accruals Aging Analysis", description: "Review aged accruals and release stale items with proper documentation", status: "NOT_STARTED", priority: "MEDIUM", preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING", evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-ACC-001"], order: 5, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "TSK-ACC-006", tasklistId: "TL-003", closeScheduleId: "CS-2026-01", name: "Accruals Sign-off", description: "Final controller review and accruals sign-off", status: "NOT_STARTED", priority: "CRITICAL", preparerId: null, preparerName: null, reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING", evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-ACC-004", "TSK-ACC-005"], order: 6, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+    ];
+
+    for (const task of [...cashCloseTasks, ...accrualsCloseTasks]) {
+      this.closeTasks.set(task.id, task);
+    }
+  }
+
   private seedCloseTemplates() {
     const now = new Date().toISOString();
     
@@ -4377,6 +4469,582 @@ export class MemStorage implements IStorage {
     ];
 
     for (const task of revenueCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Accruals Close template
+    const accrualsCloseTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-ACC-001",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Accrued Expenses Review",
+        description: "Review and update accrued expense schedules for utilities, services, and professional fees",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-ACC-002",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Accrued Payroll Reconciliation",
+        description: "Reconcile accrued wages, bonuses, commissions, and payroll taxes",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-ACC-003",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Accrued Interest Calculation",
+        description: "Calculate and record accrued interest on debt instruments",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 3,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-ACC-004",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Bonus & Commission Accruals",
+        description: "Calculate period-end bonus and commission accruals based on performance metrics",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-ACC-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-ACC-005",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Accruals Aging Analysis",
+        description: "Review aged accruals and release stale items with proper documentation",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 4,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-ACC-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-ACC-006",
+        templateId: "TPL-ACCRUALS-CLOSE",
+        name: "Accruals Sign-off",
+        description: "Final controller review and accruals sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 5,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "ACCRUAL",
+        dueDayOffset: 5,
+        dependencies: ["TPLT-ACC-004", "TPLT-ACC-005"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of accrualsCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Fixed Assets Close template
+    const fixedAssetsCloseTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-FA-001",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Depreciation Run",
+        description: "Execute monthly depreciation calculation and post journal entries",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 1,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-FA-002",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Asset Additions Review",
+        description: "Review new asset additions for proper capitalization and useful life assignment",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-FA-003",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Asset Disposals & Retirements",
+        description: "Process asset disposals, calculate gain/loss, and update registers",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-FA-004",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "CIP Transfer Review",
+        description: "Review construction-in-progress for items ready to be placed in service",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-FA-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-FA-005",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Subledger to GL Reconciliation",
+        description: "Reconcile fixed asset subledger to general ledger balances",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 4,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-FA-001", "TPLT-FA-003"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-FA-006",
+        templateId: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Fixed Assets Sign-off",
+        description: "Final controller review and fixed assets sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 5,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "FIXED_ASSET",
+        dueDayOffset: 5,
+        dependencies: ["TPLT-FA-005"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of fixedAssetsCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Prepaids Close template
+    const prepaidsCloseTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-PP-001",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "Prepaid Amortization Run",
+        description: "Execute prepaid amortization schedules and post monthly expense",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 1,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-PP-002",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "New Prepaid Setup",
+        description: "Set up new prepaids from AP invoices and configure amortization schedules",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-PP-003",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "Insurance Prepaid Review",
+        description: "Review insurance policies and verify amortization matches coverage periods",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 2,
+        dependencies: ["TPLT-PP-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-PP-004",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "Software & License Review",
+        description: "Review software licenses and subscription prepaids for proper amortization",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-PP-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-PP-005",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "Prepaid Balance Reconciliation",
+        description: "Reconcile prepaid schedules to GL balances and investigate variances",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 4,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-PP-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-PP-006",
+        templateId: "TPL-PREPAIDS-CLOSE",
+        name: "Prepaids Sign-off",
+        description: "Final controller review and prepaids sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 5,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "PREPAID",
+        dueDayOffset: 5,
+        dependencies: ["TPLT-PP-005"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of prepaidsCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Variance Analysis template
+    const varianceAnalysisTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-VAR-001",
+        templateId: "TPL-VARIANCE-ANALYSIS",
+        name: "Budget vs Actual Analysis",
+        description: "Prepare budget to actual comparison for all P&L line items",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 3,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-VAR-002",
+        templateId: "TPL-VARIANCE-ANALYSIS",
+        name: "Period-over-Period Flux",
+        description: "Analyze month-over-month and year-over-year changes",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 3,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-VAR-003",
+        templateId: "TPL-VARIANCE-ANALYSIS",
+        name: "Management Commentary",
+        description: "Draft variance explanations and management discussion for leadership",
+        priority: "MEDIUM",
+        estimatedHours: 3,
+        order: 2,
+        defaultPreparerRole: "REVIEWER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: null,
+        dueDayOffset: 4,
+        dependencies: ["TPLT-VAR-001", "TPLT-VAR-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-VAR-004",
+        templateId: "TPL-VARIANCE-ANALYSIS",
+        name: "KPI Dashboard Update",
+        description: "Update key performance indicators and financial metrics dashboard",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 4,
+        dependencies: ["TPLT-VAR-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of varianceAnalysisTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Intercompany template
+    const intercompanyTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-IC-001",
+        templateId: "TPL-INTERCOMPANY",
+        name: "IC Balance Matching",
+        description: "Match intercompany balances between entities and identify discrepancies",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-IC-002",
+        templateId: "TPL-INTERCOMPANY",
+        name: "IC Discrepancy Resolution",
+        description: "Investigate and resolve intercompany balance discrepancies",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 3,
+        dependencies: ["TPLT-IC-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-IC-003",
+        templateId: "TPL-INTERCOMPANY",
+        name: "Elimination Entries",
+        description: "Prepare and post intercompany elimination entries for consolidation",
+        priority: "CRITICAL",
+        estimatedHours: 3,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: null,
+        dueDayOffset: 4,
+        dependencies: ["TPLT-IC-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-IC-004",
+        templateId: "TPL-INTERCOMPANY",
+        name: "Transfer Pricing Documentation",
+        description: "Review transfer pricing calculations and update documentation",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 4,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-IC-005",
+        templateId: "TPL-INTERCOMPANY",
+        name: "IC Sign-off",
+        description: "Final controller review and intercompany sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 4,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: null,
+        dueDayOffset: 5,
+        dependencies: ["TPLT-IC-003"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of intercompanyTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed tasks for Tax Provision template
+    const taxProvisionTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-TAX-001",
+        templateId: "TPL-TAX-PROVISION",
+        name: "Current Tax Calculation",
+        description: "Calculate current period income tax expense based on taxable income",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 3,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-TAX-002",
+        templateId: "TPL-TAX-PROVISION",
+        name: "Deferred Tax Analysis",
+        description: "Analyze and update deferred tax assets and liabilities",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 4,
+        dependencies: ["TPLT-TAX-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-TAX-003",
+        templateId: "TPL-TAX-PROVISION",
+        name: "ETR Analysis & Reconciliation",
+        description: "Calculate effective tax rate and reconcile to statutory rate",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: null,
+        dueDayOffset: 5,
+        dependencies: ["TPLT-TAX-001", "TPLT-TAX-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-TAX-004",
+        templateId: "TPL-TAX-PROVISION",
+        name: "Tax Account Reconciliation",
+        description: "Reconcile all tax-related balance sheet accounts",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: null,
+        dueDayOffset: 5,
+        dependencies: ["TPLT-TAX-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-TAX-005",
+        templateId: "TPL-TAX-PROVISION",
+        name: "Uncertain Tax Positions Review",
+        description: "Review and update uncertain tax position reserves (FIN 48)",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 4,
+        defaultPreparerRole: "REVIEWER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: null,
+        dueDayOffset: 6,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-TAX-006",
+        templateId: "TPL-TAX-PROVISION",
+        name: "Tax Provision Sign-off",
+        description: "Final controller/CFO review and tax provision sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 5,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CFO",
+        linkedScheduleType: null,
+        dueDayOffset: 7,
+        dependencies: ["TPLT-TAX-003", "TPLT-TAX-005"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of taxProvisionTasks) {
       this.closeTemplateTasks.set(task.id, task);
     }
   }

@@ -1198,17 +1198,41 @@ export async function registerRoutes(
   // Tasks for a tasklist
   app.get("/api/close-control/tasklists/:id/tasks", async (req, res) => {
     try {
-      const tasks = [
-        { id: "TSK-001", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Bank Reconciliation", description: "Complete bank reconciliations for all accounts", status: "APPROVED" as const, priority: "HIGH" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T15:30:00Z", approvedAt: "2026-01-29T10:00:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED" as const, evidenceCount: 3, linkedSchedules: [{ type: "CASH" as const, scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: [], order: 1, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
-        { id: "TSK-002", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Intercompany Cash", description: "Review intercompany cash movements", status: "APPROVED" as const, priority: "MEDIUM" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T16:00:00Z", approvedAt: "2026-01-29T10:15:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED" as const, evidenceCount: 2, linkedSchedules: [], dependencies: ["TSK-001"], order: 2, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
-        { id: "TSK-003", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "FX Translation", description: "Calculate FX translation impact", status: "SUBMITTED" as const, priority: "HIGH" as const, preparerId: "U003", preparerName: "Sarah Analyst", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "PENDING" as const, evidenceCount: 1, linkedSchedules: [], dependencies: ["TSK-001"], order: 3, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
-        { id: "TSK-004", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Cash Variance Analysis", description: "Analyze cash variances vs budget", status: "IN_PROGRESS" as const, priority: "MEDIUM" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING" as const, evidenceCount: 0, linkedSchedules: [{ type: "CASH" as const, scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: ["TSK-001", "TSK-003"], order: 4, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
-        { id: "TSK-005", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Final Cash Sign-off", description: "Final controller review and sign-off", status: "NOT_STARTED" as const, priority: "CRITICAL" as const, preparerId: null, preparerName: null, reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING" as const, evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-004"], order: 5, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
-      ];
+      const { id } = req.params;
+      const tasks = await storage.getCloseTasklistTasks(id);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
       res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  // Create a new task in a tasklist
+  app.post("/api/close-control/tasklists/:id/tasks", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const taskData = { ...req.body, tasklistId: id };
+      const task = await storage.createCloseTask(taskData);
+      res.status(201).json(task);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      res.status(500).json({ error: "Failed to create task" });
+    }
+  });
+
+  // Update a close task
+  app.patch("/api/close-control/tasks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const task = await storage.getCloseTask(id);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      const updated = await storage.updateCloseTask(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ error: "Failed to update task" });
     }
   });
 

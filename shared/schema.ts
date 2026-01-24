@@ -800,7 +800,7 @@ export type CloseScheduleStatus = "PLANNED" | "ACTIVE" | "AT_RISK" | "COMPLETE" 
 export type ClosePeriodType = "MONTHLY" | "QUARTERLY" | "YEARLY" | "AD_HOC";
 
 // User roles for close control
-export type CloseRole = "PREPARER" | "REVIEWER" | "CONTROLLER" | "AUDITOR";
+export type CloseRole = "PREPARER" | "REVIEWER" | "CONTROLLER" | "AUDITOR" | "CFO";
 
 // Evidence status for close tasks
 export type CloseEvidenceStatus = "ATTACHED" | "MISSING" | "PENDING";

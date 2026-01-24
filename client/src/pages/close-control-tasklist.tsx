@@ -20,7 +20,8 @@ import {
   Link2,
   PlayCircle,
   Send,
-  Eye
+  Eye,
+  LayoutGrid
 } from "lucide-react";
 import type { CloseTasklist, CloseTask, CloseTaskStatus, CloseEvidenceStatus, TaskPriority } from "@shared/schema";
 
@@ -88,6 +89,12 @@ export default function CloseControlTasklistPage() {
             </>
           )}
         </div>
+        <Button variant="outline" asChild data-testid="button-kanban-view">
+          <Link href={`/close-control/tasklist/${id}/kanban`}>
+            <LayoutGrid className="h-4 w-4 mr-2" />
+            Kanban Board
+          </Link>
+        </Button>
         <Button variant="outline" disabled data-testid="button-lock-tasklist">
           <Lock className="h-4 w-4 mr-2" />
           Lock Tasklist
