@@ -1,0 +1,325 @@
+🧮 CATEGORY DASHBOARD SPEC — LOAN & DEBT AMORTIZATION (SCHEDULER)
+
+Product: Scheduler
+Category: Loan & Debt Amortization
+Audience: Preparer, Reviewer, Controller, Audit
+Purpose: Provide a period-aware view of debt balances, principal movement, and amortized interest mechanics, separating economic unwinding from cash payments, with drill-down to instrument-level amortization schedules and evidence.
+
+🔒 Design Rule (Non-Negotiable)
+
+The dashboard surfaces current-period debt position and amortization state by category — never payment-level detail or full amortization tables.
+Full schedules and cash movements are accessed only through deliberate drilldown.
+
+This is what keeps the dashboard sane for 10+ years.
+
+1️⃣ Scope & Philosophy
+What this dashboard IS
+
+A debt position control surface
+
+A principal + interest unwinding overview
+
+A risk detection screen for balance movement, rate assumptions, and covenant-sensitive errors
+
+What this dashboard is NOT
+
+❌ A treasury or payment execution tool
+
+❌ A bank reconciliation surface
+
+❌ A covenant management system
+
+❌ A posting engine
+
+This dashboard answers:
+
+“What debt do we have outstanding, how is it unwinding over time, and are principal and interest behaving as expected this period?”
+
+2️⃣ Loan & Debt Lifecycle Model (Foundation)
+
+Every loan or debt schedule exists in one state only:
+
+State	Meaning	Dashboard Visibility
+Active	Outstanding principal, amortizing	✅ Included
+Dormant	Temporarily paused (interest-only, draw-ready, covenant holiday)	⚠ Included
+Repaid	Principal fully settled	❌ Excluded
+Archived	Historical reference	❌ Excluded
+Hard Rule
+
+Only Active and Dormant debt schedules appear on the dashboard.
+
+Repaid loans never clutter the surface.
+
+3️⃣ Entry Points & Navigation
+URL
+/scheduler/debt-amortization
+
+Navigation context
+
+Top Nav: Scheduler (active)
+
+Left Sidebar: Categories
+
+Prepaids
+
+Fixed Assets
+
+Accruals
+
+Revenue & Contracts
+
+Investment Income
+
+Interest Expense
+
+Loan & Debt Amortization (active)
+
+Term Loans
+
+Revolving Credit
+
+Bonds & Notes
+
+Intercompany Loans
+
+Lease Liabilities
+
+Other
+
+Main Area: Loan & Debt Amortization Dashboard (Aggregated)
+
+4️⃣ Time Window Enforcement
+Default Time Horizon
+
+Primary view: Current period
+
+Trends: Rolling 6–12 periods (hard cap)
+
+Prohibited by Design
+
+❌ Displaying payment-by-payment schedules
+
+❌ Showing full amortization tables
+
+❌ Surfacing repaid instruments by default
+
+Payment history belongs in drilldowns; this surface is about position and movement.
+
+5️⃣ Page Layout (Position-First, Not Payment-First)
+┌──────────────────────────────────────────┐
+│ Header (Title + Period + Entity)         │
+├──────────────────────────────────────────┤
+│ KPI Summary Tiles (Debt Position)        │
+├──────────────────────────────────────────┤
+│ Principal & Interest Trends              │
+├──────────────────────────────────────────┤
+│ Risk & Covenant-Sensitive Panels         │
+├──────────────────────────────────────────┤
+│ Debt Category Summary Table              │
+└──────────────────────────────────────────┘
+
+6️⃣ Header Section
+Elements
+
+Title: Loan & Debt Amortization
+
+Context Bar:
+
+Entity selector
+
+Period selector
+
+Amortization method indicator (Nominal / Effective)
+
+Status badge (Open / Locked)
+
+Actions
+
+➕ New Loan / Debt Schedule
+
+📄 New Debt Template
+
+⬇ Export Debt Summary
+
+7️⃣ KPI Summary Tiles (Balances & Movement)
+
+Purpose: Summarize outstanding debt and movement — not cash activity.
+
+Tile	Definition
+Outstanding Principal	Ending principal balance
+Principal Repaid (Period)	Reduction in principal
+Interest Incurred (Period)	Interest expense for period
+Accrued Interest	Interest incurred but unpaid
+Active Debt Instruments	# of active schedules
+High-Risk Debt	Variable rate / complex terms
+Behavior
+
+Tiles filter categories, not instruments
+
+No tile expands into payment listings
+
+8️⃣ Charts & Visuals (Aggregated & Stable)
+Chart 1: Outstanding Principal Trend
+
+Line or stacked bar
+
+Rolling 6–12 periods
+
+Grouped by debt category
+
+Drilldown: category → Category Dashboard
+
+Chart 2: Principal vs Interest Split
+
+Stacked bar by period
+
+Shows principal repayment vs interest incurred
+
+Chart 3: Debt Mix by Type
+
+Donut / stacked bar
+
+Term loans / revolvers / bonds / leases
+
+9️⃣ Risk & Control Panels
+
+Purpose: Surface balance, rate, and structural risk early.
+
+Panels
+
+⚠ Principal movements not supported by cash evidence
+
+🔄 Variable-rate debt not updated this period
+
+🧠 Effective interest method overrides
+
+⏱ Accrued interest outstanding beyond threshold
+
+📭 Expected debt instruments not present
+
+Each panel shows:
+
+Category
+
+Count of affected instruments
+
+Severity
+
+“View Category” link
+
+🔽 10️⃣ Debt Category Summary Table
+Rows = Debt Categories, not individual loans
+Column	Description
+Category	Term Loans / Revolvers / Bonds
+Active Schedules	Count
+Outstanding Principal	Ending balance
+Principal Repaid	Period amount
+Interest Incurred	Period amount
+Risk Level	Low / Medium / High
+Status	Reviewed / Not Reviewed
+Behavior
+
+Clicking a row navigates to:
+
+/scheduler/debt-amortization/term-loans
+
+11️⃣ Drilldown Path (Progressive Disclosure)
+Level 1 → Loan & Debt Dashboard
+/scheduler/debt-amortization
+
+Level 2 → Category Dashboard
+/scheduler/debt-amortization/term-loans
+
+
+Active instruments only
+
+Current period focus
+
+Level 3 → Loan / Debt Workspace
+/scheduler/debt-amortization/term-loans/loan/987
+
+🔍 Individual Loan / Debt Workspace (Linked, Not Embedded)
+
+Tabs
+
+Overview
+
+Amortization Schedule (Principal + Interest)
+
+Rate & Terms
+
+Accrued vs Paid
+
+Evidence & Agreements
+
+Audit Trail
+
+Repayment / Closure
+
+This is where full amortization tables live — never on the dashboard.
+
+🔐 12️⃣ Controls & Permissions
+Role behavior
+Role	Access
+Preparer	Create/edit schedules
+Reviewer	Review + comment
+Controller	Approve + lock period
+Auditor	Read-only + evidence
+Accounting controls
+
+Period locking freezes balances and amortization
+
+Rate changes logged and prospective
+
+Principal adjustments require justification
+
+Effective interest recalculations flagged
+
+13️⃣ Empty & Edge States
+No active debt
+
+Message: “No active debt for this period”
+
+CTA: “Create loan schedule” or “View archived debt”
+
+Fully repaid instruments
+
+Automatically excluded from dashboard
+
+Accessible via search/history
+
+14️⃣ Technical Guardrails (Anti-Bloat)
+
+Dashboard queries aggregated balances only
+
+Hard limits:
+
+Max trend window: 12 periods
+
+Max rows: categories only
+
+Loan-level schedules load on demand
+
+🚫 Payment schedules, bank transactions, and reconciliations are forbidden on this screen
+
+15️⃣ Why Loan & Debt Needs Its Own Schedule (Truth)
+
+Debt accounting breaks when:
+
+Principal and interest blur together
+
+Rates change silently
+
+Old loans linger forever
+
+This dashboard:
+
+Separates structure from cash
+
+Makes balance movement explainable
+
+Keeps debt accounting audit-defensible
+
+16️⃣ One-Sentence Explanation (Use Everywhere)
+
+“The Loan & Debt Amortization dashboard provides a period-aware view of outstanding principal, amortized interest, and balance movement, with drilldowns to instrument-level schedules and evidence.”

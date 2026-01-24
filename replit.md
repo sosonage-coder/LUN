@@ -36,6 +36,7 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   │   │   ├── fixed-assets-dashboard.tsx # Fixed Assets Category Dashboard
 │   │   │   ├── accruals-dashboard.tsx     # Accruals Category Dashboard
 │   │   │   ├── revenue-dashboard.tsx      # Revenue & Contracts Dashboard
+│   │   │   ├── investment-income-dashboard.tsx  # Investment Income Dashboard
 │   │   │   └── not-found.tsx
 │   │   ├── lib/            # Utilities
 │   │   └── App.tsx         # Main app with routing
@@ -143,6 +144,19 @@ Calculated period allocations (not stored, rebuilt from events):
 | GET | /api/revenue/risks | Get risk panels |
 | POST | /api/revenue | Create new revenue schedule |
 
+### Investment Income Earned Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/investment-income | List all investment income schedules |
+| GET | /api/investment-income/:id | Get single investment schedule |
+| GET | /api/investment-income/kpis | Get dashboard KPIs |
+| GET | /api/investment-income/categories | Get category summaries |
+| GET | /api/investment-income/trend | Get income earned trend |
+| GET | /api/investment-income/mix | Get yield mix breakdown |
+| GET | /api/investment-income/accrued-received | Get accrued vs received |
+| GET | /api/investment-income/risks | Get risk panels |
+| POST | /api/investment-income | Create new investment schedule |
+
 ## Rebuild Algorithm
 
 The deterministic rebuild algorithm processes events in order to calculate period allocations:
@@ -185,6 +199,18 @@ The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH c
 - True-up applied on final period to eliminate rounding drift
 
 ## Recent Changes
+
+- 2026-01-24: Added Investment Income Earned Category Dashboard
+  - Portfolio-level view at /investment-income for yield and income recognition by investment category
+  - 6 KPI tiles: Income Earned (Period), Accrued Income Balance, Cash Received, Active Investments, Dormant Investments, High-Risk Instruments
+  - 3 charts: Income Earned Trend (6-period bar), Yield Mix by Category, Accrued vs Received
+  - Risk Panels section for exception management (Missing Rate/Yield Data, Rate Changes Not Updated, Assumption-Based Income, Accrued Outstanding Beyond Threshold, Not Reviewed)
+  - Category Summary table with aggregated metrics, risk levels, and review status
+  - Investment categories: Interest-Bearing, Dividends, Fixed Income Securities, Equity Method/Funds, Other
+  - Yield basis types: Fixed Rate, Variable Rate, Dividend Declared, Estimated
+  - Lifecycle states: Active, Dormant, Matured, Archived
+  - Accrual aging tracking for timing differences between earned and received income
+  - E2E testing passed
 
 - 2026-01-24: Added Revenue & Contracts Category Dashboard
   - Portfolio-level view at /revenue with ASC 606 / IFRS 15 compliance framework
