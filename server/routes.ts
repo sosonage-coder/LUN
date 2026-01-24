@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, insertCloseTemplateSchema, insertCloseTemplateTaskSchema, updateCloseTemplateSchema, updateCloseTemplateTaskSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -1212,167 +1212,11 @@ export async function registerRoutes(
     }
   });
 
-  // Close Control Templates
+  // Close Control Templates - List all templates
   app.get("/api/close-control/templates", async (req, res) => {
     try {
-      const templates = [
-        {
-          id: "TPL-MONTH-END-LEAN",
-          name: "Lean Month-End Close",
-          description: "Streamlined month-end close process with essential tasks only. Best for smaller organizations or interim periods.",
-          periodType: "MONTHLY" as const,
-          templateType: "SCHEDULE" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 24,
-          estimatedDays: 5,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-MONTH-END-FULL",
-          name: "Full Month-End Close",
-          description: "Comprehensive month-end close with all reconciliations, variance analysis, and management reporting. Suitable for larger organizations.",
-          periodType: "MONTHLY" as const,
-          templateType: "SCHEDULE" as const,
-          isSystemTemplate: true,
-          version: 3,
-          taskCount: 48,
-          estimatedDays: 8,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-QUARTER-END",
-          name: "Quarter-End Close",
-          description: "Quarterly close template including additional quarterly adjustments, external reporting preparation, and board reporting packages.",
-          periodType: "QUARTERLY" as const,
-          templateType: "SCHEDULE" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 62,
-          estimatedDays: 12,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-YEAR-END",
-          name: "Year-End Close",
-          description: "Annual close template with year-end adjustments, audit preparation, annual report compilation, and regulatory filings.",
-          periodType: "ANNUAL" as const,
-          templateType: "SCHEDULE" as const,
-          isSystemTemplate: true,
-          version: 1,
-          taskCount: 96,
-          estimatedDays: 20,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-CASH-CLOSE",
-          name: "Cash Close Tasklist",
-          description: "Standard cash close activities: bank reconciliations, intercompany cash, FX translation, and cash variance analysis.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 4,
-          taskCount: 5,
-          estimatedDays: 2,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-REVENUE-CLOSE",
-          name: "Revenue Close Tasklist",
-          description: "Revenue recognition procedures: contract review, deferred revenue adjustments, ASC 606 compliance checks.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 3,
-          taskCount: 6,
-          estimatedDays: 3,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-ACCRUALS-CLOSE",
-          name: "Accruals Close Tasklist",
-          description: "Accrual review and adjustments: expense accruals, payroll accruals, bonus provisions, and aging analysis.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 4,
-          estimatedDays: 2,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-FIXED-ASSETS-CLOSE",
-          name: "Fixed Assets Close Tasklist",
-          description: "Fixed asset procedures: depreciation run, asset additions/disposals, impairment review, and subledger reconciliation.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 3,
-          estimatedDays: 1,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-PREPAIDS-CLOSE",
-          name: "Prepaids Close Tasklist",
-          description: "Prepaid expense amortization: schedule review, new prepaid setup, balance reconciliation, and aged items cleanup.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 4,
-          estimatedDays: 1,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-VARIANCE-ANALYSIS",
-          name: "Variance Analysis Tasklist",
-          description: "Monthly variance analysis: budget vs actual, flux analysis, management commentary, and KPI reporting.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 3,
-          taskCount: 4,
-          estimatedDays: 2,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-INTERCOMPANY",
-          name: "Intercompany Tasklist",
-          description: "Intercompany reconciliation and elimination: IC balance matching, elimination entries, and transfer pricing documentation.",
-          periodType: "MONTHLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 1,
-          taskCount: 5,
-          estimatedDays: 2,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        {
-          id: "TPL-TAX-PROVISION",
-          name: "Tax Provision Tasklist",
-          description: "Quarterly tax provision calculation: current/deferred tax, effective tax rate analysis, and tax account reconciliation.",
-          periodType: "QUARTERLY" as const,
-          templateType: "TASKLIST" as const,
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 6,
-          estimatedDays: 3,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-      ];
+      const templateType = req.query.type as "TASKLIST" | "SCHEDULE" | undefined;
+      const templates = await storage.getCloseTemplates(templateType);
       res.json(templates);
     } catch (error) {
       console.error("Error fetching templates:", error);
@@ -1380,46 +1224,193 @@ export async function registerRoutes(
     }
   });
 
-  // Single Template
+  // Get single template with tasks
   app.get("/api/close-control/templates/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const templates: Record<string, any> = {
-        "TPL-MONTH-END-LEAN": {
-          id: "TPL-MONTH-END-LEAN",
-          name: "Lean Month-End Close",
-          description: "Streamlined month-end close process with essential tasks only. Best for smaller organizations or interim periods.",
-          periodType: "MONTHLY",
-          templateType: "SCHEDULE",
-          isSystemTemplate: true,
-          version: 2,
-          taskCount: 24,
-          estimatedDays: 5,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-        "TPL-CASH-CLOSE": {
-          id: "TPL-CASH-CLOSE",
-          name: "Cash Close Tasklist",
-          description: "Standard cash close activities: bank reconciliations, intercompany cash, FX translation, and cash variance analysis.",
-          periodType: "MONTHLY",
-          templateType: "TASKLIST",
-          isSystemTemplate: true,
-          version: 4,
-          taskCount: 5,
-          estimatedDays: 2,
-          createdAt: "2024-01-15T00:00:00Z",
-          createdBy: "System",
-        },
-      };
-      const template = templates[id];
+      const template = await storage.getCloseTemplate(id);
       if (!template) {
         return res.status(404).json({ error: "Template not found" });
       }
-      res.json(template);
+      const tasks = await storage.getCloseTemplateTasks(id);
+      res.json({ ...template, tasks });
     } catch (error) {
       console.error("Error fetching template:", error);
       res.status(500).json({ error: "Failed to fetch template" });
+    }
+  });
+
+  // Create new template
+  app.post("/api/close-control/templates", async (req, res) => {
+    try {
+      const validatedData = insertCloseTemplateSchema.parse(req.body);
+      const template = await storage.createCloseTemplate(validatedData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      console.error("Error creating template:", error);
+      res.status(500).json({ error: "Failed to create template" });
+    }
+  });
+
+  // Update template
+  app.patch("/api/close-control/templates/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = updateCloseTemplateSchema.parse(req.body);
+      const template = await storage.updateCloseTemplate(id, validatedData);
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      if (error instanceof Error && error.message === "Template not found") {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      if (error instanceof Error && error.message === "Cannot modify system templates") {
+        return res.status(403).json({ error: "Cannot modify system templates" });
+      }
+      console.error("Error updating template:", error);
+      res.status(500).json({ error: "Failed to update template" });
+    }
+  });
+
+  // Delete template
+  app.delete("/api/close-control/templates/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteCloseTemplate(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof Error && error.message === "Cannot delete system templates") {
+        return res.status(403).json({ error: "Cannot delete system templates" });
+      }
+      console.error("Error deleting template:", error);
+      res.status(500).json({ error: "Failed to delete template" });
+    }
+  });
+
+  // Clone template
+  app.post("/api/close-control/templates/:id/clone", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+      if (!name || typeof name !== "string") {
+        return res.status(400).json({ error: "Name is required for cloning" });
+      }
+      const cloned = await storage.cloneCloseTemplate(id, name);
+      res.status(201).json(cloned);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Template not found") {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      console.error("Error cloning template:", error);
+      res.status(500).json({ error: "Failed to clone template" });
+    }
+  });
+
+  // Get template tasks
+  app.get("/api/close-control/templates/:id/tasks", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const template = await storage.getCloseTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      const tasks = await storage.getCloseTemplateTasks(id);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching template tasks:", error);
+      res.status(500).json({ error: "Failed to fetch template tasks" });
+    }
+  });
+
+  // Create template task
+  app.post("/api/close-control/templates/:id/tasks", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertCloseTemplateTaskSchema.parse({ ...req.body, templateId: id });
+      const task = await storage.createCloseTemplateTask(validatedData);
+      res.status(201).json(task);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      if (error instanceof Error && error.message === "Template not found") {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      if (error instanceof Error && error.message === "Cannot modify system templates") {
+        return res.status(403).json({ error: "Cannot modify system templates" });
+      }
+      console.error("Error creating template task:", error);
+      res.status(500).json({ error: "Failed to create template task" });
+    }
+  });
+
+  // Update template task
+  app.patch("/api/close-control/template-tasks/:taskId", async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const validatedData = updateCloseTemplateTaskSchema.parse(req.body);
+      const task = await storage.updateCloseTemplateTask(taskId, validatedData);
+      res.json(task);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: error.errors });
+      }
+      if (error instanceof Error && error.message === "Task not found") {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      if (error instanceof Error && error.message === "Cannot modify tasks in system templates") {
+        return res.status(403).json({ error: "Cannot modify tasks in system templates" });
+      }
+      console.error("Error updating template task:", error);
+      res.status(500).json({ error: "Failed to update template task" });
+    }
+  });
+
+  // Delete template task
+  app.delete("/api/close-control/template-tasks/:taskId", async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const deleted = await storage.deleteCloseTemplateTask(taskId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof Error && error.message === "Cannot modify tasks in system templates") {
+        return res.status(403).json({ error: "Cannot modify tasks in system templates" });
+      }
+      console.error("Error deleting template task:", error);
+      res.status(500).json({ error: "Failed to delete template task" });
+    }
+  });
+
+  // Reorder template tasks
+  app.post("/api/close-control/templates/:id/tasks/reorder", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { taskIds } = req.body;
+      if (!Array.isArray(taskIds)) {
+        return res.status(400).json({ error: "taskIds must be an array" });
+      }
+      const tasks = await storage.reorderCloseTemplateTasks(id, taskIds);
+      res.json(tasks);
+    } catch (error) {
+      if (error instanceof Error && error.message === "Template not found") {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      if (error instanceof Error && error.message === "Cannot modify system templates") {
+        return res.status(403).json({ error: "Cannot modify system templates" });
+      }
+      console.error("Error reordering template tasks:", error);
+      res.status(500).json({ error: "Failed to reorder template tasks" });
     }
   });
 

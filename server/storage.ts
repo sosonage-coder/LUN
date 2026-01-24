@@ -57,7 +57,13 @@ import type {
   PrincipalInterestSplit,
   DebtMixBreakdown,
   DebtRiskPanel,
-  DebtCategory
+  DebtCategory,
+  CloseTemplate,
+  CloseTemplateTask,
+  InsertCloseTemplate,
+  InsertCloseTemplateTask,
+  UpdateCloseTemplate,
+  UpdateCloseTemplateTask
 } from "@shared/schema";
 
 export interface IStorage {
@@ -145,6 +151,22 @@ export interface IStorage {
   getPrincipalInterestSplit(entityId?: string, periods?: number): Promise<PrincipalInterestSplit[]>;
   getDebtMixBreakdown(entityId?: string): Promise<DebtMixBreakdown[]>;
   getDebtRiskPanels(entityId?: string): Promise<DebtRiskPanel[]>;
+  
+  // Close Control Templates
+  getCloseTemplates(templateType?: "TASKLIST" | "SCHEDULE"): Promise<CloseTemplate[]>;
+  getCloseTemplate(id: string): Promise<CloseTemplate | undefined>;
+  createCloseTemplate(data: InsertCloseTemplate): Promise<CloseTemplate>;
+  updateCloseTemplate(id: string, data: UpdateCloseTemplate): Promise<CloseTemplate>;
+  deleteCloseTemplate(id: string): Promise<boolean>;
+  cloneCloseTemplate(id: string, newName: string): Promise<CloseTemplate>;
+  
+  // Close Template Tasks
+  getCloseTemplateTasks(templateId: string): Promise<CloseTemplateTask[]>;
+  getCloseTemplateTask(id: string): Promise<CloseTemplateTask | undefined>;
+  createCloseTemplateTask(data: InsertCloseTemplateTask): Promise<CloseTemplateTask>;
+  updateCloseTemplateTask(id: string, data: UpdateCloseTemplateTask): Promise<CloseTemplateTask>;
+  deleteCloseTemplateTask(id: string): Promise<boolean>;
+  reorderCloseTemplateTasks(templateId: string, taskIds: string[]): Promise<CloseTemplateTask[]>;
 }
 
 // Helper functions
@@ -187,6 +209,8 @@ export class MemStorage implements IStorage {
   private revenueSchedules: Map<string, RevenueSchedule>;
   private investmentIncomeSchedules: Map<string, InvestmentIncomeSchedule>;
   private debtSchedules: Map<string, DebtSchedule>;
+  private closeTemplates: Map<string, CloseTemplate>;
+  private closeTemplateTasks: Map<string, CloseTemplateTask>;
 
   constructor() {
     this.schedules = new Map();
@@ -198,6 +222,8 @@ export class MemStorage implements IStorage {
     this.fixedAssets = new Map();
     this.accrualSchedules = new Map();
     this.revenueSchedules = new Map();
+    this.closeTemplates = new Map();
+    this.closeTemplateTasks = new Map();
     this.investmentIncomeSchedules = new Map();
     this.debtSchedules = new Map();
     
@@ -299,6 +325,9 @@ export class MemStorage implements IStorage {
     
     // Seed debt schedules for Category Dashboard
     this.seedDebtSchedules();
+    
+    // Seed close control templates
+    this.seedCloseTemplates();
   }
 
   private seedPrepaidSchedules() {
@@ -3690,6 +3719,666 @@ export class MemStorage implements IStorage {
       const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
+  }
+
+  // ===============================
+  // Close Control Templates
+  // ===============================
+
+  async getCloseTemplates(templateType?: "TASKLIST" | "SCHEDULE"): Promise<CloseTemplate[]> {
+    let templates = Array.from(this.closeTemplates.values());
+    if (templateType) {
+      templates = templates.filter(t => t.templateType === templateType);
+    }
+    return templates.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getCloseTemplate(id: string): Promise<CloseTemplate | undefined> {
+    return this.closeTemplates.get(id);
+  }
+
+  async createCloseTemplate(data: InsertCloseTemplate): Promise<CloseTemplate> {
+    const id = `TPL-${randomUUID().substring(0, 8).toUpperCase()}`;
+    const now = new Date().toISOString();
+    const template: CloseTemplate = {
+      id,
+      name: data.name,
+      description: data.description,
+      periodType: data.periodType,
+      templateType: data.templateType,
+      isSystemTemplate: false,
+      version: 1,
+      taskCount: 0,
+      estimatedDays: data.estimatedDays,
+      createdAt: now,
+      createdBy: "User",
+      updatedAt: null,
+      updatedBy: null,
+    };
+    this.closeTemplates.set(id, template);
+    return template;
+  }
+
+  async updateCloseTemplate(id: string, data: UpdateCloseTemplate): Promise<CloseTemplate> {
+    const template = this.closeTemplates.get(id);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    if (template.isSystemTemplate) {
+      throw new Error("Cannot modify system templates");
+    }
+    const now = new Date().toISOString();
+    const updated: CloseTemplate = {
+      ...template,
+      name: data.name ?? template.name,
+      description: data.description ?? template.description,
+      periodType: data.periodType ?? template.periodType,
+      estimatedDays: data.estimatedDays ?? template.estimatedDays,
+      version: template.version + 1,
+      updatedAt: now,
+      updatedBy: "User",
+    };
+    this.closeTemplates.set(id, updated);
+    return updated;
+  }
+
+  async deleteCloseTemplate(id: string): Promise<boolean> {
+    const template = this.closeTemplates.get(id);
+    if (!template) {
+      return false;
+    }
+    if (template.isSystemTemplate) {
+      throw new Error("Cannot delete system templates");
+    }
+    // Delete associated tasks
+    const taskEntries = Array.from(this.closeTemplateTasks.entries());
+    for (const [taskId, task] of taskEntries) {
+      if (task.templateId === id) {
+        this.closeTemplateTasks.delete(taskId);
+      }
+    }
+    this.closeTemplates.delete(id);
+    return true;
+  }
+
+  async cloneCloseTemplate(id: string, newName: string): Promise<CloseTemplate> {
+    const source = this.closeTemplates.get(id);
+    if (!source) {
+      throw new Error("Template not found");
+    }
+    
+    const now = new Date().toISOString();
+    const newId = `TPL-${randomUUID().substring(0, 8).toUpperCase()}`;
+    
+    const cloned: CloseTemplate = {
+      id: newId,
+      name: newName,
+      description: source.description,
+      periodType: source.periodType,
+      templateType: source.templateType,
+      isSystemTemplate: false,
+      version: 1,
+      taskCount: source.taskCount,
+      estimatedDays: source.estimatedDays,
+      createdAt: now,
+      createdBy: "User",
+      updatedAt: null,
+      updatedBy: null,
+    };
+    this.closeTemplates.set(newId, cloned);
+    
+    // Clone tasks with new IDs
+    const sourceTasks = await this.getCloseTemplateTasks(id);
+    const taskIdMap = new Map<string, string>();
+    
+    for (const task of sourceTasks) {
+      const newTaskId = `TPLT-${randomUUID().substring(0, 8).toUpperCase()}`;
+      taskIdMap.set(task.id, newTaskId);
+    }
+    
+    for (const task of sourceTasks) {
+      const newTaskId = taskIdMap.get(task.id)!;
+      const clonedTask: CloseTemplateTask = {
+        ...task,
+        id: newTaskId,
+        templateId: newId,
+        dependencies: task.dependencies.map(d => taskIdMap.get(d) || d),
+        createdAt: now,
+        updatedAt: null,
+      };
+      this.closeTemplateTasks.set(newTaskId, clonedTask);
+    }
+    
+    return cloned;
+  }
+
+  // ===============================
+  // Close Template Tasks
+  // ===============================
+
+  async getCloseTemplateTasks(templateId: string): Promise<CloseTemplateTask[]> {
+    const tasks = Array.from(this.closeTemplateTasks.values())
+      .filter(t => t.templateId === templateId)
+      .sort((a, b) => a.order - b.order);
+    return tasks;
+  }
+
+  async getCloseTemplateTask(id: string): Promise<CloseTemplateTask | undefined> {
+    return this.closeTemplateTasks.get(id);
+  }
+
+  async createCloseTemplateTask(data: InsertCloseTemplateTask): Promise<CloseTemplateTask> {
+    const template = this.closeTemplates.get(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    if (template.isSystemTemplate) {
+      throw new Error("Cannot modify system templates");
+    }
+    
+    const id = `TPLT-${randomUUID().substring(0, 8).toUpperCase()}`;
+    const now = new Date().toISOString();
+    
+    const task: CloseTemplateTask = {
+      id,
+      templateId: data.templateId,
+      name: data.name,
+      description: data.description || "",
+      priority: data.priority,
+      estimatedHours: data.estimatedHours ?? 0,
+      order: data.order,
+      defaultPreparerRole: data.defaultPreparerRole ?? null,
+      defaultReviewerRole: data.defaultReviewerRole ?? null,
+      linkedScheduleType: data.linkedScheduleType ?? null,
+      dueDayOffset: data.dueDayOffset ?? 0,
+      dependencies: data.dependencies ?? [],
+      createdAt: now,
+      updatedAt: null,
+    };
+    
+    this.closeTemplateTasks.set(id, task);
+    
+    // Update template task count
+    const taskCount = (await this.getCloseTemplateTasks(data.templateId)).length;
+    const updatedTemplate = { ...template, taskCount, updatedAt: now, updatedBy: "User" };
+    this.closeTemplates.set(data.templateId, updatedTemplate);
+    
+    return task;
+  }
+
+  async updateCloseTemplateTask(id: string, data: UpdateCloseTemplateTask): Promise<CloseTemplateTask> {
+    const task = this.closeTemplateTasks.get(id);
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    
+    const template = this.closeTemplates.get(task.templateId);
+    if (template?.isSystemTemplate) {
+      throw new Error("Cannot modify tasks in system templates");
+    }
+    
+    const now = new Date().toISOString();
+    const updated: CloseTemplateTask = {
+      ...task,
+      name: data.name ?? task.name,
+      description: data.description ?? task.description,
+      priority: data.priority ?? task.priority,
+      estimatedHours: data.estimatedHours ?? task.estimatedHours,
+      order: data.order ?? task.order,
+      defaultPreparerRole: data.defaultPreparerRole !== undefined ? data.defaultPreparerRole : task.defaultPreparerRole,
+      defaultReviewerRole: data.defaultReviewerRole !== undefined ? data.defaultReviewerRole : task.defaultReviewerRole,
+      linkedScheduleType: data.linkedScheduleType !== undefined ? data.linkedScheduleType : task.linkedScheduleType,
+      dueDayOffset: data.dueDayOffset ?? task.dueDayOffset,
+      dependencies: data.dependencies ?? task.dependencies,
+      updatedAt: now,
+    };
+    
+    this.closeTemplateTasks.set(id, updated);
+    
+    // Update template timestamp
+    if (template) {
+      const updatedTemplate = { ...template, updatedAt: now, updatedBy: "User" };
+      this.closeTemplates.set(task.templateId, updatedTemplate);
+    }
+    
+    return updated;
+  }
+
+  async deleteCloseTemplateTask(id: string): Promise<boolean> {
+    const task = this.closeTemplateTasks.get(id);
+    if (!task) {
+      return false;
+    }
+    
+    const template = this.closeTemplates.get(task.templateId);
+    if (template?.isSystemTemplate) {
+      throw new Error("Cannot modify tasks in system templates");
+    }
+    
+    this.closeTemplateTasks.delete(id);
+    
+    // Update template task count
+    if (template) {
+      const now = new Date().toISOString();
+      const taskCount = (await this.getCloseTemplateTasks(task.templateId)).length;
+      const updatedTemplate = { ...template, taskCount, updatedAt: now, updatedBy: "User" };
+      this.closeTemplates.set(task.templateId, updatedTemplate);
+    }
+    
+    return true;
+  }
+
+  async reorderCloseTemplateTasks(templateId: string, taskIds: string[]): Promise<CloseTemplateTask[]> {
+    const template = this.closeTemplates.get(templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    if (template.isSystemTemplate) {
+      throw new Error("Cannot modify system templates");
+    }
+    
+    const now = new Date().toISOString();
+    
+    for (let i = 0; i < taskIds.length; i++) {
+      const task = this.closeTemplateTasks.get(taskIds[i]);
+      if (task && task.templateId === templateId) {
+        const updated = { ...task, order: i, updatedAt: now };
+        this.closeTemplateTasks.set(taskIds[i], updated);
+      }
+    }
+    
+    const updatedTemplate = { ...template, updatedAt: now, updatedBy: "User" };
+    this.closeTemplates.set(templateId, updatedTemplate);
+    
+    return this.getCloseTemplateTasks(templateId);
+  }
+
+  private seedCloseTemplates() {
+    const now = new Date().toISOString();
+    
+    // System Schedule Templates
+    const scheduleTemplates: CloseTemplate[] = [
+      {
+        id: "TPL-MONTH-END-LEAN",
+        name: "Lean Month-End Close",
+        description: "Streamlined month-end close process with essential tasks only. Best for smaller organizations or interim periods.",
+        periodType: "MONTHLY",
+        templateType: "SCHEDULE",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 24,
+        estimatedDays: 5,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-MONTH-END-FULL",
+        name: "Full Month-End Close",
+        description: "Comprehensive month-end close with all reconciliations, variance analysis, and management reporting.",
+        periodType: "MONTHLY",
+        templateType: "SCHEDULE",
+        isSystemTemplate: true,
+        version: 3,
+        taskCount: 48,
+        estimatedDays: 8,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-QUARTER-END",
+        name: "Quarter-End Close",
+        description: "Quarterly close template including quarterly adjustments, external reporting, and board packages.",
+        periodType: "QUARTERLY",
+        templateType: "SCHEDULE",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 62,
+        estimatedDays: 12,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-YEAR-END",
+        name: "Year-End Close",
+        description: "Annual close template with year-end adjustments, audit preparation, and regulatory filings.",
+        periodType: "YEARLY",
+        templateType: "SCHEDULE",
+        isSystemTemplate: true,
+        version: 1,
+        taskCount: 96,
+        estimatedDays: 20,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+    ];
+
+    // System Tasklist Templates
+    const tasklistTemplates: CloseTemplate[] = [
+      {
+        id: "TPL-CASH-CLOSE",
+        name: "Cash Close Tasklist",
+        description: "Bank reconciliations, intercompany cash, FX translation, and cash variance analysis.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 4,
+        taskCount: 5,
+        estimatedDays: 2,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-REVENUE-CLOSE",
+        name: "Revenue Close Tasklist",
+        description: "Revenue recognition: contract review, deferred revenue adjustments, ASC 606 compliance.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 3,
+        taskCount: 6,
+        estimatedDays: 3,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-ACCRUALS-CLOSE",
+        name: "Accruals Close Tasklist",
+        description: "Expense accruals, payroll accruals, bonus provisions, and aging analysis.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 4,
+        estimatedDays: 2,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-FIXED-ASSETS-CLOSE",
+        name: "Fixed Assets Close Tasklist",
+        description: "Depreciation run, asset additions/disposals, impairment review, subledger reconciliation.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 3,
+        estimatedDays: 1,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-PREPAIDS-CLOSE",
+        name: "Prepaids Close Tasklist",
+        description: "Prepaid amortization: schedule review, new prepaid setup, balance reconciliation.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 4,
+        estimatedDays: 1,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-VARIANCE-ANALYSIS",
+        name: "Variance Analysis Tasklist",
+        description: "Budget vs actual, flux analysis, management commentary, and KPI reporting.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 3,
+        taskCount: 4,
+        estimatedDays: 2,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-INTERCOMPANY",
+        name: "Intercompany Tasklist",
+        description: "IC balance matching, elimination entries, and transfer pricing documentation.",
+        periodType: "MONTHLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 1,
+        taskCount: 5,
+        estimatedDays: 2,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+      {
+        id: "TPL-TAX-PROVISION",
+        name: "Tax Provision Tasklist",
+        description: "Quarterly tax provision: current/deferred tax, ETR analysis, tax account reconciliation.",
+        periodType: "QUARTERLY",
+        templateType: "TASKLIST",
+        isSystemTemplate: true,
+        version: 2,
+        taskCount: 6,
+        estimatedDays: 3,
+        createdAt: "2024-01-15T00:00:00Z",
+        createdBy: "System",
+        updatedAt: null,
+        updatedBy: null,
+      },
+    ];
+
+    for (const template of [...scheduleTemplates, ...tasklistTemplates]) {
+      this.closeTemplates.set(template.id, template);
+    }
+
+    // Seed sample tasks for Cash Close template
+    const cashCloseTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-CASH-001",
+        templateId: "TPL-CASH-CLOSE",
+        name: "Bank Reconciliation",
+        description: "Complete bank reconciliations for all accounts",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "CASH",
+        dueDayOffset: 2,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-CASH-002",
+        templateId: "TPL-CASH-CLOSE",
+        name: "Intercompany Cash Review",
+        description: "Review intercompany cash movements and balances",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "CASH",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-CASH-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-CASH-003",
+        templateId: "TPL-CASH-CLOSE",
+        name: "FX Translation",
+        description: "Calculate FX translation impact on cash",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 2,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "CASH",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-CASH-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-CASH-004",
+        templateId: "TPL-CASH-CLOSE",
+        name: "Cash Variance Analysis",
+        description: "Analyze cash variances vs budget and prior period",
+        priority: "MEDIUM",
+        estimatedHours: 2,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "CASH",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-CASH-001", "TPLT-CASH-003"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-CASH-005",
+        templateId: "TPL-CASH-CLOSE",
+        name: "Final Cash Sign-off",
+        description: "Final controller review and sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 4,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "CASH",
+        dueDayOffset: 5,
+        dependencies: ["TPLT-CASH-004"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of cashCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
+
+    // Seed sample tasks for Revenue Close template
+    const revenueCloseTasks: CloseTemplateTask[] = [
+      {
+        id: "TPLT-REV-001",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "Contract Review",
+        description: "Review new and modified contracts for revenue recognition",
+        priority: "HIGH",
+        estimatedHours: 4,
+        order: 0,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 1,
+        dependencies: [],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-REV-002",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "Deferred Revenue Roll",
+        description: "Roll deferred revenue schedules and verify balances",
+        priority: "HIGH",
+        estimatedHours: 3,
+        order: 1,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 2,
+        dependencies: ["TPLT-REV-001"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-REV-003",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "ASC 606 Compliance Check",
+        description: "Verify compliance with ASC 606 requirements",
+        priority: "CRITICAL",
+        estimatedHours: 2,
+        order: 2,
+        defaultPreparerRole: "REVIEWER",
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 3,
+        dependencies: ["TPLT-REV-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-REV-004",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "Revenue Variance Analysis",
+        description: "Analyze revenue variances and prepare management commentary",
+        priority: "MEDIUM",
+        estimatedHours: 3,
+        order: 3,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-REV-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-REV-005",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "Contract Asset/Liability Reconciliation",
+        description: "Reconcile contract assets and liabilities to GL",
+        priority: "HIGH",
+        estimatedHours: 2,
+        order: 4,
+        defaultPreparerRole: "PREPARER",
+        defaultReviewerRole: "REVIEWER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 4,
+        dependencies: ["TPLT-REV-002"],
+        createdAt: now,
+        updatedAt: null,
+      },
+      {
+        id: "TPLT-REV-006",
+        templateId: "TPL-REVENUE-CLOSE",
+        name: "Revenue Sign-off",
+        description: "Final controller review and revenue sign-off",
+        priority: "CRITICAL",
+        estimatedHours: 1,
+        order: 5,
+        defaultPreparerRole: null,
+        defaultReviewerRole: "CONTROLLER",
+        linkedScheduleType: "REVENUE",
+        dueDayOffset: 5,
+        dependencies: ["TPLT-REV-003", "TPLT-REV-004", "TPLT-REV-005"],
+        createdAt: now,
+        updatedAt: null,
+      },
+    ];
+
+    for (const task of revenueCloseTasks) {
+      this.closeTemplateTasks.set(task.id, task);
+    }
   }
 }
 

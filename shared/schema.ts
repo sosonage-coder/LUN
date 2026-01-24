@@ -915,6 +915,39 @@ export interface CloseTemplate {
   estimatedDays: number;
   createdAt: string;
   createdBy: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+// Close Template Task (task definition within a template)
+export interface CloseTemplateTask {
+  id: string;
+  templateId: string;
+  name: string;
+  description: string;
+  priority: TaskPriority;
+  estimatedHours: number;
+  order: number;
+  defaultPreparerRole: CloseRole | null;
+  defaultReviewerRole: CloseRole | null;
+  linkedScheduleType: LinkedScheduleType | null;
+  dueDayOffset: number; // Days from period start (negative = before end)
+  dependencies: string[]; // Template task IDs
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+// Close Template Tasklist (tasklist definition within a schedule template)
+export interface CloseTemplateTasklist {
+  id: string;
+  templateId: string;
+  name: string;
+  description: string;
+  order: number;
+  linkedTasklistTemplateId: string | null; // Reference to a TASKLIST template
+  dueDayOffset: number;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 // Close Evidence
@@ -1036,3 +1069,54 @@ export const insertCloseScheduleSchema = z.object({
 });
 
 export type InsertCloseSchedule = z.infer<typeof insertCloseScheduleSchema>;
+
+// Close Template insert schemas
+export const insertCloseTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  description: z.string().min(1, "Description is required"),
+  periodType: z.enum(["MONTHLY", "QUARTERLY", "YEARLY", "AD_HOC"]),
+  templateType: z.enum(["TASKLIST", "SCHEDULE"]),
+  estimatedDays: z.number().min(1, "Estimated days must be at least 1"),
+});
+
+export type InsertCloseTemplate = z.infer<typeof insertCloseTemplateSchema>;
+
+export const insertCloseTemplateTaskSchema = z.object({
+  templateId: z.string().min(1),
+  name: z.string().min(1, "Task name is required"),
+  description: z.string().optional().default(""),
+  priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+  estimatedHours: z.number().min(0).default(0),
+  order: z.number().min(0),
+  defaultPreparerRole: z.enum(["PREPARER", "REVIEWER", "CONTROLLER", "AUDITOR"]).nullable().optional(),
+  defaultReviewerRole: z.enum(["PREPARER", "REVIEWER", "CONTROLLER", "AUDITOR"]).nullable().optional(),
+  linkedScheduleType: z.enum(["PREPAID", "FIXED_ASSET", "ACCRUAL", "REVENUE", "INVESTMENT_INCOME", "DEBT", "CASH"]).nullable().optional(),
+  dueDayOffset: z.number().default(0),
+  dependencies: z.array(z.string()).optional().default([]),
+});
+
+export type InsertCloseTemplateTask = z.infer<typeof insertCloseTemplateTaskSchema>;
+
+export const updateCloseTemplateSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  periodType: z.enum(["MONTHLY", "QUARTERLY", "YEARLY", "AD_HOC"]).optional(),
+  estimatedDays: z.number().min(1).optional(),
+});
+
+export type UpdateCloseTemplate = z.infer<typeof updateCloseTemplateSchema>;
+
+export const updateCloseTemplateTaskSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]).optional(),
+  estimatedHours: z.number().min(0).optional(),
+  order: z.number().min(0).optional(),
+  defaultPreparerRole: z.enum(["PREPARER", "REVIEWER", "CONTROLLER", "AUDITOR"]).nullable().optional(),
+  defaultReviewerRole: z.enum(["PREPARER", "REVIEWER", "CONTROLLER", "AUDITOR"]).nullable().optional(),
+  linkedScheduleType: z.enum(["PREPAID", "FIXED_ASSET", "ACCRUAL", "REVENUE", "INVESTMENT_INCOME", "DEBT", "CASH"]).nullable().optional(),
+  dueDayOffset: z.number().optional(),
+  dependencies: z.array(z.string()).optional(),
+});
+
+export type UpdateCloseTemplateTask = z.infer<typeof updateCloseTemplateTaskSchema>;
