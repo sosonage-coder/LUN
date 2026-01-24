@@ -14,11 +14,23 @@ import ScheduleDetail from "@/pages/schedule-detail";
 import CreateSchedule from "@/pages/create-schedule";
 import PrepaidCalculator from "@/pages/prepaid-calculator";
 import PrepaidsDashboard from "@/pages/prepaids-dashboard";
+import PrepaidsCategory from "@/pages/prepaids-category";
+import PrepaidsWorkspace from "@/pages/prepaids-workspace";
 import FixedAssetsDashboard from "@/pages/fixed-assets-dashboard";
+import FixedAssetsCategory from "@/pages/fixed-assets-category";
+import FixedAssetsWorkspace from "@/pages/fixed-assets-workspace";
 import AccrualsDashboard from "@/pages/accruals-dashboard";
+import AccrualsCategory from "@/pages/accruals-category";
+import AccrualsWorkspace from "@/pages/accruals-workspace";
 import RevenueDashboard from "@/pages/revenue-dashboard";
+import RevenueCategory from "@/pages/revenue-category";
+import RevenueWorkspace from "@/pages/revenue-workspace";
 import InvestmentIncomeDashboard from "@/pages/investment-income-dashboard";
+import InvestmentIncomeCategory from "@/pages/investment-income-category";
+import InvestmentIncomeWorkspace from "@/pages/investment-income-workspace";
 import DebtDashboard from "@/pages/debt-dashboard";
+import DebtCategoryPage from "@/pages/debt-category";
+import DebtWorkspace from "@/pages/debt-workspace";
 
 function Router() {
   return (
@@ -29,11 +41,23 @@ function Router() {
       <Route path="/schedules/:id" component={ScheduleDetail} />
       <Route path="/prepaid-calculator" component={PrepaidCalculator} />
       <Route path="/prepaids" component={PrepaidsDashboard} />
+      <Route path="/prepaids/:category" component={PrepaidsCategory} />
+      <Route path="/prepaids/:category/schedule/:id" component={PrepaidsWorkspace} />
       <Route path="/fixed-assets" component={FixedAssetsDashboard} />
+      <Route path="/fixed-assets/:category" component={FixedAssetsCategory} />
+      <Route path="/fixed-assets/:category/asset/:id" component={FixedAssetsWorkspace} />
       <Route path="/accruals" component={AccrualsDashboard} />
+      <Route path="/accruals/:category" component={AccrualsCategory} />
+      <Route path="/accruals/:category/schedule/:id" component={AccrualsWorkspace} />
       <Route path="/revenue" component={RevenueDashboard} />
+      <Route path="/revenue/:category" component={RevenueCategory} />
+      <Route path="/revenue/:category/contract/:id" component={RevenueWorkspace} />
       <Route path="/investment-income" component={InvestmentIncomeDashboard} />
+      <Route path="/investment-income/:category" component={InvestmentIncomeCategory} />
+      <Route path="/investment-income/:category/investment/:id" component={InvestmentIncomeWorkspace} />
       <Route path="/debt" component={DebtDashboard} />
+      <Route path="/debt/:category" component={DebtCategoryPage} />
+      <Route path="/debt/:category/instrument/:id" component={DebtWorkspace} />
       <Route component={NotFound} />
     </Switch>
   );

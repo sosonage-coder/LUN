@@ -490,7 +490,7 @@ export default function RevenueDashboard() {
                             <div className="flex items-center gap-3">
                               <div className={`w-3 h-3 rounded-full ${categoryColors[cat.category]}`} />
                               <Icon className="h-4 w-4 text-muted-foreground" />
-                              <Link href={`/revenue/${cat.category.toLowerCase()}`} className="font-medium hover:underline">
+                              <Link href={`/revenue/${cat.category.toLowerCase().replace(/_/g, "-")}`} className="font-medium hover:underline">
                                 {categoryLabels[cat.category]}
                               </Link>
                             </div>
@@ -521,7 +521,7 @@ export default function RevenueDashboard() {
                           </TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" asChild>
-                              <Link href={`/revenue/${cat.category.toLowerCase()}`}>
+                              <Link href={`/revenue/${cat.category.toLowerCase().replace(/_/g, "-")}`}>
                                 <ExternalLink className="h-4 w-4" />
                               </Link>
                             </Button>

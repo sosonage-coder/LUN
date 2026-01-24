@@ -1,0 +1,485 @@
+🧱 CASH SCHEDULER — LEVELLED DESIGN (LIKE ACCRUALS)
+
+Principle:
+Do not show everything to everyone, everywhere.
+Each level answers one question only.
+
+🧭 LEVEL 0 — CASH CATEGORY ENTRY (Minimal, Calm)
+
+Audience: Controller, Reviewer
+Purpose: “Do we have cash movement risk this period?”
+
+What this level shows
+
+Period
+
+Entity
+
+High-level status only
+
+KPIs (max 5 — no charts)
+KPI	Meaning
+Opening Cash (Bank)	Reference only
+Closing Cash (Bank)	Reference only
+Net Cash Movement	Explained downstream
+FX Impact	Isolated
+Unclassified Cash %	🚨 control KPI
+Status Indicators
+
+✅ Fully classified
+
+⚠ Requires review
+
+🔒 Locked
+
+🚫 No transactions
+🚫 No tagging
+🚫 No bank detail
+
+This level exists to answer:
+
+“Is cash understood — yes or no?”
+
+🧱 LEVEL 1 — CASH MOVEMENT SUMMARY (Behavior Layer)
+
+Audience: Preparer, Reviewer, Controller
+Purpose: “Why did cash change?”
+
+Grain
+
+One row = one cash movement category × period
+
+Table (tight, readable)
+Column	Meaning
+Movement Category	Payroll, Rent, Receipts
+Cash Flow Type	Operating / Investing / Financing
+Nature	Recurring / Variable / One-off
+Inflows	Total
+Outflows	Total
+Net Movement	Explained
+FX Impact	Separate
+Status	OK / Needs Review
+Rules
+
+No bank accounts
+
+No individual transactions
+
+FX is its own line
+
+This mirrors Accrual Schedule Level 1 perfectly.
+
+🧱 LEVEL 2 — CASH MOVEMENT DETAIL (Explanation Layer)
+
+Audience: Preparer
+Purpose: “What makes up this movement?”
+
+Entry path
+
+Click a Movement Category from Level 1.
+
+Grain
+
+One row = one classified cash pattern
+
+Not transactions — patterns.
+
+Table
+Column	Meaning
+Pattern Name	“Monthly Payroll – US”
+Counterparty	Optional
+Direction	In / Out
+Expected?	Yes / No
+Amount	Period total
+Variance vs Expected	Explained
+Source	Bank / Manual
+Notes	Required if variance
+
+This is where understanding happens, quietly.
+
+🧱 LEVEL 3 — BANK ACCOUNT CONTEXT (Read-Only)
+
+Audience: Controller, Audit
+Purpose: “Where did this cash actually move?”
+
+What appears here
+
+Bank Account
+
+Currency
+
+Opening Balance
+
+Closing Balance
+
+Net Movement
+
+FX Translation Impact
+
+Explicit disclaimer (hard-coded)
+
+“Balances shown are bank-sourced and not reconciled to the GL.”
+
+🚫 No tagging
+🚫 No edits
+🚫 No certification here
+
+This prevents dashboard pollution and scope creep.
+
+🧱 LEVEL 4 — TRANSACTION INTELLIGENCE (Optional, Isolated)
+
+Audience: Preparer
+Purpose: “How do we classify raw bank data?”
+
+This level lives in the Cash Classification Engine, not Scheduler.
+
+What’s here
+
+Bank transactions
+
+Tags
+
+GL suggestions
+
+Exception queues
+
+Relationship
+
+Feeds Cash Schedule
+
+Never embedded inside it
+
+Critical rule:
+
+Scheduler consumes results, never raw transactions.
+
+🔐 CERTIFICATION MODEL (Same as Accruals)
+What certification means at Cash Level
+
+Certifying Level 0 / Level 1 asserts:
+
+Cash movements are fully classified
+
+FX is isolated
+
+No unknown cash remains
+
+It does not assert:
+
+GL correctness
+
+Bank reconciliation accuracy
+
+🧠 WHY THIS WORKS (and scales)
+
+Because:
+
+Controllers see calm summaries
+
+Preparers work where detail belongs
+
+Auditors get clean logic paths
+
+Dashboards stay readable
+
+Products don’t bleed into each other
+
+This is exactly why your Accrual Schedule spec is strong — and this mirrors it.
+
+🧩 CONSISTENCY CHECK (Important)
+
+Now you have:
+
+Schedule	Levels
+Accruals	Category → Schedule → Line
+Prepaids	Category → Schedule → Period
+Fixed Assets	Category → Class → Asset
+Loans	Category → Facility → Rollforward
+Cash	Category → Movement → Pattern → Bank Context
+
+This is platform-level coherence.
+
+🔒 FINAL DESIGN RULE (tattoo this)
+
+Dashboards summarize.
+Schedules explain.
+Transactions stay isolated.
+
+If you want next, we can:
+
+Draw the full Scheduler Level Map (all schedules aligned)
+
+Write the Cash Category Dashboard spec (Fixed-Assets style)
+
+Or define shared level primitives so engineering doesn’t reinvent UI logic
+
+Just say the word.
+
+rewrite the Spec
+
+Got it. Below is a clean, rewritten CASH SCHEDULER SPEC, fully aligned with how you wrote Accruals — same tone, same discipline, explicit levels, no dashboard clutter, no product bleed.
+
+This is implementation-ready and safe to hand to engineering.
+
+🧱 PRODUCT SPEC — CASH SCHEDULE (LEVELLED, SCHEDULER)
+
+Product: Scheduler
+Category: Cash
+Audience: Preparer, Reviewer, Controller, Audit
+Purpose: Explain cash movement behavior over time using progressive disclosure, without embedding reconciliation, transactions, or treasury logic.
+
+0️⃣ Scope & Philosophy (lock this first)
+What this schedule IS
+
+The Cash Schedule is a movement explanation layer.
+
+It exists to answer:
+
+Why did cash change this period?
+
+What types of cash movements occurred?
+
+Which movements are recurring vs exceptional?
+
+How much of the change is FX vs real cash?
+
+What this schedule is NOT (by design)
+
+❌ Not a bank reconciliation
+
+❌ Not a GL certification surface
+
+❌ Not a transaction listing
+
+❌ Not a treasury or forecasting tool
+
+Those belong to separate products.
+
+This schedule explains behavior, not correctness.
+
+1️⃣ Core Accounting Characteristics
+Attribute	Behavior
+Nature	Movement explanation schedule
+Frequency	Monthly
+Balance Sheet impact	Indirect
+Income Statement impact	Indirect
+ERP dependency	GL cash balance (read-only reference)
+Bank dependency	Bank balances (read-only reference)
+Audit relevance	Medium
+Disclosure relevance	Indirect (cash flow narrative support)
+2️⃣ Levelled Architecture (Anti-Overcrowding Rule)
+
+Each level answers one question only.
+No level may leak the responsibility of another.
+
+🧭 LEVEL 0 — CASH CATEGORY SUMMARY
+
+Audience: Controller, Reviewer
+Question answered: “Is cash understood this period?”
+
+Displayed Metrics (max 5)
+Metric	Meaning
+Opening Cash (Bank)	Reference only
+Closing Cash (Bank)	Reference only
+Net Cash Movement	Explained downstream
+FX Impact	Isolated
+Unclassified Cash %	🚨 control metric
+Status
+
+✅ Complete
+
+⚠ Needs review
+
+🔒 Locked
+
+🚫 No bank accounts
+🚫 No transactions
+🚫 No tagging
+
+This level exists only to surface risk.
+
+🧱 LEVEL 1 — CASH MOVEMENT SUMMARY
+
+Audience: Preparer, Reviewer, Controller
+Question answered: “Why did cash change?”
+
+Grain
+
+One row = one cash movement category × period
+
+Table Structure
+Column	Meaning
+Movement Category	Payroll, Rent, Customer Receipts
+Cash Flow Type	Operating / Investing / Financing
+Nature	Recurring / Variable / One-off
+Inflows	Period total
+Outflows	Period total
+Net Movement	Explained
+FX Impact	Separate
+Status	OK / Review
+Rules
+
+FX is never embedded in movements
+
+Totals must explain Level 0 net movement
+
+No bank account detail
+
+🧱 LEVEL 2 — CASH MOVEMENT DETAIL
+
+Audience: Preparer
+Question answered: “What makes up this movement?”
+
+Entry
+
+Click a Movement Category from Level 1.
+
+Grain
+
+One row = one classified cash pattern
+
+Not:
+
+Individual bank transactions
+
+Journals
+
+Table Structure
+Column	Meaning
+Pattern Name	“Monthly Payroll – US”
+Counterparty	Optional
+Direction	Inflow / Outflow
+Expected?	Yes / No
+Amount	Period total
+Variance vs Expected	Explained
+Source	Bank / Manual
+Notes	Required if variance
+
+This is the explanation surface.
+
+🧱 LEVEL 3 — BANK ACCOUNT CONTEXT (READ-ONLY)
+
+Audience: Controller, Audit
+Question answered: “Where did cash actually move?”
+
+Displayed Fields
+Field	Purpose
+Bank Account	Masked
+Currency	Native
+Opening Balance	Bank-sourced
+Closing Balance	Bank-sourced
+Net Movement	Calculated
+FX Translation Impact	Separate
+Hard Disclaimer (non-optional)
+
+“Bank balances shown are sourced directly from financial institutions and are not reconciled to the general ledger.”
+
+🚫 No edits
+🚫 No tagging
+🚫 No certification
+
+🧱 LEVEL 4 — TRANSACTION INTELLIGENCE (OUT OF SCOPE)
+
+Raw bank transactions live in the Cash Classification Engine, not in Scheduler.
+
+Relationship
+
+Classification engine → feeds patterns into Level 2
+
+Scheduler never consumes raw transactions
+
+This keeps Scheduler clean and stable.
+
+3️⃣ Required Data Fields — Base Schema
+Identification
+
+Entity
+
+Period
+
+Movement Category
+
+Currency
+
+Classification
+
+Cash Flow Type
+
+Nature (Recurring / Variable / One-off)
+
+Direction
+
+Counterparty (optional)
+
+Business Explanation
+
+Amounts
+
+Local Currency Amount
+
+Reporting Currency Amount (display only)
+
+FX Impact (separate)
+
+4️⃣ Controls & Validation Rules
+Hard Controls
+
+All cash must be classified
+
+FX impact must be isolated
+
+Unclassified cash blocks certification
+
+Level 1 totals must reconcile to Level 0
+
+Review Controls
+
+Large movements flagged
+
+Repeated “one-off” items flagged
+
+Missing expected movements flagged
+
+5️⃣ Certification Meaning
+
+Certifying Cash Schedule (Levels 0–1) asserts:
+
+Cash movements are understood
+
+Movements are properly classified
+
+FX effects are separated
+
+No unknown cash remains
+
+It does not assert:
+
+Bank reconciliation accuracy
+
+GL correctness
+
+Those are proven elsewhere.
+
+6️⃣ Relationship to Other Products
+Product	Role
+Bank Reconciliation	Proves bank balances
+BS Reconciliation	Certifies GL cash
+Accrual Schedule	Explains non-cash expenses
+Loan Schedule	Explains debt payments
+Cash Classification Engine	Supplies patterns
+Close Variance	Narrative support
+7️⃣ Technical Guardrails (Non-Negotiable)
+
+No posting logic
+
+No reconciliation logic
+
+No forecasting logic
+
+No transaction rendering
+
+Scheduler consumes classified results only.
+
+8️⃣ One-Sentence Definition (use everywhere)
+
+“The Cash Schedule explains why cash changed during the period by classifying movements, isolating FX effects, and separating recurring behavior from exceptions through progressive disclosure.”
