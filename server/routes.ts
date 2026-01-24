@@ -1889,5 +1889,161 @@ export async function registerRoutes(
     }
   });
 
+  // ============================================
+  // RECONCILIATION API ROUTES
+  // ============================================
+
+  // Get reconciliation KPIs
+  app.get("/api/reconciliations/kpis", async (req, res) => {
+    try {
+      const { entityId, period } = req.query;
+      const kpis = await storage.getReconciliationKPIs(
+        entityId as string | undefined,
+        period as string | undefined
+      );
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching reconciliation KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch KPIs" });
+    }
+  });
+
+  // Get all reconciliation templates
+  app.get("/api/reconciliations/templates", async (req, res) => {
+    try {
+      const templates = await storage.getReconciliationTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching reconciliation templates:", error);
+      res.status(500).json({ error: "Failed to fetch templates" });
+    }
+  });
+
+  // Get single template
+  app.get("/api/reconciliations/templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getReconciliationTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching template:", error);
+      res.status(500).json({ error: "Failed to fetch template" });
+    }
+  });
+
+  // Get all reconciliation accounts
+  app.get("/api/reconciliations/accounts", async (req, res) => {
+    try {
+      const { entityId, accountType } = req.query;
+      const accounts = await storage.getReconciliationAccounts(
+        entityId as string | undefined,
+        accountType as any
+      );
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching reconciliation accounts:", error);
+      res.status(500).json({ error: "Failed to fetch accounts" });
+    }
+  });
+
+  // Get single account
+  app.get("/api/reconciliations/accounts/:id", async (req, res) => {
+    try {
+      const account = await storage.getReconciliationAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      res.json(account);
+    } catch (error) {
+      console.error("Error fetching account:", error);
+      res.status(500).json({ error: "Failed to fetch account" });
+    }
+  });
+
+  // Get all reconciliations
+  app.get("/api/reconciliations", async (req, res) => {
+    try {
+      const { accountId, period, status } = req.query;
+      const reconciliations = await storage.getReconciliations(
+        accountId as string | undefined,
+        period as string | undefined,
+        status as any
+      );
+      res.json(reconciliations);
+    } catch (error) {
+      console.error("Error fetching reconciliations:", error);
+      res.status(500).json({ error: "Failed to fetch reconciliations" });
+    }
+  });
+
+  // Get single reconciliation
+  app.get("/api/reconciliations/:id", async (req, res) => {
+    try {
+      const reconciliation = await storage.getReconciliation(req.params.id);
+      if (!reconciliation) {
+        return res.status(404).json({ error: "Reconciliation not found" });
+      }
+      
+      // Also fetch account and template for full context
+      const account = await storage.getReconciliationAccount(reconciliation.accountId);
+      const template = await storage.getReconciliationTemplate(reconciliation.templateId);
+      
+      res.json({
+        reconciliation,
+        account,
+        template,
+      });
+    } catch (error) {
+      console.error("Error fetching reconciliation:", error);
+      res.status(500).json({ error: "Failed to fetch reconciliation" });
+    }
+  });
+
+  // Create reconciliation
+  app.post("/api/reconciliations", async (req, res) => {
+    try {
+      const reconciliation = await storage.createReconciliation(req.body);
+      res.status(201).json(reconciliation);
+    } catch (error) {
+      console.error("Error creating reconciliation:", error);
+      res.status(500).json({ error: "Failed to create reconciliation" });
+    }
+  });
+
+  // Update reconciliation status
+  app.patch("/api/reconciliations/:id/status", async (req, res) => {
+    try {
+      const { status } = req.body;
+      const userId = "Current User"; // In real app, get from auth
+      const reconciliation = await storage.updateReconciliationStatus(
+        req.params.id,
+        status,
+        userId
+      );
+      res.json(reconciliation);
+    } catch (error) {
+      console.error("Error updating reconciliation status:", error);
+      res.status(500).json({ error: "Failed to update status" });
+    }
+  });
+
+  // Add line item to reconciliation section
+  app.post("/api/reconciliations/:id/sections/:sectionId/items", async (req, res) => {
+    try {
+      const { id, sectionId } = req.params;
+      const reconciliation = await storage.addReconciliationLineItem(
+        id,
+        sectionId,
+        req.body
+      );
+      res.status(201).json(reconciliation);
+    } catch (error) {
+      console.error("Error adding line item:", error);
+      res.status(500).json({ error: "Failed to add line item" });
+    }
+  });
+
   return httpServer;
 }

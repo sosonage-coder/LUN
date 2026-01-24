@@ -65,7 +65,18 @@ import type {
   UpdateCloseTemplate,
   UpdateCloseTemplateTask,
   CloseTask,
-  InsertCloseTask
+  InsertCloseTask,
+  ReconciliationTemplate,
+  ReconciliationAccount,
+  Reconciliation,
+  ReconciliationKPIs,
+  InsertReconciliationTemplate,
+  InsertReconciliationAccount,
+  InsertReconciliation,
+  InsertReconciliationLineItem,
+  ReconciliationLineItem,
+  ReconciliationAccountType,
+  ReconciliationStatus
 } from "@shared/schema";
 
 export interface IStorage {
@@ -176,6 +187,26 @@ export interface IStorage {
   createCloseTask(data: Partial<CloseTask> & { tasklistId: string; name: string }): Promise<CloseTask>;
   updateCloseTask(id: string, data: Partial<CloseTask>): Promise<CloseTask>;
   getAllCloseTasks(): Promise<CloseTask[]>;
+  
+  // Reconciliation Templates
+  getReconciliationTemplates(): Promise<ReconciliationTemplate[]>;
+  getReconciliationTemplate(id: string): Promise<ReconciliationTemplate | undefined>;
+  createReconciliationTemplate(data: InsertReconciliationTemplate): Promise<ReconciliationTemplate>;
+  
+  // Reconciliation Accounts
+  getReconciliationAccounts(entityId?: string, accountType?: ReconciliationAccountType): Promise<ReconciliationAccount[]>;
+  getReconciliationAccount(id: string): Promise<ReconciliationAccount | undefined>;
+  createReconciliationAccount(data: InsertReconciliationAccount): Promise<ReconciliationAccount>;
+  
+  // Reconciliations
+  getReconciliations(accountId?: string, period?: string, status?: ReconciliationStatus): Promise<Reconciliation[]>;
+  getReconciliation(id: string): Promise<Reconciliation | undefined>;
+  createReconciliation(data: InsertReconciliation): Promise<Reconciliation>;
+  updateReconciliationStatus(id: string, status: ReconciliationStatus, userId: string): Promise<Reconciliation>;
+  addReconciliationLineItem(reconciliationId: string, sectionId: string, data: InsertReconciliationLineItem): Promise<Reconciliation>;
+  
+  // Reconciliation Dashboard
+  getReconciliationKPIs(entityId?: string, period?: string): Promise<ReconciliationKPIs>;
 }
 
 // Helper functions
@@ -221,6 +252,9 @@ export class MemStorage implements IStorage {
   private closeTemplates: Map<string, CloseTemplate>;
   private closeTemplateTasks: Map<string, CloseTemplateTask>;
   private closeTasks: Map<string, CloseTask>;
+  private reconciliationTemplates: Map<string, ReconciliationTemplate>;
+  private reconciliationAccounts: Map<string, ReconciliationAccount>;
+  private reconciliations: Map<string, Reconciliation>;
 
   constructor() {
     this.schedules = new Map();
@@ -237,10 +271,14 @@ export class MemStorage implements IStorage {
     this.closeTasks = new Map();
     this.investmentIncomeSchedules = new Map();
     this.debtSchedules = new Map();
+    this.reconciliationTemplates = new Map();
+    this.reconciliationAccounts = new Map();
+    this.reconciliations = new Map();
     
     // Seed with default entities
     this.seedData();
     this.seedCloseTasks();
+    this.seedReconciliationData();
   }
 
   private seedData() {
@@ -5064,6 +5102,543 @@ export class MemStorage implements IStorage {
     for (const task of taxProvisionTasks) {
       this.closeTemplateTasks.set(task.id, task);
     }
+  }
+
+  private seedReconciliationData() {
+    const now = new Date().toISOString();
+    
+    // Seed Reconciliation Templates
+    const templates: ReconciliationTemplate[] = [
+      {
+        templateId: "RTPL-CASH-SINGLE",
+        name: "Cash - Single Bank Account",
+        description: "Standard bank reconciliation for single currency, single bank account",
+        accountTypes: ["CASH"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "GL balance at period start", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "BANK_TRANSACTIONS", name: "Bank Statement Balance", description: "Ending balance per bank statement", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Deposits", description: "Deposits in transit not yet on bank statement", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Checks", description: "Checks issued but not yet cleared", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "ADJUSTMENTS", name: "Adjustments", description: "Bank fees, errors, and other adjustments", sortOrder: 5, isRequired: false, fields: [] },
+          { sectionId: "S6", sectionType: "CLOSING_BALANCE", name: "Reconciled Balance", description: "Calculated reconciled balance", sortOrder: 6, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-CASH-MULTI",
+        name: "Cash - Multiple Banks",
+        description: "Bank reconciliation consolidating multiple bank accounts",
+        accountTypes: ["CASH"],
+        sections: [
+          { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Bank Account Summary", description: "List of all bank accounts and balances", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Items", description: "All outstanding deposits and checks by bank", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "VARIANCE_ANALYSIS", name: "Variance Analysis", description: "Explain variances between GL and bank", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "CLOSING_BALANCE", name: "Consolidated Balance", description: "Total reconciled cash balance", sortOrder: 4, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-PREPAID",
+        name: "Prepaid Expenses",
+        description: "Prepaid expense schedule reconciliation with amortization rollforward",
+        accountTypes: ["PREPAID"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "Beginning prepaid balance", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "ADDITIONS", name: "Additions", description: "New prepaid items added during period", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "ADJUSTMENTS", name: "Amortization", description: "Amortization expense for the period", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "SUBLEDGER_DETAIL", name: "Schedule Detail", description: "Link to prepaid schedule for supporting detail", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Closing Balance", description: "Ending prepaid balance", sortOrder: 5, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-FIXED-ASSET",
+        name: "Fixed Assets",
+        description: "Fixed asset rollforward with additions, disposals, and depreciation",
+        accountTypes: ["FIXED_ASSET"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening NBV", description: "Net book value at period start", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "ADDITIONS", name: "Additions", description: "Capital expenditures and acquisitions", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "DISPOSALS", name: "Disposals", description: "Asset disposals and retirements", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "ADJUSTMENTS", name: "Depreciation", description: "Depreciation expense for the period", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "ADJUSTMENTS", name: "Impairment", description: "Impairment charges if any", sortOrder: 5, isRequired: false, fields: [] },
+          { sectionId: "S6", sectionType: "CLOSING_BALANCE", name: "Closing NBV", description: "Net book value at period end", sortOrder: 6, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-ACCRUAL",
+        name: "Accrued Expenses",
+        description: "Accrual rollforward with additions and releases",
+        accountTypes: ["ACCRUAL"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "Accrued expenses at period start", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "ADDITIONS", name: "New Accruals", description: "Accruals recorded during period", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "ADJUSTMENTS", name: "Releases/Payments", description: "Accruals released or paid", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "VARIANCE_ANALYSIS", name: "Aging Analysis", description: "Analysis of aged accruals", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Closing Balance", description: "Ending accrued balance", sortOrder: 5, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-AR",
+        name: "Accounts Receivable",
+        description: "AR reconciliation with aging and allowance analysis",
+        accountTypes: ["ACCOUNTS_RECEIVABLE"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "AR balance at period start", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "ADDITIONS", name: "Sales/Billings", description: "New receivables from sales", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "ADJUSTMENTS", name: "Collections", description: "Cash received from customers", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "ADJUSTMENTS", name: "Bad Debt", description: "Write-offs and allowance adjustments", sortOrder: 4, isRequired: false, fields: [] },
+          { sectionId: "S5", sectionType: "SUBLEDGER_DETAIL", name: "Aging Schedule", description: "AR aging analysis", sortOrder: 5, isRequired: true, fields: [] },
+          { sectionId: "S6", sectionType: "CLOSING_BALANCE", name: "Closing Balance", description: "Ending AR balance", sortOrder: 6, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-AP",
+        name: "Accounts Payable",
+        description: "AP reconciliation with vendor analysis",
+        accountTypes: ["ACCOUNTS_PAYABLE"],
+        sections: [
+          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "AP balance at period start", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "ADDITIONS", name: "Invoices Received", description: "New payables from vendor invoices", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "ADJUSTMENTS", name: "Payments", description: "Payments made to vendors", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "SUBLEDGER_DETAIL", name: "Vendor Detail", description: "Top vendors and aging", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Closing Balance", description: "Ending AP balance", sortOrder: 5, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-INTERCO",
+        name: "Intercompany",
+        description: "Intercompany balance reconciliation with counterparty confirmation",
+        accountTypes: ["INTERCOMPANY"],
+        sections: [
+          { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Counterparty Balances", description: "Balance by intercompany counterparty", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "VARIANCE_ANALYSIS", name: "Reconciliation Differences", description: "Differences vs counterparty records", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "SUPPORTING_DOCUMENTATION", name: "Confirmations", description: "Counterparty balance confirmations", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "CLOSING_BALANCE", name: "Net Position", description: "Net intercompany position", sortOrder: 4, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+    ];
+
+    for (const tpl of templates) {
+      this.reconciliationTemplates.set(tpl.templateId, tpl);
+    }
+
+    // Seed Reconciliation Accounts
+    const accounts: ReconciliationAccount[] = [
+      { accountId: "ACCT-1010", accountCode: "1010", accountName: "Cash - Operating Account", accountType: "CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
+      { accountId: "ACCT-1020", accountCode: "1020", accountName: "Cash - Payroll Account", accountType: "CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
+      { accountId: "ACCT-1100", accountCode: "1100", accountName: "Accounts Receivable", accountType: "ACCOUNTS_RECEIVABLE", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AR", isActive: true, createdAt: now },
+      { accountId: "ACCT-1200", accountCode: "1200", accountName: "Prepaid Insurance", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1210", accountCode: "1210", accountName: "Prepaid Rent", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1220", accountCode: "1220", accountName: "Prepaid Software", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1500", accountCode: "1500", accountName: "Fixed Assets - Equipment", accountType: "FIXED_ASSET", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-1510", accountCode: "1510", accountName: "Fixed Assets - Furniture", accountType: "FIXED_ASSET", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-2000", accountCode: "2000", accountName: "Accounts Payable", accountType: "ACCOUNTS_PAYABLE", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AP", isActive: true, createdAt: now },
+      { accountId: "ACCT-2100", accountCode: "2100", accountName: "Accrued Expenses", accountType: "ACCRUAL", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
+      { accountId: "ACCT-2110", accountCode: "2110", accountName: "Accrued Payroll", accountType: "ACCRUAL", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
+      { accountId: "ACCT-2200", accountCode: "2200", accountName: "Intercompany - US Sub", accountType: "INTERCOMPANY", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+    ];
+
+    for (const acct of accounts) {
+      this.reconciliationAccounts.set(acct.accountId, acct);
+    }
+
+    // Seed sample reconciliations for current period
+    const reconciliations: Reconciliation[] = [
+      {
+        reconciliationId: "REC-1010-2026-01",
+        accountId: "ACCT-1010",
+        templateId: "RTPL-CASH-SINGLE",
+        period: "2026-01",
+        status: "APPROVED",
+        glBalance: 1250000,
+        reconciledBalance: 1250000,
+        variance: 0,
+        sections: [
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning balance per GL", reference: null, date: "2025-12-31", amount: 1180000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1180000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "Bank Statement Balance", sectionType: "BANK_TRANSACTIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "Bank statement ending balance", reference: "Stmt #12345", date: "2026-01-31", amount: 1285000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1285000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Outstanding Deposits", sectionType: "OUTSTANDING_ITEMS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Deposit in transit", reference: "DEP-001", date: "2026-01-30", amount: 25000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 25000 },
+          { sectionId: "S4", templateSectionId: "S4", name: "Outstanding Checks", sectionType: "OUTSTANDING_ITEMS", sortOrder: 4, isComplete: true, items: [{ itemId: "I4", description: "Check #4521", reference: "CHK-4521", date: "2026-01-28", amount: -35000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }, { itemId: "I5", description: "Check #4522", reference: "CHK-4522", date: "2026-01-29", amount: -25000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -60000 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Adjustments", sectionType: "ADJUSTMENTS", sortOrder: 5, isComplete: true, items: [], subtotal: 0 },
+          { sectionId: "S6", templateSectionId: "S6", name: "Reconciled Balance", sectionType: "CLOSING_BALANCE", sortOrder: 6, isComplete: true, items: [{ itemId: "I6", description: "Reconciled balance (Bank + Deposits - Checks)", reference: null, date: null, amount: 1250000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1250000 },
+        ],
+        preparedBy: "John Preparer",
+        preparedAt: "2026-01-28T14:00:00Z",
+        reviewedBy: "Jane Controller",
+        reviewedAt: "2026-01-29T10:00:00Z",
+        approvedBy: "Jane Controller",
+        approvedAt: "2026-01-29T10:30:00Z",
+        notes: null,
+        attachmentCount: 2,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        reconciliationId: "REC-1100-2026-01",
+        accountId: "ACCT-1100",
+        templateId: "RTPL-AR",
+        period: "2026-01",
+        status: "PENDING_REVIEW",
+        glBalance: 875000,
+        reconciledBalance: 875000,
+        variance: 0,
+        sections: [
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning AR balance", reference: null, date: "2025-12-31", amount: 820000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 820000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "Sales/Billings", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "January sales", reference: null, date: null, amount: 450000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 450000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Collections", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Cash receipts", reference: null, date: null, amount: -395000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -395000 },
+          { sectionId: "S4", templateSectionId: "S4", name: "Bad Debt", sectionType: "ADJUSTMENTS", sortOrder: 4, isComplete: false, items: [], subtotal: 0 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Aging Schedule", sectionType: "SUBLEDGER_DETAIL", sortOrder: 5, isComplete: true, items: [], subtotal: 0 },
+          { sectionId: "S6", templateSectionId: "S6", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 6, isComplete: true, items: [{ itemId: "I4", description: "Ending AR balance", reference: null, date: null, amount: 875000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 875000 },
+        ],
+        preparedBy: "Sarah Analyst",
+        preparedAt: "2026-01-28T16:00:00Z",
+        reviewedBy: null,
+        reviewedAt: null,
+        approvedBy: null,
+        approvedAt: null,
+        notes: "Pending bad debt review",
+        attachmentCount: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        reconciliationId: "REC-1200-2026-01",
+        accountId: "ACCT-1200",
+        templateId: "RTPL-PREPAID",
+        period: "2026-01",
+        status: "IN_PROGRESS",
+        glBalance: 125000,
+        reconciledBalance: 118000,
+        variance: 7000,
+        sections: [
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning prepaid balance", reference: null, date: "2025-12-31", amount: 130000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 130000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "Additions", sectionType: "ADDITIONS", sortOrder: 2, isComplete: false, items: [], subtotal: 0 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Amortization", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I2", description: "January amortization", reference: "JE-1234", date: "2026-01-31", amount: -12000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -12000 },
+          { sectionId: "S4", templateSectionId: "S4", name: "Schedule Detail", sectionType: "SUBLEDGER_DETAIL", sortOrder: 4, isComplete: false, items: [], subtotal: 0 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [{ itemId: "I3", description: "Calculated ending balance", reference: null, date: null, amount: 118000, notes: "Variance needs investigation", attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 118000 },
+        ],
+        preparedBy: "John Preparer",
+        preparedAt: null,
+        reviewedBy: null,
+        reviewedAt: null,
+        approvedBy: null,
+        approvedAt: null,
+        notes: "Working on variance investigation",
+        attachmentCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        reconciliationId: "REC-2000-2026-01",
+        accountId: "ACCT-2000",
+        templateId: "RTPL-AP",
+        period: "2026-01",
+        status: "NOT_STARTED",
+        glBalance: 340000,
+        reconciledBalance: 0,
+        variance: 340000,
+        sections: [],
+        preparedBy: null,
+        preparedAt: null,
+        reviewedBy: null,
+        reviewedAt: null,
+        approvedBy: null,
+        approvedAt: null,
+        notes: null,
+        attachmentCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        reconciliationId: "REC-2100-2026-01",
+        accountId: "ACCT-2100",
+        templateId: "RTPL-ACCRUAL",
+        period: "2026-01",
+        status: "APPROVED",
+        glBalance: 185000,
+        reconciledBalance: 185000,
+        variance: 0,
+        sections: [
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning accrual balance", reference: null, date: "2025-12-31", amount: 165000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 165000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "New Accruals", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "January accruals", reference: null, date: null, amount: 95000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 95000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Releases/Payments", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Payments and reversals", reference: null, date: null, amount: -75000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -75000 },
+          { sectionId: "S4", templateSectionId: "S4", name: "Aging Analysis", sectionType: "VARIANCE_ANALYSIS", sortOrder: 4, isComplete: true, items: [], subtotal: 0 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [{ itemId: "I4", description: "Ending accrual balance", reference: null, date: null, amount: 185000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 185000 },
+        ],
+        preparedBy: "Sarah Analyst",
+        preparedAt: "2026-01-27T15:00:00Z",
+        reviewedBy: "Jane Controller",
+        reviewedAt: "2026-01-28T09:00:00Z",
+        approvedBy: "Jane Controller",
+        approvedAt: "2026-01-28T09:30:00Z",
+        notes: null,
+        attachmentCount: 3,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    for (const rec of reconciliations) {
+      this.reconciliations.set(rec.reconciliationId, rec);
+    }
+  }
+
+  // Reconciliation Template Methods
+  async getReconciliationTemplates(): Promise<ReconciliationTemplate[]> {
+    return Array.from(this.reconciliationTemplates.values());
+  }
+
+  async getReconciliationTemplate(id: string): Promise<ReconciliationTemplate | undefined> {
+    return this.reconciliationTemplates.get(id);
+  }
+
+  async createReconciliationTemplate(data: InsertReconciliationTemplate): Promise<ReconciliationTemplate> {
+    const now = new Date().toISOString();
+    const template: ReconciliationTemplate = {
+      templateId: `RTPL-${randomUUID().slice(0, 8).toUpperCase()}`,
+      name: data.name,
+      description: data.description,
+      accountTypes: data.accountTypes,
+      sections: data.sections.map((s, idx) => ({
+        sectionId: `S${idx + 1}`,
+        sectionType: s.sectionType,
+        name: s.name,
+        description: s.description,
+        sortOrder: s.sortOrder,
+        isRequired: s.isRequired,
+        fields: s.fields.map((f, fidx) => ({
+          fieldId: `F${idx + 1}-${fidx + 1}`,
+          name: f.name,
+          fieldType: f.fieldType,
+          isRequired: f.isRequired,
+          defaultValue: f.defaultValue,
+          formula: f.formula,
+        })),
+      })),
+      isSystemTemplate: false,
+      isActive: true,
+      createdAt: now,
+      createdBy: "Current User",
+      updatedAt: now,
+    };
+    this.reconciliationTemplates.set(template.templateId, template);
+    return template;
+  }
+
+  // Reconciliation Account Methods
+  async getReconciliationAccounts(entityId?: string, accountType?: ReconciliationAccountType): Promise<ReconciliationAccount[]> {
+    let accounts = Array.from(this.reconciliationAccounts.values());
+    if (entityId) {
+      accounts = accounts.filter(a => a.entityId === entityId);
+    }
+    if (accountType) {
+      accounts = accounts.filter(a => a.accountType === accountType);
+    }
+    return accounts.sort((a, b) => a.accountCode.localeCompare(b.accountCode));
+  }
+
+  async getReconciliationAccount(id: string): Promise<ReconciliationAccount | undefined> {
+    return this.reconciliationAccounts.get(id);
+  }
+
+  async createReconciliationAccount(data: InsertReconciliationAccount): Promise<ReconciliationAccount> {
+    const now = new Date().toISOString();
+    const account: ReconciliationAccount = {
+      accountId: `ACCT-${randomUUID().slice(0, 8).toUpperCase()}`,
+      accountCode: data.accountCode,
+      accountName: data.accountName,
+      accountType: data.accountType,
+      entityId: data.entityId,
+      currency: data.currency,
+      defaultTemplateId: data.defaultTemplateId || null,
+      isActive: true,
+      createdAt: now,
+    };
+    this.reconciliationAccounts.set(account.accountId, account);
+    return account;
+  }
+
+  // Reconciliation Methods
+  async getReconciliations(accountId?: string, period?: string, status?: ReconciliationStatus): Promise<Reconciliation[]> {
+    let recs = Array.from(this.reconciliations.values());
+    if (accountId) {
+      recs = recs.filter(r => r.accountId === accountId);
+    }
+    if (period) {
+      recs = recs.filter(r => r.period === period);
+    }
+    if (status) {
+      recs = recs.filter(r => r.status === status);
+    }
+    return recs;
+  }
+
+  async getReconciliation(id: string): Promise<Reconciliation | undefined> {
+    return this.reconciliations.get(id);
+  }
+
+  async createReconciliation(data: InsertReconciliation): Promise<Reconciliation> {
+    const now = new Date().toISOString();
+    const template = await this.getReconciliationTemplate(data.templateId);
+    
+    const reconciliation: Reconciliation = {
+      reconciliationId: `REC-${randomUUID().slice(0, 8).toUpperCase()}`,
+      accountId: data.accountId,
+      templateId: data.templateId,
+      period: data.period,
+      status: "NOT_STARTED",
+      glBalance: data.glBalance,
+      reconciledBalance: 0,
+      variance: data.glBalance,
+      sections: template ? template.sections.map(s => ({
+        sectionId: s.sectionId,
+        templateSectionId: s.sectionId,
+        name: s.name,
+        sectionType: s.sectionType,
+        sortOrder: s.sortOrder,
+        isComplete: false,
+        items: [],
+        subtotal: 0,
+      })) : [],
+      preparedBy: null,
+      preparedAt: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      approvedBy: null,
+      approvedAt: null,
+      notes: null,
+      attachmentCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.reconciliations.set(reconciliation.reconciliationId, reconciliation);
+    return reconciliation;
+  }
+
+  async updateReconciliationStatus(id: string, status: ReconciliationStatus, userId: string): Promise<Reconciliation> {
+    const rec = this.reconciliations.get(id);
+    if (!rec) {
+      throw new Error("Reconciliation not found");
+    }
+    
+    const now = new Date().toISOString();
+    const updated: Reconciliation = { ...rec, status, updatedAt: now };
+    
+    if (status === "PENDING_REVIEW" && !rec.preparedAt) {
+      updated.preparedBy = userId;
+      updated.preparedAt = now;
+    } else if (status === "REVIEWED" && !rec.reviewedAt) {
+      updated.reviewedBy = userId;
+      updated.reviewedAt = now;
+    } else if (status === "APPROVED" && !rec.approvedAt) {
+      updated.approvedBy = userId;
+      updated.approvedAt = now;
+    }
+    
+    this.reconciliations.set(id, updated);
+    return updated;
+  }
+
+  async addReconciliationLineItem(reconciliationId: string, sectionId: string, data: InsertReconciliationLineItem): Promise<Reconciliation> {
+    const rec = this.reconciliations.get(reconciliationId);
+    if (!rec) {
+      throw new Error("Reconciliation not found");
+    }
+    
+    const now = new Date().toISOString();
+    const section = rec.sections.find(s => s.sectionId === sectionId);
+    if (!section) {
+      throw new Error("Section not found");
+    }
+    
+    const newItem: ReconciliationLineItem = {
+      itemId: `I-${randomUUID().slice(0, 8)}`,
+      description: data.description,
+      reference: data.reference || null,
+      date: data.date || null,
+      amount: data.amount,
+      notes: data.notes || null,
+      attachmentIds: [],
+      createdAt: now,
+      createdBy: "Current User",
+    };
+    
+    section.items.push(newItem);
+    section.subtotal = section.items.reduce((sum, item) => sum + item.amount, 0);
+    
+    // Recalculate reconciled balance
+    rec.reconciledBalance = rec.sections.reduce((sum, s) => sum + s.subtotal, 0);
+    rec.variance = rec.glBalance - rec.reconciledBalance;
+    rec.updatedAt = now;
+    
+    if (rec.status === "NOT_STARTED") {
+      rec.status = "IN_PROGRESS";
+    }
+    
+    this.reconciliations.set(reconciliationId, rec);
+    return rec;
+  }
+
+  // Reconciliation KPIs
+  async getReconciliationKPIs(entityId?: string, period?: string): Promise<ReconciliationKPIs> {
+    let accounts = Array.from(this.reconciliationAccounts.values());
+    if (entityId) {
+      accounts = accounts.filter(a => a.entityId === entityId);
+    }
+    
+    const targetPeriod = period || "2026-01";
+    const recs = Array.from(this.reconciliations.values()).filter(r => r.period === targetPeriod);
+    
+    const reconciledCount = recs.filter(r => r.status === "APPROVED" || r.status === "LOCKED").length;
+    const pendingReviewCount = recs.filter(r => r.status === "PENDING_REVIEW" || r.status === "REVIEWED").length;
+    const notStartedCount = recs.filter(r => r.status === "NOT_STARTED").length;
+    const varianceTotal = recs.reduce((sum, r) => sum + Math.abs(r.variance), 0);
+    
+    return {
+      totalAccounts: accounts.length,
+      reconciledCount,
+      pendingReviewCount,
+      notStartedCount,
+      varianceTotal,
+      completionPercentage: accounts.length > 0 ? Math.round((reconciledCount / accounts.length) * 100) : 0,
+    };
   }
 }
 
