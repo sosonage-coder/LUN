@@ -36,11 +36,17 @@ import CashCategoryPage from "@/pages/cash-category";
 import CashMovementDetailPage from "@/pages/cash-movement-detail";
 import CashOpsExpensesPage from "@/pages/cash-ops-expenses";
 import CashManualTaggingPage from "@/pages/cash-manual-tagging";
+import CloseControlDashboard from "@/pages/close-control-dashboard";
+import CloseControlSchedulePage from "@/pages/close-control-schedule";
+import CloseControlTasklistPage from "@/pages/close-control-tasklist";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/close-control" component={CloseControlDashboard} />
+      <Route path="/close-control/schedule/:id" component={CloseControlSchedulePage} />
+      <Route path="/close-control/tasklist/:id" component={CloseControlTasklistPage} />
       <Route path="/schedules" component={SchedulesList} />
       <Route path="/schedules/new" component={CreateSchedule} />
       <Route path="/schedules/:id" component={ScheduleDetail} />

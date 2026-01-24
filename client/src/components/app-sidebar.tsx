@@ -14,7 +14,9 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
-  Banknote
+  Banknote,
+  Shield,
+  ListChecks
 } from "lucide-react";
 import {
   Sidebar,
@@ -204,6 +206,26 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Close Control</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location === "/close-control" || location.startsWith("/close-control/")}
+                  data-testid="nav-close-control"
+                >
+                  <Link href="/close-control">
+                    <Shield className="h-4 w-4" />
+                    <span>Close Schedules</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

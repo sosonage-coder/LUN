@@ -1073,5 +1073,144 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CLOSE CONTROL SYSTEM API =====
+
+  // Close Control KPIs
+  app.get("/api/close-control/kpis", async (req, res) => {
+    try {
+      const kpis = {
+        totalSchedules: 3,
+        activeSchedules: 2,
+        atRiskSchedules: 1,
+        completedSchedules: 0,
+        totalTasks: 42,
+        completedTasks: 28,
+        approvedTasks: 22,
+        overdueTasks: 3,
+        tasksNeedingReview: 6,
+        evidencePending: 8,
+      };
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching close control KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch close control KPIs" });
+    }
+  });
+
+  // Close Schedules list
+  app.get("/api/close-control/schedules", async (req, res) => {
+    try {
+      const schedules = [
+        { period: "2026-01", scheduleId: "CS-2026-01", scheduleName: "January 2026 Month-End Close", status: "ACTIVE" as const, progressPercent: 65, daysRemaining: 3, tasksTotal: 24, tasksCompleted: 16, tasksApproved: 12, tasksOverdue: 2, riskLevel: "MEDIUM" as const },
+        { period: "2025-12", scheduleId: "CS-2025-12", scheduleName: "December 2025 Month-End Close", status: "AT_RISK" as const, progressPercent: 45, daysRemaining: -2, tasksTotal: 28, tasksCompleted: 12, tasksApproved: 10, tasksOverdue: 5, riskLevel: "HIGH" as const },
+        { period: "2025-Q4", scheduleId: "CS-2025-Q4", scheduleName: "Q4 2025 Quarter-End Close", status: "PLANNED" as const, progressPercent: 0, daysRemaining: 10, tasksTotal: 42, tasksCompleted: 0, tasksApproved: 0, tasksOverdue: 0, riskLevel: "NONE" as const },
+      ];
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching close schedules:", error);
+      res.status(500).json({ error: "Failed to fetch close schedules" });
+    }
+  });
+
+  // Single Close Schedule
+  app.get("/api/close-control/schedules/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const schedule = {
+        id,
+        name: id === "CS-2026-01" ? "January 2026 Month-End Close" : "December 2025 Month-End Close",
+        period: id === "CS-2026-01" ? "2026-01" : "2025-12",
+        periodType: "MONTHLY" as const,
+        templateId: "TPL-MONTH-END-LEAN",
+        status: id === "CS-2026-01" ? "ACTIVE" as const : "AT_RISK" as const,
+        startDate: id === "CS-2026-01" ? "2026-01-28" : "2025-12-28",
+        endDate: id === "CS-2026-01" ? "2026-02-05" : "2026-01-05",
+        totalTasklists: 6,
+        completedTasklists: 3,
+        lockedTasklists: 2,
+        totalTasks: 24,
+        completedTasks: 16,
+        approvedTasks: 12,
+        riskLevel: id === "CS-2026-01" ? "MEDIUM" as const : "HIGH" as const,
+        overdueTasks: id === "CS-2026-01" ? 2 : 5,
+        ownerId: "U001",
+        ownerName: "Jane Controller",
+        lockedAt: null,
+        lockedBy: null,
+        createdAt: "2026-01-01T00:00:00Z",
+      };
+      res.json(schedule);
+    } catch (error) {
+      console.error("Error fetching close schedule:", error);
+      res.status(500).json({ error: "Failed to fetch close schedule" });
+    }
+  });
+
+  // Tasklists for a schedule
+  app.get("/api/close-control/schedules/:id/tasklists", async (req, res) => {
+    try {
+      const tasklists = [
+        { id: "TL-001", name: "Cash Close", status: "COMPLETED" as const, ownerName: "John Preparer", totalTasks: 5, completedTasks: 5, approvedTasks: 5, progressPercent: 100, dueDate: "2026-01-30", isOverdue: false, riskLevel: "NONE" as const },
+        { id: "TL-002", name: "Revenue Close", status: "IN_PROGRESS" as const, ownerName: "Sarah Analyst", totalTasks: 6, completedTasks: 4, approvedTasks: 3, progressPercent: 50, dueDate: "2026-02-01", isOverdue: false, riskLevel: "LOW" as const },
+        { id: "TL-003", name: "Accruals Close", status: "IN_PROGRESS" as const, ownerName: "Mike Accountant", totalTasks: 4, completedTasks: 2, approvedTasks: 1, progressPercent: 25, dueDate: "2026-02-02", isOverdue: false, riskLevel: "MEDIUM" as const },
+        { id: "TL-004", name: "Fixed Assets Close", status: "LOCKED" as const, ownerName: "Jane Controller", totalTasks: 3, completedTasks: 3, approvedTasks: 3, progressPercent: 100, dueDate: "2026-01-29", isOverdue: false, riskLevel: "NONE" as const },
+        { id: "TL-005", name: "Variance Analysis", status: "NOT_STARTED" as const, ownerName: null, totalTasks: 4, completedTasks: 0, approvedTasks: 0, progressPercent: 0, dueDate: "2026-02-03", isOverdue: false, riskLevel: "NONE" as const },
+        { id: "TL-006", name: "Final Review", status: "NOT_STARTED" as const, ownerName: "Jane Controller", totalTasks: 2, completedTasks: 0, approvedTasks: 0, progressPercent: 0, dueDate: "2026-02-05", isOverdue: false, riskLevel: "NONE" as const },
+      ];
+      res.json(tasklists);
+    } catch (error) {
+      console.error("Error fetching tasklists:", error);
+      res.status(500).json({ error: "Failed to fetch tasklists" });
+    }
+  });
+
+  // Single Tasklist
+  app.get("/api/close-control/tasklists/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tasklist = {
+        id,
+        closeScheduleId: "CS-2026-01",
+        name: id === "TL-001" ? "Cash Close" : id === "TL-002" ? "Revenue Close" : "Accruals Close",
+        description: "Month-end close activities for cash and bank reconciliations",
+        templateId: "TPL-CASH-CLOSE",
+        status: id === "TL-001" ? "COMPLETED" as const : "IN_PROGRESS" as const,
+        ownerId: "U002",
+        ownerName: "John Preparer",
+        totalTasks: 5,
+        completedTasks: id === "TL-001" ? 5 : 3,
+        approvedTasks: id === "TL-001" ? 5 : 2,
+        dueDate: "2026-01-30",
+        completedAt: id === "TL-001" ? "2026-01-29T18:30:00Z" : null,
+        lockedAt: id === "TL-001" ? "2026-01-30T09:00:00Z" : null,
+        lockedBy: id === "TL-001" ? "Jane Controller" : null,
+        period: "2026-01",
+        order: 1,
+        createdAt: "2026-01-01T00:00:00Z",
+      };
+      res.json(tasklist);
+    } catch (error) {
+      console.error("Error fetching tasklist:", error);
+      res.status(500).json({ error: "Failed to fetch tasklist" });
+    }
+  });
+
+  // Tasks for a tasklist
+  app.get("/api/close-control/tasklists/:id/tasks", async (req, res) => {
+    try {
+      const tasks = [
+        { id: "TSK-001", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Bank Reconciliation", description: "Complete bank reconciliations for all accounts", status: "APPROVED" as const, priority: "HIGH" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T15:30:00Z", approvedAt: "2026-01-29T10:00:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED" as const, evidenceCount: 3, linkedSchedules: [{ type: "CASH" as const, scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: [], order: 1, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "TSK-002", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Intercompany Cash", description: "Review intercompany cash movements", status: "APPROVED" as const, priority: "MEDIUM" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-29", completedAt: "2026-01-28T16:00:00Z", approvedAt: "2026-01-29T10:15:00Z", approvedBy: "Jane Controller", evidenceStatus: "ATTACHED" as const, evidenceCount: 2, linkedSchedules: [], dependencies: ["TSK-001"], order: 2, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "TSK-003", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "FX Translation", description: "Calculate FX translation impact", status: "SUBMITTED" as const, priority: "HIGH" as const, preparerId: "U003", preparerName: "Sarah Analyst", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "PENDING" as const, evidenceCount: 1, linkedSchedules: [], dependencies: ["TSK-001"], order: 3, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "TSK-004", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Cash Variance Analysis", description: "Analyze cash variances vs budget", status: "IN_PROGRESS" as const, priority: "MEDIUM" as const, preparerId: "U002", preparerName: "John Preparer", reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING" as const, evidenceCount: 0, linkedSchedules: [{ type: "CASH" as const, scheduleId: "CM-2026-01", scheduleName: "Cash Schedule Jan 2026", period: "2026-01" }], dependencies: ["TSK-001", "TSK-003"], order: 4, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "TSK-005", tasklistId: "TL-001", closeScheduleId: "CS-2026-01", name: "Final Cash Sign-off", description: "Final controller review and sign-off", status: "NOT_STARTED" as const, priority: "CRITICAL" as const, preparerId: null, preparerName: null, reviewerId: "U001", reviewerName: "Jane Controller", dueDate: "2026-01-30", completedAt: null, approvedAt: null, approvedBy: null, evidenceStatus: "MISSING" as const, evidenceCount: 0, linkedSchedules: [], dependencies: ["TSK-004"], order: 5, period: "2026-01", createdAt: "2026-01-01T00:00:00Z" },
+      ];
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
   return httpServer;
 }
