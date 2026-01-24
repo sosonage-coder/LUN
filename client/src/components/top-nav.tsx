@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -17,27 +18,40 @@ import {
   Bell,
   Building2,
   Calculator,
+  Shield,
   FileCheck,
   ClipboardList,
   BarChart3,
   Settings,
+  Check,
 } from "lucide-react";
+import { useProduct, ProductId } from "@/contexts/product-context";
 
 interface Product {
-  id: string;
+  id: ProductId;
   name: string;
   icon: typeof Calendar;
   href: string;
   description: string;
+  available: boolean;
 }
 
 const products: Product[] = [
   {
-    id: "scheduler",
-    name: "Scheduler",
+    id: "schedule-studio",
+    name: "Schedule Studio",
     icon: Calculator,
     href: "/",
-    description: "Schedule Studio for cost allocation",
+    description: "Cost allocation & amortization",
+    available: true,
+  },
+  {
+    id: "oneclose",
+    name: "OneClose",
+    icon: Shield,
+    href: "/close-control",
+    description: "Period-end close management",
+    available: true,
   },
   {
     id: "reconciliations",
@@ -45,6 +59,7 @@ const products: Product[] = [
     icon: FileCheck,
     href: "/reconciliations",
     description: "Account reconciliation workflows",
+    available: false,
   },
   {
     id: "policies",
@@ -52,6 +67,7 @@ const products: Product[] = [
     icon: ClipboardList,
     href: "/policies",
     description: "Policy documentation & approvals",
+    available: false,
   },
   {
     id: "walkthroughs",
@@ -59,6 +75,7 @@ const products: Product[] = [
     icon: ClipboardList,
     href: "/walkthroughs",
     description: "Process walkthroughs & testing",
+    available: false,
   },
   {
     id: "reports",
@@ -66,6 +83,7 @@ const products: Product[] = [
     icon: BarChart3,
     href: "/reports",
     description: "Financial reports & analytics",
+    available: false,
   },
   {
     id: "admin",
@@ -73,22 +91,21 @@ const products: Product[] = [
     icon: Settings,
     href: "/admin",
     description: "System administration",
+    available: false,
   },
 ];
 
-function getActiveProduct(location: string): Product {
-  if (location.startsWith("/reconciliations")) return products[1];
-  if (location.startsWith("/policies")) return products[2];
-  if (location.startsWith("/walkthroughs")) return products[3];
-  if (location.startsWith("/reports")) return products[4];
-  if (location.startsWith("/admin")) return products[5];
-  return products[0];
-}
-
 export function TopNav() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
-  const activeProduct = getActiveProduct(location);
+  const { activeProduct, setActiveProduct } = useProduct();
+  
+  const currentProduct = products.find(p => p.id === activeProduct) || products[0];
+
+  const handleProductSelect = (product: Product) => {
+    setActiveProduct(product.id);
+    setLocation(product.href);
+  };
 
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-card" data-testid="top-nav">
@@ -104,43 +121,59 @@ export function TopNav() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2" data-testid="product-switcher">
-              <activeProduct.icon className="h-4 w-4" />
-              <span>{activeProduct.name}</span>
+            <Button variant="outline" className="gap-2" data-testid="product-switcher">
+              <currentProduct.icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{currentProduct.name}</span>
               <ChevronDown className="h-3 w-3 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            {products.map((product) => (
-              <DropdownMenuItem key={product.id} asChild>
-                <Link href={product.href}>
-                  <div className="flex items-center gap-3 w-full" data-testid={`product-${product.id}`}>
-                    <product.icon className="h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span className="font-medium">{product.name}</span>
-                      <span className="text-xs text-muted-foreground">{product.description}</span>
-                    </div>
+          <DropdownMenuContent align="start" className="w-64">
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Active Products
+            </div>
+            {products.filter(p => p.available).map((product) => (
+              <DropdownMenuItem 
+                key={product.id} 
+                onClick={() => handleProductSelect(product)}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-3 w-full" data-testid={`product-${product.id}`}>
+                  <product.icon className="h-4 w-4" />
+                  <div className="flex flex-col flex-1">
+                    <span className="font-medium">{product.name}</span>
+                    <span className="text-xs text-muted-foreground">{product.description}</span>
                   </div>
-                </Link>
+                  {activeProduct === product.id && (
+                    <Check className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))}
+            
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Coming Soon
+            </div>
+            {products.filter(p => !p.available).map((product) => (
+              <DropdownMenuItem 
+                key={product.id} 
+                onClick={() => handleProductSelect(product)}
+                className="cursor-pointer opacity-60"
+              >
+                <div className="flex items-center gap-3 w-full" data-testid={`product-${product.id}`}>
+                  <product.icon className="h-4 w-4" />
+                  <div className="flex flex-col flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{product.name}</span>
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">Soon</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{product.description}</span>
+                  </div>
+                </div>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <nav className="hidden lg:flex items-center gap-1">
-          {products.slice(1, 5).map((product) => (
-            <Link key={product.id} href={product.href}>
-              <Button
-                variant={activeProduct.id === product.id ? "secondary" : "ghost"}
-                size="sm"
-                className="text-sm"
-                data-testid={`nav-${product.id}`}
-              >
-                {product.name}
-              </Button>
-            </Link>
-          ))}
-        </nav>
       </div>
 
       <div className="flex items-center gap-2">

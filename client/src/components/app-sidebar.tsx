@@ -17,7 +17,10 @@ import {
   Banknote,
   Shield,
   ListChecks,
-  ClipboardCheck
+  ClipboardCheck,
+  Users,
+  FileCheck,
+  CalendarDays
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,41 +39,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useProduct } from "@/contexts/product-context";
 
-const navigationItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "My Tasks",
-    url: "/my-tasks",
-    icon: ClipboardCheck,
-  },
-  {
-    title: "Calendar View",
-    url: "/close-control/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "Schedules",
-    url: "/schedules",
-    icon: Clock,
-  },
-  {
-    title: "Prepaid Calculator",
-    url: "/prepaid-calculator",
-    icon: Calculator,
-  },
-  {
-    title: "Entities",
-    url: "/entities",
-    icon: Building2,
-  },
+const scheduleStudioNav = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Schedules", url: "/schedules", icon: Clock },
+  { title: "Prepaid Calculator", url: "/prepaid-calculator", icon: Calculator },
+  { title: "Entities", url: "/entities", icon: Building2 },
 ];
 
-const categoryItems = [
+const scheduleStudioCategories = [
   {
     title: "Prepaids",
     url: "/prepaids",
@@ -159,246 +137,248 @@ const categoryItems = [
   },
 ];
 
-const systemItems = [
-  {
-    title: "Period Status",
-    url: "/periods",
-    icon: Clock,
-  },
-  {
-    title: "Audit Log",
-    url: "/audit",
-    icon: FileText,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
+const oneCloseNav = [
+  { title: "Dashboard", url: "/close-control", icon: LayoutDashboard },
+  { title: "My Tasks", url: "/my-tasks", icon: ClipboardCheck },
+  { title: "Calendar View", url: "/close-control/calendar", icon: CalendarDays },
+  { title: "Templates", url: "/close-control/templates", icon: FileText },
+  { title: "Certification & SoD", url: "/close-control/certification", icon: Shield },
 ];
+
+const systemItems = [
+  { title: "Period Status", url: "/periods", icon: Clock },
+  { title: "Audit Log", url: "/audit", icon: FileText },
+  { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const productInfo = {
+  "schedule-studio": { name: "Schedule Studio", icon: Calculator, description: "Cost Allocation" },
+  "oneclose": { name: "OneClose", icon: Shield, description: "Close Management" },
+  "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Coming Soon" },
+  "policies": { name: "Policies", icon: FileText, description: "Coming Soon" },
+  "walkthroughs": { name: "Walkthroughs", icon: ClipboardCheck, description: "Coming Soon" },
+  "reports": { name: "Reports", icon: FileText, description: "Coming Soon" },
+  "admin": { name: "Admin", icon: Settings, description: "Coming Soon" },
+};
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { activeProduct } = useProduct();
+  
+  const info = productInfo[activeProduct] || productInfo["schedule-studio"];
+  const ProductIcon = info.icon;
+
+  const renderScheduleStudio = () => (
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {scheduleStudioNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/" && location.startsWith(item.url));
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Categories</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {scheduleStudioCategories.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/" && location.startsWith(item.url));
+              const isSubItemActive = item.subItems?.some(sub => location === sub.url);
+              
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <Collapsible 
+                    defaultOpen={isActive || isSubItemActive}
+                    className="group/collapsible w-full"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton 
+                        isActive={isActive && !isSubItemActive}
+                        data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
+                        tooltip={item.title}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={location === item.url}
+                            data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}-dashboard`}
+                          >
+                            <Link href={item.url}>
+                              <span className="text-muted-foreground">Dashboard</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        {item.subItems?.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton 
+                              asChild 
+                              isActive={location === subItem.url}
+                              data-testid={`nav-sub-${subItem.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
+                            >
+                              <Link href={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+
+  const renderOneClose = () => (
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {oneCloseNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/close-control" && location.startsWith(item.url));
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Active Close</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {(() => {
+              const scheduleMatch = location.match(/\/close-control\/schedule\/([^/]+)/);
+              const tasklistMatch = location.match(/\/close-control\/tasklist\/([^/]+)/);
+              
+              if (scheduleMatch) {
+                const scheduleId = scheduleMatch[1];
+                return (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={true}
+                      data-testid="nav-close-control-schedule"
+                    >
+                      <Link href={`/close-control/schedule/${scheduleId}`}>
+                        <Calendar className="h-4 w-4" />
+                        <span>Schedule ({scheduleId})</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              }
+              
+              if (tasklistMatch) {
+                const tasklistId = tasklistMatch[1];
+                return (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={true}
+                      data-testid="nav-close-control-tasklist"
+                    >
+                      <Link href={`/close-control/tasklist/${tasklistId}`}>
+                        <ListChecks className="h-4 w-4" />
+                        <span>Tasklist ({tasklistId})</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              }
+              
+              return (
+                <SidebarMenuItem>
+                  <SidebarMenuButton disabled className="text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>No active schedule</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })()}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+
+  const renderComingSoon = () => (
+    <SidebarGroup>
+      <SidebarGroupContent>
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <ProductIcon className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-sm font-medium mb-1">{info.name}</h3>
+          <p className="text-xs text-muted-foreground">
+            This module is under development
+          </p>
+        </div>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Calendar className="h-5 w-5" />
+            <ProductIcon className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold">Lunari</h1>
-            <p className="text-xs text-muted-foreground">Finance Stream</p>
+            <h1 className="text-sm font-semibold">{info.name}</h1>
+            <p className="text-xs text-muted-foreground">{info.description}</p>
           </div>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => {
-                const isActive = location === item.url || 
-                  (item.url !== "/" && location.startsWith(item.url));
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>OneClose</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Collapsible 
-                  defaultOpen={location.startsWith("/close-control")}
-                  className="group/collapsible w-full"
-                >
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      isActive={location === "/close-control"}
-                      data-testid="nav-close-control"
-                      tooltip="OneClose"
-                    >
-                      <Shield className="h-4 w-4" />
-                      <span>Close Schedules</span>
-                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                          asChild 
-                          isActive={location === "/close-control"}
-                          data-testid="nav-close-control-dashboard"
-                        >
-                          <Link href="/close-control">
-                            <span className="text-muted-foreground">Dashboard</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                          asChild 
-                          isActive={location === "/close-control/templates"}
-                          data-testid="nav-close-control-templates"
-                        >
-                          <Link href="/close-control/templates">
-                            <span>Templates</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                          asChild 
-                          isActive={location === "/close-control/certification"}
-                          data-testid="nav-close-control-certification"
-                        >
-                          <Link href="/close-control/certification">
-                            <span>Certification & SoD</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      {(() => {
-                        const scheduleMatch = location.match(/\/close-control\/schedule\/([^/]+)/);
-                        if (scheduleMatch) {
-                          const scheduleId = scheduleMatch[1];
-                          return (
-                            <SidebarMenuSubItem>
-                              <SidebarMenuSubButton 
-                                asChild
-                                isActive={true}
-                                data-testid="nav-close-control-schedule"
-                              >
-                                <Link href={`/close-control/schedule/${scheduleId}`}>
-                                  <span>Schedule ({scheduleId})</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        }
-                        return null;
-                      })()}
-                      {(() => {
-                        const tasklistMatch = location.match(/\/close-control\/tasklist\/([^/]+)/);
-                        if (tasklistMatch) {
-                          const tasklistId = tasklistMatch[1];
-                          return (
-                            <>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton 
-                                  asChild
-                                  isActive={false}
-                                  data-testid="nav-close-control-schedule-parent"
-                                >
-                                  <Link href="/close-control">
-                                    <span className="text-muted-foreground">Schedule</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                              <SidebarMenuSubItem>
-                                <SidebarMenuSubButton 
-                                  asChild
-                                  isActive={true}
-                                  data-testid="nav-close-control-tasklist"
-                                >
-                                  <Link href={`/close-control/tasklist/${tasklistId}`}>
-                                    <ListChecks className="h-3 w-3 mr-1" />
-                                    <span>Tasklist ({tasklistId})</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            </>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </Collapsible>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Schedule Studio</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {categoryItems.map((item) => {
-                const isActive = location === item.url || 
-                  (item.url !== "/" && location.startsWith(item.url));
-                const isSubItemActive = item.subItems?.some(sub => location === sub.url);
-                
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <Collapsible 
-                      defaultOpen={isActive || isSubItemActive}
-                      className="group/collapsible w-full"
-                    >
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton 
-                          isActive={isActive && !isSubItemActive}
-                          data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
-                          tooltip={item.title}
-                        >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton 
-                              asChild 
-                              isActive={location === item.url}
-                              data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}-dashboard`}
-                            >
-                              <Link href={item.url}>
-                                <span className="text-muted-foreground">Dashboard</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          {item.subItems?.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton 
-                                asChild 
-                                isActive={location === subItem.url}
-                                data-testid={`nav-sub-${subItem.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
-                              >
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {activeProduct === "schedule-studio" && renderScheduleStudio()}
+        {activeProduct === "oneclose" && renderOneClose()}
+        {!["schedule-studio", "oneclose"].includes(activeProduct) && renderComingSoon()}
         
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>

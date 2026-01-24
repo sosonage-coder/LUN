@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/top-nav";
+import { ProductProvider } from "@/contexts/product-context";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import ReconciliationsPage from "@/pages/reconciliations";
@@ -115,23 +116,25 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="schedule-engine-theme">
         <TooltipProvider>
-          <div className="flex flex-col h-screen w-full">
-            <TopNav />
-            <SidebarProvider style={style as React.CSSProperties}>
-              <div className="flex flex-1 w-full overflow-hidden">
-                <AppSidebar />
-                <div className="flex flex-col flex-1 overflow-hidden">
-                  <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-                    <SidebarTrigger data-testid="button-sidebar-toggle" />
-                    <ThemeToggle />
-                  </header>
-                  <main className="flex-1 overflow-auto">
-                    <Router />
-                  </main>
+          <ProductProvider>
+            <div className="flex flex-col h-screen w-full">
+              <TopNav />
+              <SidebarProvider style={style as React.CSSProperties}>
+                <div className="flex flex-1 w-full overflow-hidden">
+                  <AppSidebar />
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                    <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+                      <SidebarTrigger data-testid="button-sidebar-toggle" />
+                      <ThemeToggle />
+                    </header>
+                    <main className="flex-1 overflow-auto">
+                      <Router />
+                    </main>
+                  </div>
                 </div>
-              </div>
-            </SidebarProvider>
-          </div>
+              </SidebarProvider>
+            </div>
+          </ProductProvider>
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
