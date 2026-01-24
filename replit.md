@@ -1,7 +1,7 @@
-# Non-Monetary Schedule Engine
+# Next Engine
 
 ## Overview
-The Non-Monetary Schedule Engine is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
+Next Engine is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
 
 **Module Categories:**
 - Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization - 3-level drill-down hierarchy

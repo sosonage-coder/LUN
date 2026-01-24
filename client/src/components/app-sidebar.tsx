@@ -188,8 +188,8 @@ export function AppSidebar() {
             <Calendar className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold">Schedule Engine</h1>
-            <p className="text-xs text-muted-foreground">Non-Monetary v1.0</p>
+            <h1 className="text-sm font-semibold">Next Engine</h1>
+            <p className="text-xs text-muted-foreground">v1.0</p>
           </div>
         </div>
       </SidebarHeader>

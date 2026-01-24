@@ -36,7 +36,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
-            Non-Monetary Schedule Engine Overview
+            Next Engine Overview
           </p>
         </div>
         <Link href="/schedules/new">
