@@ -1,0 +1,340 @@
+I’ll answer this **from both seats**, because prepaid schedules are one of those deceptively simple areas where *bad practice hides for years*.
+
+I’ll structure this as:
+
+1. **What “good” looks like in real finance**
+2. **Non-negotiable accounting best practices**
+3. **Operational best practices (how teams actually survive close)**
+4. **System / tooling best practices (what your platform should enforce)**
+5. **Common failure modes to explicitly avoid**
+
+No theory. This is lived experience.
+
+---
+
+# 1️⃣ What a “Good” Prepaid Schedule Actually Does
+
+A best-in-class prepaid schedule must answer, instantly and defensibly:
+
+* What is prepaid?
+* Why is it prepaid?
+* How much has been expensed?
+* How much remains?
+* Over what period?
+* What changed since last month?
+* Can I prove it?
+
+If it cannot answer **all seven**, it’s not a good schedule — even if the math is right.
+
+---
+
+# 2️⃣ Accounting Best Practices (Non-Negotiable)
+
+These are **hard rules**, not preferences.
+
+---
+
+## A. Time drives amortization — not balances
+
+**Best practice**
+
+* Amortization is driven by:
+
+  * start date
+  * end date
+  * period count
+
+**Never**
+
+* “Expense until balance hits zero”
+* “Catch up because it feels right”
+
+**Why**
+Auditors test *time logic*, not spreadsheet behavior.
+
+---
+
+## B. Reporting currency is the source of truth
+
+**Best practice**
+
+* Amortization is calculated in **reporting currency**
+* Local currency is **context only**
+
+**Never**
+
+* Recalculate amortization because FX moved
+* Remeasure prepaids monthly
+
+If FX moves → that’s a **monetary item**, not a prepaid.
+
+---
+
+## C. FX is locked at recognition
+
+**Best practice**
+
+* FX rate at recognition is:
+
+  * derived from amounts
+  * stored
+  * never edited
+
+**Why**
+Prepaids are **non-monetary assets** under IAS 21 / ASC 830.
+
+Any system that remeasures FX on prepaids is wrong.
+
+---
+
+## D. Closed periods are immutable
+
+**Best practice**
+
+* Once a period is closed:
+
+  * no recalculation
+  * no restatement
+  * no silent adjustments
+
+All corrections:
+
+* flow forward
+* are visible
+* are explained
+
+---
+
+## E. Corrections are events, not edits
+
+**Best practice**
+
+* Wrong amount? → rebasis event
+* Wrong dates? → date change event
+* Late onboarding? → external history flag
+
+**Never**
+
+* Edit prior rows
+* Overwrite history
+* “Fix last month”
+
+Auditors *hate* invisible fixes.
+
+---
+
+# 3️⃣ Operational Best Practices (How Teams Actually Use Them)
+
+This is where most schedules fail.
+
+---
+
+## A. One prepaid = one cost stream
+
+**Best practice**
+
+* One schedule per:
+
+  * vendor
+  * contract
+  * service period
+
+**Never**
+
+* Bundle unrelated items
+* Roll multiple contracts into one line
+
+Why?
+Because reviewers ask:
+
+> “What is this, exactly?”
+
+---
+
+## B. Always show progress, not just balances
+
+A good schedule always shows:
+
+* total periods
+* periods elapsed
+* periods remaining
+
+This instantly answers:
+
+> “Is this behaving normally?”
+
+Balance-only schedules hide problems.
+
+---
+
+## C. Late onboarding must be explicit
+
+**Best practice**
+
+* Clearly mark:
+
+  * periods expensed outside the system
+  * system posting start period
+
+**Never**
+
+* Pretend the system owned history it didn’t
+
+Auditors respect honesty more than completeness.
+
+---
+
+## D. Final period true-up is allowed — once
+
+**Best practice**
+
+* Allow rounding differences to be cleaned up:
+
+  * in the final active period only
+
+**Never**
+
+* Drip rounding noise across months
+
+---
+
+## E. Commentary matters
+
+Every prepaid schedule should support:
+
+* reviewer notes
+* explanation of changes
+* carry-forward commentary
+
+The number alone is not enough.
+
+---
+
+# 4️⃣ System / Tooling Best Practices
+
+*(This is where your architecture is very strong)*
+
+---
+
+## A. Schedules must be first-class objects
+
+**Best practice**
+A prepaid schedule is:
+
+* not an attachment
+* not “just Excel”
+* not opaque
+
+It has:
+
+* a type (PREPAID)
+* defined behavior
+* state
+* lineage
+
+Your approach nails this.
+
+---
+
+## B. Period-by-period states must be visible
+
+Each period should be clearly labeled as:
+
+* external
+* system-generated
+* adjusted
+* closed
+
+If users can’t see this, they won’t trust the system.
+
+---
+
+## C. Side-by-side currency display (but asymmetric)
+
+**Best practice UI**
+
+* Reporting currency = dominant
+* Local currency = muted
+* FX = visible but locked
+
+This prevents mental gymnastics and Excel checks.
+
+---
+
+## D. No manual per-period overrides
+
+This is critical.
+
+**Never allow**
+
+* “Just change this month”
+* “Force it to match GL”
+
+If something’s wrong:
+
+* fix the cause
+* generate a forward adjustment
+
+---
+
+## E. Schedules must remember prior periods
+
+Best prepaid systems:
+
+* show prior period version
+* show what changed
+* show why it changed
+
+This is how Excel survives — memory.
+
+---
+
+# 5️⃣ Common Failure Modes to Avoid (Very Important)
+
+These are the things that get teams in trouble.
+
+---
+
+❌ Re-measuring FX on prepaids
+❌ Using balances instead of dates
+❌ Editing prior months quietly
+❌ Mixing unrelated prepaids
+❌ Letting users “fix” one month
+❌ Hiding late onboarding
+❌ No commentary / explanation
+❌ Treating schedules as attachments
+
+If you avoid these, you’re already ahead of most ERPs.
+
+---
+
+# 6️⃣ The Gold-Standard Definition (One Sentence)
+
+> **A prepaid schedule is a time-based, non-monetary cost allocation that is forward-only, FX-locked, event-corrected, and fully explainable period by period.**
+
+If your schedule satisfies that sentence, it’s best practice.
+
+---
+
+## Final Verdict (Both Seats Agree)
+
+**As a finance user:**
+These practices make schedules reviewable, defensible, and calm.
+
+**As a senior SWE:**
+These practices prevent data corruption, reconciliation bugs, and audit nightmares.
+
+Your existing prepaid spec already aligns extremely well with these best practices — especially around:
+
+* FX locking
+* event-based corrections
+* late onboarding honesty
+* forward-only logic
+
+If you want next, we can:
+
+* red-team a prepaid schedule with ugly edge cases
+* define a “prepaid quality checklist”
+* or map prepaid best practices → audit assertions
+
+Just tell me where to go next.
