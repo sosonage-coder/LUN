@@ -1,7 +1,11 @@
 # Non-Monetary Schedule Engine
 
 ## Overview
-The Non-Monetary Schedule Engine is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, and debt amortization. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
+The Non-Monetary Schedule Engine is a financial accounting application designed for deterministic and auditable cost allocation over time. It specializes in managing financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system ensures accurate, time-based allocation with an append-only event tracking mechanism and derived FX rates. The project aims to provide comprehensive financial oversight and reporting capabilities for various accounting categories.
+
+**Module Categories:**
+- Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization - 3-level drill-down hierarchy
+- Cash Scheduler - Leveled architecture for cash flow tracking (Level 0: Dashboard, Level 1: Category Summary, Level 2: Movement Detail)
 
 ## User Preferences
 - Financial application styling with professional appearance
@@ -14,7 +18,7 @@ The application follows a client-server architecture.
 
 **Frontend (Client):**
 - Built with React, TypeScript, TanStack Query, Wouter, Tailwind CSS, and shadcn/ui.
-- Provides a professional financial UI with dashboards for various accounting categories (Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization).
+- Provides a professional financial UI with dashboards for various accounting categories (Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization, Cash).
 - Features include: schedule listing, detailed schedule views, creation forms, and a specialized prepaid calculator.
 - UI/UX decisions prioritize clear currency formatting, dark mode support, and visual indicators for period states.
 
