@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -20,7 +21,8 @@ import {
   ClipboardCheck,
   Users,
   FileCheck,
-  CalendarDays
+  CalendarDays,
+  Loader2
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +42,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useProduct } from "@/contexts/product-context";
+import type { ReconciliationAccount } from "@shared/schema";
 
 const scheduleStudioNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -364,6 +367,15 @@ export function AppSidebar() {
     </>
   );
 
+  const { data: allAccounts = [], isLoading: accountsLoading, isError: accountsError } = useQuery<ReconciliationAccount[]>({
+    queryKey: ["/api/reconciliations/accounts"],
+    enabled: activeProduct === "reconciliations",
+  });
+
+  const getAccountsForCategory = (categoryKey: string) => {
+    return allAccounts.filter(acc => acc.accountType === categoryKey);
+  };
+
   const renderReconciliations = () => (
     <>
       <SidebarGroup>
@@ -396,34 +408,68 @@ export function AppSidebar() {
         <SidebarGroupLabel>Account Categories</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            <Collapsible defaultOpen className="group/collapsible">
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton data-testid="nav-account-categories">
-                    <FileCheck className="h-4 w-4" />
-                    <span>All Categories</span>
-                    <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {accountCategories.map((category) => (
-                      <SidebarMenuSubItem key={category.key}>
-                        <SidebarMenuSubButton 
-                          asChild
-                          data-testid={`nav-category-${category.key.toLowerCase()}`}
-                        >
-                          <Link href={`/reconciliations?category=${category.key}`}>
-                            <category.icon className="h-4 w-4" />
-                            <span>{category.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
+            {accountCategories.map((category) => {
+              const categoryAccounts = getAccountsForCategory(category.key);
+              const accountCount = categoryAccounts.length;
+              
+              return (
+                <Collapsible key={category.key} className="group/category">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton data-testid={`nav-category-${category.key.toLowerCase()}`}>
+                        <category.icon className="h-4 w-4" />
+                        <span className="flex-1">{category.title}</span>
+                        {accountsLoading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : accountCount > 0 && (
+                          <Badge variant="secondary">
+                            {accountCount}
+                          </Badge>
+                        )}
+                        <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]/category:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {accountsLoading ? (
+                          <SidebarMenuSubItem>
+                            <span className="text-xs text-muted-foreground px-2 py-1 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+                            </span>
+                          </SidebarMenuSubItem>
+                        ) : accountsError ? (
+                          <SidebarMenuSubItem>
+                            <span className="text-xs text-muted-foreground px-2 py-1">
+                              Error loading accounts
+                            </span>
+                          </SidebarMenuSubItem>
+                        ) : categoryAccounts.length === 0 ? (
+                          <SidebarMenuSubItem>
+                            <span className="text-xs text-muted-foreground px-2 py-1">
+                              No accounts
+                            </span>
+                          </SidebarMenuSubItem>
+                        ) : (
+                          categoryAccounts.map((account) => (
+                            <SidebarMenuSubItem key={account.accountId}>
+                              <SidebarMenuSubButton 
+                                asChild
+                                data-testid={`nav-account-${account.accountCode}`}
+                              >
+                                <Link href={`/reconciliations?account=${account.accountId}`}>
+                                  <span className="font-mono text-xs">{account.accountCode}</span>
+                                  <span className="truncate">{account.accountName}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))
+                        )}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

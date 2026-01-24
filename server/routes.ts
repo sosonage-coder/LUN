@@ -2045,5 +2045,27 @@ export async function registerRoutes(
     }
   });
 
+  // Change reconciliation template
+  app.patch("/api/reconciliations/:id/template", async (req, res) => {
+    try {
+      const schema = z.object({
+        templateId: z.string().min(1, "templateId is required"),
+      });
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.errors[0].message });
+      }
+      const { templateId } = result.data;
+      const reconciliation = await storage.updateReconciliationTemplate(
+        req.params.id,
+        templateId
+      );
+      res.json(reconciliation);
+    } catch (error) {
+      console.error("Error updating reconciliation template:", error);
+      res.status(500).json({ error: "Failed to update template" });
+    }
+  });
+
   return httpServer;
 }

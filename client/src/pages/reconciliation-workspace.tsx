@@ -15,13 +15,30 @@ import {
   Loader2,
   Paperclip,
   Send,
-  AlertTriangle
+  AlertTriangle,
+  LayoutTemplate,
+  Check
 } from "lucide-react";
 import type { Reconciliation, ReconciliationAccount, ReconciliationTemplate } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const statusConfig = {
   NOT_STARTED: { label: "Not Started", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300", nextAction: "Start", nextStatus: "IN_PROGRESS" as const },
@@ -56,9 +73,37 @@ export default function ReconciliationWorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const { data, isLoading, error } = useQuery<ReconciliationData>({
     queryKey: ["/api/reconciliations", id],
+  });
+
+  const { data: templates = [] } = useQuery<ReconciliationTemplate[]>({
+    queryKey: ["/api/reconciliations/templates"],
+  });
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      return apiRequest("PATCH", `/api/reconciliations/${id}/template`, { templateId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reconciliations", id] });
+      setIsTemplateDialogOpen(false);
+      setSelectedTemplateId(null);
+      toast({
+        title: "Template applied",
+        description: "The reconciliation template has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to apply template. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -214,13 +259,100 @@ export default function ReconciliationWorkspacePage() {
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCheck className="h-5 w-5" />
-                Reconciliation Sections
-              </CardTitle>
-              <CardDescription>
-                Template: {template?.name || "Unknown"}
-              </CardDescription>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileCheck className="h-5 w-5" />
+                    Reconciliation Sections
+                  </CardTitle>
+                  <CardDescription>
+                    Template: {template?.name || "Unknown"}
+                  </CardDescription>
+                </div>
+                <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" data-testid="button-change-template">
+                      <LayoutTemplate className="h-4 w-4 mr-2" />
+                      Change Template
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Select Template</DialogTitle>
+                      <DialogDescription>
+                        Choose a template to apply to this reconciliation. The sections will be updated based on the template structure.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <Select 
+                        value={selectedTemplateId || undefined} 
+                        onValueChange={setSelectedTemplateId}
+                      >
+                        <SelectTrigger data-testid="select-template">
+                          <SelectValue placeholder="Select a template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((t) => (
+                            <SelectItem 
+                              key={t.templateId} 
+                              value={t.templateId}
+                              data-testid={`template-option-${t.templateId}`}
+                            >
+                              {t.name}{t.templateId === template?.templateId ? " (Current)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {selectedTemplateId && (
+                        <div className="rounded-md border p-3 bg-muted/30">
+                          <h4 className="font-medium text-sm mb-2">Template Preview</h4>
+                          {(() => {
+                            const previewTemplate = templates.find(t => t.templateId === selectedTemplateId);
+                            if (!previewTemplate) return null;
+                            return (
+                              <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">{previewTemplate.description}</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {previewTemplate.sections.map((section, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
+                                      {section.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-end gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setIsTemplateDialogOpen(false);
+                            setSelectedTemplateId(null);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={() => selectedTemplateId && applyTemplateMutation.mutate(selectedTemplateId)}
+                          disabled={!selectedTemplateId || applyTemplateMutation.isPending}
+                          data-testid="button-apply-template"
+                        >
+                          {applyTemplateMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4 mr-2" />
+                          )}
+                          Apply Template
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {reconciliation.sections.length === 0 ? (

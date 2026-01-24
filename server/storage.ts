@@ -203,6 +203,7 @@ export interface IStorage {
   getReconciliation(id: string): Promise<Reconciliation | undefined>;
   createReconciliation(data: InsertReconciliation): Promise<Reconciliation>;
   updateReconciliationStatus(id: string, status: ReconciliationStatus, userId: string): Promise<Reconciliation>;
+  updateReconciliationTemplate(id: string, templateId: string): Promise<Reconciliation>;
   addReconciliationLineItem(reconciliationId: string, sectionId: string, data: InsertReconciliationLineItem): Promise<Reconciliation>;
   
   // Reconciliation Dashboard
@@ -5571,6 +5572,51 @@ export class MemStorage implements IStorage {
       updated.approvedBy = userId;
       updated.approvedAt = now;
     }
+    
+    this.reconciliations.set(id, updated);
+    return updated;
+  }
+
+  async updateReconciliationTemplate(id: string, templateId: string): Promise<Reconciliation> {
+    const rec = this.reconciliations.get(id);
+    if (!rec) {
+      throw new Error("Reconciliation not found");
+    }
+    
+    const template = this.reconciliationTemplates.get(templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    
+    const now = new Date().toISOString();
+    
+    // Create new sections from the template
+    const newSections = template.sections.map((section, index) => ({
+      sectionId: `S-${randomUUID().slice(0, 8)}`,
+      templateSectionId: section.sectionId,
+      name: section.name,
+      sectionType: section.sectionType,
+      sortOrder: section.sortOrder,
+      isComplete: false,
+      items: [],
+      subtotal: 0,
+    }));
+    
+    const updated: Reconciliation = {
+      ...rec,
+      templateId,
+      sections: newSections,
+      reconciledBalance: 0,
+      variance: rec.glBalance,
+      status: "NOT_STARTED",
+      preparedBy: null,
+      preparedAt: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      approvedBy: null,
+      approvedAt: null,
+      updatedAt: now,
+    };
     
     this.reconciliations.set(id, updated);
     return updated;
