@@ -182,6 +182,78 @@ export const insertPrepaidScheduleSchema = z.object({
 
 export type InsertPrepaidSchedule = z.infer<typeof insertPrepaidScheduleSchema>;
 
+// ========================
+// Fixed Assets Dashboard Types
+// ========================
+
+export type AssetClass = "IT" | "FURNITURE" | "LEASEHOLD" | "VEHICLES" | "MACHINERY" | "OTHER";
+export type DepreciationMethod = "STRAIGHT_LINE" | "DOUBLE_DECLINING" | "UNITS_OF_PRODUCTION" | "CUSTOM";
+export type AssetStatus = "IN_SERVICE" | "FULLY_DEPRECIATED" | "DISPOSED" | "NOT_IN_SERVICE";
+
+export interface FixedAsset {
+  id: string;
+  name: string;
+  assetClass: AssetClass;
+  entityId: string;
+  inServiceDate: string; // YYYY-MM-DD
+  usefulLifeMonths: number;
+  depreciationMethod: DepreciationMethod;
+  cost: number; // Capitalized amount
+  accumulatedDepreciation: number;
+  netBookValue: number; // Cost - Accumulated
+  currency: string;
+  status: AssetStatus;
+  evidence: EvidenceStatus;
+  owner: string;
+  createdAt: string;
+}
+
+export interface FixedAssetDashboardKPIs {
+  grossAssetValue: number;
+  accumulatedDepreciation: number;
+  netBookValue: number;
+  depreciationThisPeriod: number;
+  assetsInService: number;
+  assetsFullyDepreciated: number;
+}
+
+export interface AssetClassBreakdown {
+  assetClass: AssetClass;
+  amount: number; // NBV
+  count: number;
+}
+
+export interface DepreciationTrendPoint {
+  period: string;
+  depreciation: number;
+}
+
+export interface UsefulLifeDistribution {
+  range: string; // "0-1 yrs", "1-3 yrs", "3-5 yrs", "5+ yrs"
+  count: number;
+}
+
+export interface ControlFlag {
+  type: string;
+  count: number;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  description: string;
+}
+
+export const insertFixedAssetSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  assetClass: z.enum(["IT", "FURNITURE", "LEASEHOLD", "VEHICLES", "MACHINERY", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  inServiceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  usefulLifeMonths: z.number().min(1, "Useful life must be at least 1 month"),
+  depreciationMethod: z.enum(["STRAIGHT_LINE", "DOUBLE_DECLINING", "UNITS_OF_PRODUCTION", "CUSTOM"]),
+  cost: z.number().positive("Cost must be positive"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertFixedAsset = z.infer<typeof insertFixedAssetSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;

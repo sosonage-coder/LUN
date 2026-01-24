@@ -14,7 +14,15 @@ import type {
   PrepaidDashboardKPIs,
   PrepaidCategoryBreakdown,
   AmortizationTrendPoint,
-  PrepaidSubcategory
+  PrepaidSubcategory,
+  FixedAsset,
+  InsertFixedAsset,
+  FixedAssetDashboardKPIs,
+  AssetClassBreakdown,
+  DepreciationTrendPoint,
+  UsefulLifeDistribution,
+  ControlFlag,
+  AssetClass
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +57,16 @@ export interface IStorage {
   getPrepaidDashboardKPIs(entityId?: string, period?: string): Promise<PrepaidDashboardKPIs>;
   getPrepaidCategoryBreakdown(entityId?: string): Promise<PrepaidCategoryBreakdown[]>;
   getAmortizationTrend(entityId?: string, periods?: number): Promise<AmortizationTrendPoint[]>;
+  
+  // Fixed Assets Dashboard
+  getFixedAssets(entityId?: string, assetClass?: AssetClass): Promise<FixedAsset[]>;
+  getFixedAsset(id: string): Promise<FixedAsset | undefined>;
+  createFixedAsset(data: InsertFixedAsset): Promise<FixedAsset>;
+  getFixedAssetDashboardKPIs(entityId?: string, period?: string): Promise<FixedAssetDashboardKPIs>;
+  getAssetClassBreakdown(entityId?: string): Promise<AssetClassBreakdown[]>;
+  getDepreciationTrend(entityId?: string, periods?: number): Promise<DepreciationTrendPoint[]>;
+  getUsefulLifeDistribution(entityId?: string): Promise<UsefulLifeDistribution[]>;
+  getControlFlags(entityId?: string): Promise<ControlFlag[]>;
 }
 
 // Helper functions
@@ -86,6 +104,7 @@ export class MemStorage implements IStorage {
   private periodStatuses: Map<string, PeriodStatus>;
   private cachedPeriods: Map<string, PeriodLine[]>;
   private prepaidSchedules: Map<string, PrepaidSchedule>;
+  private fixedAssets: Map<string, FixedAsset>;
 
   constructor() {
     this.schedules = new Map();
@@ -94,6 +113,7 @@ export class MemStorage implements IStorage {
     this.periodStatuses = new Map();
     this.cachedPeriods = new Map();
     this.prepaidSchedules = new Map();
+    this.fixedAssets = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -178,6 +198,9 @@ export class MemStorage implements IStorage {
 
     // Seed prepaid schedules for Category Dashboard
     this.seedPrepaidSchedules();
+    
+    // Seed fixed assets for Category Dashboard
+    this.seedFixedAssets();
   }
 
   private seedPrepaidSchedules() {
@@ -807,6 +830,411 @@ export class MemStorage implements IStorage {
     }
 
     return result;
+  }
+
+  // ========================
+  // Fixed Assets Methods
+  // ========================
+
+  private seedFixedAssets() {
+    const now = new Date().toISOString();
+    const sampleAssets: FixedAsset[] = [
+      {
+        id: randomUUID(),
+        name: "MacBook Pro Fleet - Engineering",
+        assetClass: "IT",
+        entityId: "CORP-001",
+        inServiceDate: "2023-06-15",
+        usefulLifeMonths: 36,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 125000,
+        accumulatedDepreciation: 62500,
+        netBookValue: 62500,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "IT Operations",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Server Infrastructure - Data Center",
+        assetClass: "IT",
+        entityId: "CORP-001",
+        inServiceDate: "2022-01-10",
+        usefulLifeMonths: 60,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 450000,
+        accumulatedDepreciation: 180000,
+        netBookValue: 270000,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "Infrastructure",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Office Furniture - HQ Floor 3",
+        assetClass: "FURNITURE",
+        entityId: "CORP-001",
+        inServiceDate: "2021-03-01",
+        usefulLifeMonths: 84,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 85000,
+        accumulatedDepreciation: 42500,
+        netBookValue: 42500,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "Facilities",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Leasehold Improvements - Berlin Office",
+        assetClass: "LEASEHOLD",
+        entityId: "SUB-EU",
+        inServiceDate: "2020-09-01",
+        usefulLifeMonths: 120,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 320000,
+        accumulatedDepreciation: 128000,
+        netBookValue: 192000,
+        currency: "EUR",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "EU Facilities",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Company Vehicles - Sales Fleet",
+        assetClass: "VEHICLES",
+        entityId: "SUB-US",
+        inServiceDate: "2022-08-15",
+        usefulLifeMonths: 60,
+        depreciationMethod: "DOUBLE_DECLINING",
+        cost: 180000,
+        accumulatedDepreciation: 90000,
+        netBookValue: 90000,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "Sales Ops",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Manufacturing Equipment - Assembly Line",
+        assetClass: "MACHINERY",
+        entityId: "SUB-US",
+        inServiceDate: "2019-04-01",
+        usefulLifeMonths: 120,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 750000,
+        accumulatedDepreciation: 437500,
+        netBookValue: 312500,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "Manufacturing",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "CNC Machine - Precision Shop",
+        assetClass: "MACHINERY",
+        entityId: "SUB-US",
+        inServiceDate: "2018-01-15",
+        usefulLifeMonths: 120,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 280000,
+        accumulatedDepreciation: 196000,
+        netBookValue: 84000,
+        currency: "USD",
+        status: "IN_SERVICE",
+        evidence: "MISSING",
+        owner: "Manufacturing",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Legacy Printers - Warehouse",
+        assetClass: "IT",
+        entityId: "CORP-001",
+        inServiceDate: "2018-06-01",
+        usefulLifeMonths: 60,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 45000,
+        accumulatedDepreciation: 45000,
+        netBookValue: 0,
+        currency: "USD",
+        status: "FULLY_DEPRECIATED",
+        evidence: "ATTACHED",
+        owner: "IT Operations",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Network Equipment - London",
+        assetClass: "IT",
+        entityId: "SUB-UK",
+        inServiceDate: "2024-01-10",
+        usefulLifeMonths: 48,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 95000,
+        accumulatedDepreciation: 11875,
+        netBookValue: 83125,
+        currency: "GBP",
+        status: "IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "UK IT",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Standing Desks - Tokyo Office",
+        assetClass: "FURNITURE",
+        entityId: "SUB-JP",
+        inServiceDate: "2023-11-01",
+        usefulLifeMonths: 84,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 42000,
+        accumulatedDepreciation: 6000,
+        netBookValue: 36000,
+        currency: "JPY",
+        status: "IN_SERVICE",
+        evidence: "MISSING",
+        owner: "JP Facilities",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Forklift - Warehouse",
+        assetClass: "VEHICLES",
+        entityId: "SUB-US",
+        inServiceDate: "2024-03-01",
+        usefulLifeMonths: 72,
+        depreciationMethod: "STRAIGHT_LINE",
+        cost: 55000,
+        accumulatedDepreciation: 0,
+        netBookValue: 55000,
+        currency: "USD",
+        status: "NOT_IN_SERVICE",
+        evidence: "ATTACHED",
+        owner: "Warehouse Ops",
+        createdAt: now,
+      },
+    ];
+
+    for (const asset of sampleAssets) {
+      this.fixedAssets.set(asset.id, asset);
+    }
+  }
+
+  async getFixedAssets(entityId?: string, assetClass?: AssetClass): Promise<FixedAsset[]> {
+    let assets = Array.from(this.fixedAssets.values());
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+    
+    if (assetClass) {
+      assets = assets.filter(a => a.assetClass === assetClass);
+    }
+
+    return assets.sort((a, b) => b.netBookValue - a.netBookValue);
+  }
+
+  async getFixedAsset(id: string): Promise<FixedAsset | undefined> {
+    return this.fixedAssets.get(id);
+  }
+
+  async createFixedAsset(data: InsertFixedAsset): Promise<FixedAsset> {
+    const now = new Date().toISOString();
+    const asset: FixedAsset = {
+      id: randomUUID(),
+      name: data.name,
+      assetClass: data.assetClass,
+      entityId: data.entityId,
+      inServiceDate: data.inServiceDate,
+      usefulLifeMonths: data.usefulLifeMonths,
+      depreciationMethod: data.depreciationMethod,
+      cost: data.cost,
+      accumulatedDepreciation: 0,
+      netBookValue: data.cost,
+      currency: data.currency,
+      status: "NOT_IN_SERVICE",
+      evidence: "MISSING",
+      owner: data.owner,
+      createdAt: now,
+    };
+
+    this.fixedAssets.set(asset.id, asset);
+    return asset;
+  }
+
+  async getFixedAssetDashboardKPIs(entityId?: string, period?: string): Promise<FixedAssetDashboardKPIs> {
+    let assets = Array.from(this.fixedAssets.values());
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+
+    const grossAssetValue = assets.reduce((sum, a) => sum + a.cost, 0);
+    const accumulatedDepreciation = assets.reduce((sum, a) => sum + a.accumulatedDepreciation, 0);
+    const netBookValue = assets.reduce((sum, a) => sum + a.netBookValue, 0);
+    
+    const activeAssets = assets.filter(a => a.status === "IN_SERVICE");
+    const monthlyDepreciation = activeAssets.reduce((sum, a) => {
+      return sum + (a.cost / a.usefulLifeMonths);
+    }, 0);
+
+    const assetsInService = assets.filter(a => a.status === "IN_SERVICE").length;
+    const assetsFullyDepreciated = assets.filter(a => a.status === "FULLY_DEPRECIATED").length;
+
+    return {
+      grossAssetValue,
+      accumulatedDepreciation,
+      netBookValue,
+      depreciationThisPeriod: Math.round(monthlyDepreciation),
+      assetsInService,
+      assetsFullyDepreciated,
+    };
+  }
+
+  async getAssetClassBreakdown(entityId?: string): Promise<AssetClassBreakdown[]> {
+    let assets = Array.from(this.fixedAssets.values()).filter(a => a.status !== "DISPOSED");
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+
+    const breakdown: Record<AssetClass, { amount: number; count: number }> = {
+      IT: { amount: 0, count: 0 },
+      FURNITURE: { amount: 0, count: 0 },
+      LEASEHOLD: { amount: 0, count: 0 },
+      VEHICLES: { amount: 0, count: 0 },
+      MACHINERY: { amount: 0, count: 0 },
+      OTHER: { amount: 0, count: 0 },
+    };
+
+    for (const asset of assets) {
+      breakdown[asset.assetClass].amount += asset.netBookValue;
+      breakdown[asset.assetClass].count += 1;
+    }
+
+    return Object.entries(breakdown)
+      .filter(([_, data]) => data.count > 0)
+      .map(([assetClass, data]) => ({
+        assetClass: assetClass as AssetClass,
+        amount: data.amount,
+        count: data.count,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }
+
+  async getDepreciationTrend(entityId?: string, periods: number = 6): Promise<DepreciationTrendPoint[]> {
+    let assets = Array.from(this.fixedAssets.values()).filter(a => a.status === "IN_SERVICE");
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+
+    const monthlyDepreciation = assets.reduce((sum, a) => sum + (a.cost / a.usefulLifeMonths), 0);
+    const result: DepreciationTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const depreciation = i === 0 ? monthlyDepreciation : monthlyDepreciation * (0.95 + Math.random() * 0.1);
+      result.push({ period, depreciation: Math.round(depreciation) });
+    }
+
+    return result;
+  }
+
+  async getUsefulLifeDistribution(entityId?: string): Promise<UsefulLifeDistribution[]> {
+    let assets = Array.from(this.fixedAssets.values()).filter(a => a.status === "IN_SERVICE");
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+
+    const distribution: Record<string, number> = {
+      "0-1 yrs": 0,
+      "1-3 yrs": 0,
+      "3-5 yrs": 0,
+      "5+ yrs": 0,
+    };
+
+    const today = new Date();
+    for (const asset of assets) {
+      const inServiceDate = new Date(asset.inServiceDate);
+      const monthsElapsed = (today.getFullYear() - inServiceDate.getFullYear()) * 12 + 
+                           (today.getMonth() - inServiceDate.getMonth());
+      const remainingMonths = Math.max(0, asset.usefulLifeMonths - monthsElapsed);
+      const remainingYears = remainingMonths / 12;
+
+      if (remainingYears <= 1) {
+        distribution["0-1 yrs"]++;
+      } else if (remainingYears <= 3) {
+        distribution["1-3 yrs"]++;
+      } else if (remainingYears <= 5) {
+        distribution["3-5 yrs"]++;
+      } else {
+        distribution["5+ yrs"]++;
+      }
+    }
+
+    return Object.entries(distribution).map(([range, count]) => ({ range, count }));
+  }
+
+  async getControlFlags(entityId?: string): Promise<ControlFlag[]> {
+    let assets = Array.from(this.fixedAssets.values());
+    
+    if (entityId) {
+      assets = assets.filter(a => a.entityId === entityId);
+    }
+
+    const flags: ControlFlag[] = [];
+
+    const missingEvidence = assets.filter(a => a.evidence === "MISSING" && a.status !== "DISPOSED").length;
+    if (missingEvidence > 0) {
+      flags.push({
+        type: "MISSING_EVIDENCE",
+        count: missingEvidence,
+        severity: "HIGH",
+        description: "Assets missing capitalization evidence",
+      });
+    }
+
+    const notInService = assets.filter(a => a.status === "NOT_IN_SERVICE").length;
+    if (notInService > 0) {
+      flags.push({
+        type: "NOT_IN_SERVICE",
+        count: notInService,
+        severity: "MEDIUM",
+        description: "Assets not yet placed in service",
+      });
+    }
+
+    const fullyDepreciatedActive = assets.filter(a => a.status === "FULLY_DEPRECIATED").length;
+    if (fullyDepreciatedActive > 0) {
+      flags.push({
+        type: "FULLY_DEPRECIATED_ACTIVE",
+        count: fullyDepreciatedActive,
+        severity: "LOW",
+        description: "Fully depreciated but still active",
+      });
+    }
+
+    return flags.sort((a, b) => {
+      const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
   }
 }
 

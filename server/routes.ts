@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, type PrepaidSubcategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, type PrepaidSubcategory, type AssetClass } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -248,6 +248,120 @@ export async function registerRoutes(
       }
       console.error("Error creating prepaid schedule:", error);
       res.status(500).json({ error: "Failed to create prepaid schedule" });
+    }
+  });
+
+  // ======================
+  // Fixed Assets Dashboard Routes
+  // ======================
+
+  // Get fixed assets dashboard KPIs
+  app.get("/api/fixed-assets/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getFixedAssetDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching fixed asset KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch fixed asset KPIs" });
+    }
+  });
+
+  // Get asset class breakdown
+  app.get("/api/fixed-assets/breakdown", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const breakdown = await storage.getAssetClassBreakdown(entityId);
+      res.json(breakdown);
+    } catch (error) {
+      console.error("Error fetching asset class breakdown:", error);
+      res.status(500).json({ error: "Failed to fetch asset class breakdown" });
+    }
+  });
+
+  // Get depreciation trend
+  app.get("/api/fixed-assets/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getDepreciationTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching depreciation trend:", error);
+      res.status(500).json({ error: "Failed to fetch depreciation trend" });
+    }
+  });
+
+  // Get useful life distribution
+  app.get("/api/fixed-assets/lifecycle", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const distribution = await storage.getUsefulLifeDistribution(entityId);
+      res.json(distribution);
+    } catch (error) {
+      console.error("Error fetching useful life distribution:", error);
+      res.status(500).json({ error: "Failed to fetch useful life distribution" });
+    }
+  });
+
+  // Get control flags
+  app.get("/api/fixed-assets/flags", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const flags = await storage.getControlFlags(entityId);
+      res.json(flags);
+    } catch (error) {
+      console.error("Error fetching control flags:", error);
+      res.status(500).json({ error: "Failed to fetch control flags" });
+    }
+  });
+
+  // Get all fixed assets
+  app.get("/api/fixed-assets", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const assetClass = req.query.assetClass as AssetClass | undefined;
+      const assets = await storage.getFixedAssets(entityId, assetClass);
+      res.json(assets);
+    } catch (error) {
+      console.error("Error fetching fixed assets:", error);
+      res.status(500).json({ error: "Failed to fetch fixed assets" });
+    }
+  });
+
+  // Get single fixed asset
+  app.get("/api/fixed-assets/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const asset = await storage.getFixedAsset(id);
+      
+      if (!asset) {
+        return res.status(404).json({ error: "Fixed asset not found" });
+      }
+
+      res.json(asset);
+    } catch (error) {
+      console.error("Error fetching fixed asset:", error);
+      res.status(500).json({ error: "Failed to fetch fixed asset" });
+    }
+  });
+
+  // Create new fixed asset
+  app.post("/api/fixed-assets", async (req, res) => {
+    try {
+      const validatedData = insertFixedAssetSchema.parse(req.body);
+      const asset = await storage.createFixedAsset(validatedData);
+      res.status(201).json(asset);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating fixed asset:", error);
+      res.status(500).json({ error: "Failed to create fixed asset" });
     }
   });
 
