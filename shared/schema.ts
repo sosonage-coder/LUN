@@ -344,6 +344,113 @@ export const insertAccrualScheduleSchema = z.object({
 
 export type InsertAccrualSchedule = z.infer<typeof insertAccrualScheduleSchema>;
 
+// ============================
+// Revenue & Contracts Types
+// ============================
+
+export type RevenueCategory = 
+  | "SUBSCRIPTIONS"
+  | "SUPPORT_MAINTENANCE"
+  | "USAGE_BASED"
+  | "MILESTONE_BASED"
+  | "LICENSING"
+  | "OTHER";
+
+export type RevenueLifecycleState = "ACTIVE" | "DORMANT" | "COMPLETED" | "ARCHIVED";
+
+export type RecognitionMethod = "STRAIGHT_LINE" | "USAGE" | "MILESTONE" | "POINT_IN_TIME" | "OVER_TIME";
+
+export type JudgmentLevel = "HIGH" | "MEDIUM" | "LOW";
+
+export interface RevenueSchedule {
+  id: string;
+  contractName: string;
+  customerName: string;
+  category: RevenueCategory;
+  entityId: string;
+  lifecycleState: RevenueLifecycleState;
+  recognitionMethod: RecognitionMethod;
+  contractStartDate: string;
+  contractEndDate: string;
+  totalContractValue: number;
+  revenueRecognizedToDate: number;
+  revenueRecognizedPeriod: number;
+  deferredRevenue: number;
+  contractAssets: number; // unbilled / recognized-not-billed
+  currency: string;
+  judgmentLevel: JudgmentLevel;
+  hasPerformanceObligationDetail: boolean;
+  evidence: EvidenceStatus;
+  reviewStatus: ReviewStatus;
+  lastReviewedAt: string | null;
+  lastReviewedBy: string | null;
+  owner: string;
+  reportingFramework: "ASC_606" | "IFRS_15";
+  createdAt: string;
+}
+
+export interface RevenueDashboardKPIs {
+  revenueRecognizedPeriod: number;
+  deferredRevenueEnding: number;
+  contractAssets: number;
+  activeContracts: number;
+  dormantContracts: number;
+  highJudgmentContracts: number;
+}
+
+export interface RevenueCategorySummary {
+  category: RevenueCategory;
+  activeCount: number;
+  revenueRecognized: number;
+  deferredRevenue: number;
+  riskLevel: RiskLevel;
+  reviewStatus: ReviewStatus;
+}
+
+export interface RevenueTrendPoint {
+  period: string;
+  recognized: number;
+  deferred: number;
+}
+
+export interface DeferredRevenueRollforward {
+  period: string;
+  openingBalance: number;
+  additions: number;
+  recognition: number;
+  endingBalance: number;
+}
+
+export interface RevenueMixBreakdown {
+  category: RevenueCategory;
+  amount: number;
+  percentage: number;
+}
+
+export interface RevenueRiskPanel {
+  type: "MISSING_PO_DETAIL" | "LARGE_TRUE_UP" | "MANUAL_RECOGNITION" | "NOT_REVIEWED" | "EXPECTED_MISSING";
+  title: string;
+  categories: { category: RevenueCategory; count: number }[];
+  severity: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export const insertRevenueScheduleSchema = z.object({
+  contractName: z.string().min(1, "Contract name is required"),
+  customerName: z.string().min(1, "Customer name is required"),
+  category: z.enum(["SUBSCRIPTIONS", "SUPPORT_MAINTENANCE", "USAGE_BASED", "MILESTONE_BASED", "LICENSING", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  recognitionMethod: z.enum(["STRAIGHT_LINE", "USAGE", "MILESTONE", "POINT_IN_TIME", "OVER_TIME"]),
+  contractStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  contractEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  totalContractValue: z.number().min(0, "Value cannot be negative"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  judgmentLevel: z.enum(["HIGH", "MEDIUM", "LOW"]),
+  reportingFramework: z.enum(["ASC_606", "IFRS_15"]),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertRevenueSchedule = z.infer<typeof insertRevenueScheduleSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;

@@ -13,7 +13,8 @@ import {
   Monitor,
   Layers,
   HardDrive,
-  Landmark
+  Landmark,
+  Receipt
 } from "lucide-react";
 import {
   Sidebar,
@@ -67,6 +68,11 @@ const categoryItems = [
     title: "Accruals",
     url: "/accruals",
     icon: Landmark,
+  },
+  {
+    title: "Revenue & Contracts",
+    url: "/revenue",
+    icon: Receipt,
   },
 ];
 

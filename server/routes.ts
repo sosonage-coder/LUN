@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -476,6 +476,133 @@ export async function registerRoutes(
       }
       console.error("Error creating accrual:", error);
       res.status(500).json({ error: "Failed to create accrual" });
+    }
+  });
+
+  // ======================
+  // Revenue & Contracts Dashboard Routes
+  // ======================
+
+  // Get revenue dashboard KPIs
+  app.get("/api/revenue/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getRevenueDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching revenue KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch revenue KPIs" });
+    }
+  });
+
+  // Get category summaries
+  app.get("/api/revenue/categories", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const summaries = await storage.getRevenueCategorySummaries(entityId);
+      res.json(summaries);
+    } catch (error) {
+      console.error("Error fetching revenue category summaries:", error);
+      res.status(500).json({ error: "Failed to fetch revenue category summaries" });
+    }
+  });
+
+  // Get revenue trend
+  app.get("/api/revenue/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getRevenueTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching revenue trend:", error);
+      res.status(500).json({ error: "Failed to fetch revenue trend" });
+    }
+  });
+
+  // Get deferred revenue rollforward
+  app.get("/api/revenue/rollforward", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const rollforward = await storage.getDeferredRevenueRollforward(entityId, periods);
+      res.json(rollforward);
+    } catch (error) {
+      console.error("Error fetching deferred revenue rollforward:", error);
+      res.status(500).json({ error: "Failed to fetch deferred revenue rollforward" });
+    }
+  });
+
+  // Get revenue mix breakdown
+  app.get("/api/revenue/mix", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const mix = await storage.getRevenueMixBreakdown(entityId);
+      res.json(mix);
+    } catch (error) {
+      console.error("Error fetching revenue mix:", error);
+      res.status(500).json({ error: "Failed to fetch revenue mix" });
+    }
+  });
+
+  // Get risk panels
+  app.get("/api/revenue/risks", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const panels = await storage.getRevenueRiskPanels(entityId);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching revenue risk panels:", error);
+      res.status(500).json({ error: "Failed to fetch revenue risk panels" });
+    }
+  });
+
+  // Get all revenue schedules (for drilldown)
+  app.get("/api/revenue", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const category = req.query.category as RevenueCategory | undefined;
+      const revenues = await storage.getRevenueSchedules(entityId, category);
+      res.json(revenues);
+    } catch (error) {
+      console.error("Error fetching revenue schedules:", error);
+      res.status(500).json({ error: "Failed to fetch revenue schedules" });
+    }
+  });
+
+  // Get single revenue schedule
+  app.get("/api/revenue/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const revenue = await storage.getRevenueSchedule(id);
+      
+      if (!revenue) {
+        return res.status(404).json({ error: "Revenue schedule not found" });
+      }
+
+      res.json(revenue);
+    } catch (error) {
+      console.error("Error fetching revenue schedule:", error);
+      res.status(500).json({ error: "Failed to fetch revenue schedule" });
+    }
+  });
+
+  // Create new revenue schedule
+  app.post("/api/revenue", async (req, res) => {
+    try {
+      const validatedData = insertRevenueScheduleSchema.parse(req.body);
+      const revenue = await storage.createRevenueSchedule(validatedData);
+      res.status(201).json(revenue);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating revenue schedule:", error);
+      res.status(500).json({ error: "Failed to create revenue schedule" });
     }
   });
 

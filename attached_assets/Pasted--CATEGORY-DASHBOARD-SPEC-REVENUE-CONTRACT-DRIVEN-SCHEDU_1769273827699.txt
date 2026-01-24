@@ -1,0 +1,337 @@
+💰 CATEGORY DASHBOARD SPEC — REVENUE & CONTRACT-DRIVEN SCHEDULES (SCHEDULER)
+
+Product: Scheduler
+Category: Revenue & Contracts
+Audience: Preparer, Reviewer, Controller, Audit
+Purpose: Provide a period-aware, contract-level view of revenue recognition, deferred revenue movement, and performance-obligation risk — without exposing transactional clutter.
+
+🔒 Design Rule (Non-Negotiable)
+
+Revenue dashboards surface recognition state and risk by contract and category — never invoice-level detail.
+History and transaction math are accessed only through deliberate drilldown.
+
+This prevents the dashboard from turning into a billing ledger.
+
+1️⃣ Scope & Philosophy
+What this dashboard IS
+
+A revenue recognition control surface
+
+A deferred revenue & contract asset rollforward view
+
+A risk detection screen for timing, completeness, and judgment
+
+What this dashboard is NOT
+
+❌ A billing or invoicing system
+
+❌ A CRM or contract repository
+
+❌ A forecasting or sales pipeline tool
+
+❌ A posting engine
+
+This dashboard answers:
+
+“Are we recognizing the right amount of revenue this period — and can we explain what’s deferred, unbilled, or judgment-based?”
+
+2️⃣ Revenue Schedule Lifecycle Model (Foundation)
+
+Every revenue schedule exists in one state only:
+
+State	Meaning	Dashboard Visibility
+Active	Contract has remaining performance obligations	✅ Included
+Dormant	Temporarily paused recognition	⚠ Included (separate count)
+Completed	Fully recognized	❌ Excluded
+Archived	Historical reference	❌ Excluded
+Hard Rule
+
+Only Active and Dormant revenue schedules appear on the dashboard.
+
+Completed contracts never clutter the surface.
+
+3️⃣ Entry Points & Navigation
+URL
+/scheduler/revenue
+
+Navigation context
+
+Top Nav: Scheduler (active)
+
+Left Sidebar: Categories
+
+Prepaids
+
+Fixed Assets
+
+Accruals
+
+Revenue & Contracts (active)
+
+Subscriptions
+
+Support & Maintenance
+
+Usage-Based
+
+Milestone-Based
+
+Licensing
+
+Other
+
+Main Area: Revenue Dashboard (Aggregated)
+
+4️⃣ Time Window Enforcement
+Default Time Horizon
+
+Primary view: Current period
+
+Trends: Rolling 6–12 periods (capped)
+
+Prohibited by Design
+
+❌ Invoice-level listing on dashboard
+
+❌ Full contract history auto-loaded
+
+❌ Recognition outside selected period window
+
+Revenue history is earned via drilldown, never dumped.
+
+5️⃣ Page Layout (Recognition-First, Not Billing-First)
+┌──────────────────────────────────────────┐
+│ Header (Title + Period + Entity)         │
+├──────────────────────────────────────────┤
+│ KPI Summary Tiles (Recognition State)   │
+├──────────────────────────────────────────┤
+│ Revenue & Deferral Trends                │
+├──────────────────────────────────────────┤
+│ Risk & Completeness Panels               │
+├──────────────────────────────────────────┤
+│ Category / Contract Summary Table        │
+└──────────────────────────────────────────┘
+
+6️⃣ Header Section
+Elements
+
+Title: Revenue & Contracts
+
+Context Bar:
+
+Entity selector
+
+Period selector
+
+Reporting framework indicator (ASC 606 / IFRS 15)
+
+Status badge (Open / Locked)
+
+Actions
+
+➕ New Revenue Schedule
+
+📄 New Contract Template
+
+⬇ Export Revenue Summary
+
+7️⃣ KPI Summary Tiles (Recognition, Not Sales)
+
+Purpose: Show what is recognized vs deferred — not how much was billed.
+
+Tile	Definition
+Revenue Recognized (Period)	Revenue recognized this period
+Deferred Revenue (Ending)	Contract liability balance
+Contract Assets	Unbilled / recognized-not-billed
+Active Contracts	# of active revenue schedules
+Dormant Contracts	Paused recognition
+High-Judgment Contracts	Estimates / manual allocations
+Behavior
+
+Tiles filter categories, not invoices
+
+No tile ever expands to billing data
+
+8️⃣ Charts & Visuals (Aggregated & Safe)
+Chart 1: Revenue Recognition Trend
+
+Line or stacked bar
+
+Rolling 6–12 periods
+
+Grouped by revenue category
+
+Drilldown: category → Category Dashboard
+
+Chart 2: Deferred Revenue Rollforward
+
+Waterfall or stacked bars
+
+Shows:
+
+Opening deferred revenue
+
+Additions (billings)
+
+Recognition
+
+Ending balance
+
+Drilldown: category → contract summaries
+
+Chart 3: Revenue Mix by Category
+
+Donut / stacked bar
+
+Subscriptions / Usage / Milestones / Licensing
+
+9️⃣ Risk & Completeness Panels (Where Value Lives)
+
+Purpose: Expose revenue risk early.
+
+Panels
+
+⚠ Contracts missing performance obligation detail
+
+🔄 Large recognition true-ups
+
+🧠 Manual or estimate-based recognition
+
+⏱ Contracts not reviewed this period
+
+📭 Expected recurring contracts not present
+
+Each panel shows:
+
+Category
+
+Count of affected contracts
+
+Severity
+
+“View Category” link
+
+🔽 10️⃣ Category / Contract Summary Table
+Rows = Categories or Contracts (configurable)
+
+(Default = Category level)
+
+Column	Description
+Category / Contract	Subscription / Customer X
+Active Schedules	Count
+Revenue Recognized	Period amount
+Deferred Revenue	Ending balance
+Risk Level	Low / Medium / High
+Status	Reviewed / Not Reviewed
+Behavior
+
+Clicking a row navigates to:
+
+/scheduler/revenue/subscriptions
+
+
+or
+
+/scheduler/revenue/contracts/123
+
+
+depending on configuration.
+
+11️⃣ Drilldown Path (Progressive Disclosure)
+Level 1 → Revenue Dashboard
+/scheduler/revenue
+
+Level 2 → Category Dashboard
+/scheduler/revenue/subscriptions
+
+
+Active contracts only
+
+Current period focus
+
+Level 3 → Contract Workspace
+/scheduler/revenue/subscriptions/contract/123
+
+🔍 Individual Contract Workspace (Linked, Not Embedded)
+
+Tabs
+
+Overview
+
+Performance Obligations
+
+Allocation & Recognition Schedule
+
+Billings vs Recognition
+
+Evidence & Contracts
+
+Audit Trail
+
+This is where complexity lives — never on the dashboard.
+
+🔐 12️⃣ Controls & Permissions
+Role behavior
+Role	Access
+Preparer	Create/edit schedules
+Reviewer	Review + comment
+Controller	Approve + lock periods
+Auditor	Read-only + evidence
+Accounting controls
+
+Period locking freezes recognition
+
+Allocation changes are prospective
+
+Manual recognition requires justification
+
+Framework (606/IFRS 15) locked per entity
+
+13️⃣ Empty & Edge States
+No active contracts
+
+Message: “No active revenue schedules for this period”
+
+CTA: “Create revenue schedule” or “View archived contracts”
+
+Fully recognized portfolio
+
+Dashboard shows zero deferred exposure
+
+Risk panels suppressed
+
+14️⃣ Technical Guardrails (Anti-Bloat)
+
+Dashboard queries aggregated contract data only
+
+Hard limits:
+
+Max trend periods: 12
+
+Max dashboard rows: categories only
+
+Contract-level data loaded on demand
+
+🚫 Invoices and billing lines are forbidden on this screen
+
+15️⃣ Why Revenue Needs This Design (Truth)
+
+Revenue failures happen when:
+
+Recognition logic is hidden
+
+Deferred balances are unexplained
+
+Contracts outlive scrutiny
+
+This dashboard:
+
+Makes revenue defensible
+
+Makes audits predictable
+
+Keeps billing noise out of accounting truth
+
+16️⃣ One-Sentence Explanation (Use Everywhere)
+
+“The Revenue & Contracts dashboard provides a period-aware view of revenue recognition and deferral by contract category, while all billing and historical detail is accessed only through deliberate drilldown.”

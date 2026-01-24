@@ -16,6 +16,7 @@ import PrepaidCalculator from "@/pages/prepaid-calculator";
 import PrepaidsDashboard from "@/pages/prepaids-dashboard";
 import FixedAssetsDashboard from "@/pages/fixed-assets-dashboard";
 import AccrualsDashboard from "@/pages/accruals-dashboard";
+import RevenueDashboard from "@/pages/revenue-dashboard";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/prepaids" component={PrepaidsDashboard} />
       <Route path="/fixed-assets" component={FixedAssetsDashboard} />
       <Route path="/accruals" component={AccrualsDashboard} />
+      <Route path="/revenue" component={RevenueDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

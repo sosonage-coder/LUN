@@ -30,7 +30,16 @@ import type {
   AccrualTrendPoint,
   AccrualRiskPanel,
   AccrualMixBreakdown,
-  AccrualCategory
+  AccrualCategory,
+  RevenueSchedule,
+  InsertRevenueSchedule,
+  RevenueDashboardKPIs,
+  RevenueCategorySummary,
+  RevenueTrendPoint,
+  DeferredRevenueRollforward,
+  RevenueMixBreakdown,
+  RevenueRiskPanel,
+  RevenueCategory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -85,6 +94,17 @@ export interface IStorage {
   getAccrualTrend(entityId?: string, periods?: number): Promise<AccrualTrendPoint[]>;
   getAccrualRiskPanels(entityId?: string): Promise<AccrualRiskPanel[]>;
   getAccrualMixBreakdown(entityId?: string): Promise<AccrualMixBreakdown[]>;
+  
+  // Revenue & Contracts Dashboard
+  getRevenueSchedules(entityId?: string, category?: RevenueCategory): Promise<RevenueSchedule[]>;
+  getRevenueSchedule(id: string): Promise<RevenueSchedule | undefined>;
+  createRevenueSchedule(data: InsertRevenueSchedule): Promise<RevenueSchedule>;
+  getRevenueDashboardKPIs(entityId?: string, period?: string): Promise<RevenueDashboardKPIs>;
+  getRevenueCategorySummaries(entityId?: string): Promise<RevenueCategorySummary[]>;
+  getRevenueTrend(entityId?: string, periods?: number): Promise<RevenueTrendPoint[]>;
+  getDeferredRevenueRollforward(entityId?: string, periods?: number): Promise<DeferredRevenueRollforward[]>;
+  getRevenueMixBreakdown(entityId?: string): Promise<RevenueMixBreakdown[]>;
+  getRevenueRiskPanels(entityId?: string): Promise<RevenueRiskPanel[]>;
 }
 
 // Helper functions
@@ -124,6 +144,7 @@ export class MemStorage implements IStorage {
   private prepaidSchedules: Map<string, PrepaidSchedule>;
   private fixedAssets: Map<string, FixedAsset>;
   private accrualSchedules: Map<string, AccrualSchedule>;
+  private revenueSchedules: Map<string, RevenueSchedule>;
 
   constructor() {
     this.schedules = new Map();
@@ -134,6 +155,7 @@ export class MemStorage implements IStorage {
     this.prepaidSchedules = new Map();
     this.fixedAssets = new Map();
     this.accrualSchedules = new Map();
+    this.revenueSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -224,6 +246,9 @@ export class MemStorage implements IStorage {
     
     // Seed accrual schedules for Category Dashboard
     this.seedAccrualSchedules();
+    
+    // Seed revenue schedules for Category Dashboard
+    this.seedRevenueSchedules();
   }
 
   private seedPrepaidSchedules() {
@@ -1781,6 +1806,633 @@ export class MemStorage implements IStorage {
         percentage: grandTotal > 0 ? (amount / grandTotal) * 100 : 0,
       }))
       .sort((a, b) => b.amount - a.amount);
+  }
+
+  // ========================
+  // Revenue & Contracts Methods
+  // ========================
+
+  private seedRevenueSchedules() {
+    const now = new Date().toISOString();
+    const sampleRevenues: RevenueSchedule[] = [
+      {
+        id: randomUUID(),
+        contractName: "Enterprise SaaS - Acme Corp",
+        customerName: "Acme Corporation",
+        category: "SUBSCRIPTIONS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "STRAIGHT_LINE",
+        contractStartDate: "2024-01-01",
+        contractEndDate: "2026-12-31",
+        totalContractValue: 1200000,
+        revenueRecognizedToDate: 400000,
+        revenueRecognizedPeriod: 33333,
+        deferredRevenue: 800000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Deal Desk",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Platform License - TechStart",
+        customerName: "TechStart Inc",
+        category: "SUBSCRIPTIONS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "STRAIGHT_LINE",
+        contractStartDate: "2024-06-01",
+        contractEndDate: "2025-05-31",
+        totalContractValue: 240000,
+        revenueRecognizedToDate: 160000,
+        revenueRecognizedPeriod: 20000,
+        deferredRevenue: 80000,
+        contractAssets: 15000,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Sales",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Support Agreement - GlobalBank",
+        customerName: "GlobalBank Financial",
+        category: "SUPPORT_MAINTENANCE",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "STRAIGHT_LINE",
+        contractStartDate: "2024-03-01",
+        contractEndDate: "2025-02-28",
+        totalContractValue: 180000,
+        revenueRecognizedToDate: 135000,
+        revenueRecognizedPeriod: 15000,
+        deferredRevenue: 45000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Customer Success",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Premium Support - Fintech Pro",
+        customerName: "Fintech Pro LLC",
+        category: "SUPPORT_MAINTENANCE",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "STRAIGHT_LINE",
+        contractStartDate: "2024-09-01",
+        contractEndDate: "2025-08-31",
+        totalContractValue: 96000,
+        revenueRecognizedToDate: 40000,
+        revenueRecognizedPeriod: 8000,
+        deferredRevenue: 56000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "MEDIUM",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Customer Success",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "API Usage - DataFlow",
+        customerName: "DataFlow Analytics",
+        category: "USAGE_BASED",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "USAGE",
+        contractStartDate: "2024-01-01",
+        contractEndDate: "2025-12-31",
+        totalContractValue: 0,
+        revenueRecognizedToDate: 125000,
+        revenueRecognizedPeriod: 18500,
+        deferredRevenue: 0,
+        contractAssets: 22000,
+        currency: "USD",
+        judgmentLevel: "HIGH",
+        hasPerformanceObligationDetail: false,
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Product",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Compute Credits - CloudScale",
+        customerName: "CloudScale Ops",
+        category: "USAGE_BASED",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "USAGE",
+        contractStartDate: "2024-04-01",
+        contractEndDate: "2025-03-31",
+        totalContractValue: 50000,
+        revenueRecognizedToDate: 38000,
+        revenueRecognizedPeriod: 5200,
+        deferredRevenue: 12000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "MEDIUM",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Analyst",
+        owner: "Cloud Ops",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Implementation Project - MegaCorp",
+        customerName: "MegaCorp Industries",
+        category: "MILESTONE_BASED",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "MILESTONE",
+        contractStartDate: "2024-07-01",
+        contractEndDate: "2025-06-30",
+        totalContractValue: 500000,
+        revenueRecognizedToDate: 200000,
+        revenueRecognizedPeriod: 100000,
+        deferredRevenue: 300000,
+        contractAssets: 50000,
+        currency: "USD",
+        judgmentLevel: "HIGH",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Professional Services",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Custom Integration - RetailMax",
+        customerName: "RetailMax Holdings",
+        category: "MILESTONE_BASED",
+        entityId: "SUB-EU",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "MILESTONE",
+        contractStartDate: "2024-10-01",
+        contractEndDate: "2025-09-30",
+        totalContractValue: 280000,
+        revenueRecognizedToDate: 70000,
+        revenueRecognizedPeriod: 35000,
+        deferredRevenue: 210000,
+        contractAssets: 25000,
+        currency: "EUR",
+        judgmentLevel: "HIGH",
+        hasPerformanceObligationDetail: false,
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "EU Professional Services",
+        reportingFramework: "IFRS_15",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Software License - ManufactureCo",
+        customerName: "ManufactureCo Global",
+        category: "LICENSING",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "POINT_IN_TIME",
+        contractStartDate: "2024-11-01",
+        contractEndDate: "2027-10-31",
+        totalContractValue: 750000,
+        revenueRecognizedToDate: 750000,
+        revenueRecognizedPeriod: 0,
+        deferredRevenue: 0,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Enterprise Sales",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "IP License - PharmaTech",
+        customerName: "PharmaTech Research",
+        category: "LICENSING",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "OVER_TIME",
+        contractStartDate: "2024-02-01",
+        contractEndDate: "2029-01-31",
+        totalContractValue: 2500000,
+        revenueRecognizedToDate: 500000,
+        revenueRecognizedPeriod: 41667,
+        deferredRevenue: 2000000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "MEDIUM",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Controller",
+        owner: "Licensing",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Consulting Services - StartupXYZ",
+        customerName: "StartupXYZ",
+        category: "OTHER",
+        entityId: "SUB-US",
+        lifecycleState: "DORMANT",
+        recognitionMethod: "OVER_TIME",
+        contractStartDate: "2024-05-01",
+        contractEndDate: "2024-10-31",
+        totalContractValue: 85000,
+        revenueRecognizedToDate: 60000,
+        revenueRecognizedPeriod: 0,
+        deferredRevenue: 25000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Revenue Analyst",
+        owner: "Consulting",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        contractName: "Training Services - EduCorp",
+        customerName: "EduCorp Learning",
+        category: "OTHER",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        recognitionMethod: "OVER_TIME",
+        contractStartDate: "2024-08-01",
+        contractEndDate: "2025-01-31",
+        totalContractValue: 45000,
+        revenueRecognizedToDate: 30000,
+        revenueRecognizedPeriod: 7500,
+        deferredRevenue: 15000,
+        contractAssets: 0,
+        currency: "USD",
+        judgmentLevel: "LOW",
+        hasPerformanceObligationDetail: true,
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Training",
+        reportingFramework: "ASC_606",
+        createdAt: now,
+      },
+    ];
+
+    for (const revenue of sampleRevenues) {
+      this.revenueSchedules.set(revenue.id, revenue);
+    }
+  }
+
+  async getRevenueSchedules(entityId?: string, category?: RevenueCategory): Promise<RevenueSchedule[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE" || r.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+    
+    if (category) {
+      revenues = revenues.filter(r => r.category === category);
+    }
+
+    return revenues.sort((a, b) => b.revenueRecognizedPeriod - a.revenueRecognizedPeriod);
+  }
+
+  async getRevenueSchedule(id: string): Promise<RevenueSchedule | undefined> {
+    return this.revenueSchedules.get(id);
+  }
+
+  async createRevenueSchedule(data: InsertRevenueSchedule): Promise<RevenueSchedule> {
+    const now = new Date().toISOString();
+    const revenue: RevenueSchedule = {
+      id: randomUUID(),
+      contractName: data.contractName,
+      customerName: data.customerName,
+      category: data.category,
+      entityId: data.entityId,
+      lifecycleState: "ACTIVE",
+      recognitionMethod: data.recognitionMethod,
+      contractStartDate: data.contractStartDate,
+      contractEndDate: data.contractEndDate,
+      totalContractValue: data.totalContractValue,
+      revenueRecognizedToDate: 0,
+      revenueRecognizedPeriod: 0,
+      deferredRevenue: data.totalContractValue,
+      contractAssets: 0,
+      currency: data.currency,
+      judgmentLevel: data.judgmentLevel,
+      hasPerformanceObligationDetail: false,
+      evidence: "MISSING",
+      reviewStatus: "NOT_REVIEWED",
+      lastReviewedAt: null,
+      lastReviewedBy: null,
+      owner: data.owner,
+      reportingFramework: data.reportingFramework,
+      createdAt: now,
+    };
+
+    this.revenueSchedules.set(revenue.id, revenue);
+    return revenue;
+  }
+
+  async getRevenueDashboardKPIs(entityId?: string, period?: string): Promise<RevenueDashboardKPIs> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE" || r.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const activeRevenues = revenues.filter(r => r.lifecycleState === "ACTIVE");
+    const dormantRevenues = revenues.filter(r => r.lifecycleState === "DORMANT");
+
+    const revenueRecognizedPeriod = activeRevenues.reduce((sum, r) => sum + r.revenueRecognizedPeriod, 0);
+    const deferredRevenueEnding = revenues.reduce((sum, r) => sum + r.deferredRevenue, 0);
+    const contractAssets = revenues.reduce((sum, r) => sum + r.contractAssets, 0);
+    const highJudgmentContracts = revenues.filter(r => r.judgmentLevel === "HIGH").length;
+
+    return {
+      revenueRecognizedPeriod,
+      deferredRevenueEnding,
+      contractAssets,
+      activeContracts: activeRevenues.length,
+      dormantContracts: dormantRevenues.length,
+      highJudgmentContracts,
+    };
+  }
+
+  async getRevenueCategorySummaries(entityId?: string): Promise<RevenueCategorySummary[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE" || r.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const summaries: Record<RevenueCategory, RevenueCategorySummary> = {
+      SUBSCRIPTIONS: { category: "SUBSCRIPTIONS", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      SUPPORT_MAINTENANCE: { category: "SUPPORT_MAINTENANCE", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      USAGE_BASED: { category: "USAGE_BASED", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      MILESTONE_BASED: { category: "MILESTONE_BASED", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      LICENSING: { category: "LICENSING", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      OTHER: { category: "OTHER", activeCount: 0, revenueRecognized: 0, deferredRevenue: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+    };
+
+    for (const revenue of revenues) {
+      const cat = revenue.category;
+      if (revenue.lifecycleState === "ACTIVE") {
+        summaries[cat].activeCount++;
+      }
+      summaries[cat].revenueRecognized += revenue.revenueRecognizedPeriod;
+      summaries[cat].deferredRevenue += revenue.deferredRevenue;
+      
+      if (revenue.judgmentLevel === "HIGH" || !revenue.hasPerformanceObligationDetail || revenue.evidence === "MISSING") {
+        summaries[cat].riskLevel = "HIGH";
+      } else if (revenue.judgmentLevel === "MEDIUM" && summaries[cat].riskLevel !== "HIGH") {
+        summaries[cat].riskLevel = "MEDIUM";
+      }
+      
+      if (revenue.reviewStatus === "NOT_REVIEWED") {
+        summaries[cat].reviewStatus = "NOT_REVIEWED";
+      }
+    }
+
+    return Object.values(summaries)
+      .filter(s => s.activeCount > 0 || s.revenueRecognized > 0)
+      .sort((a, b) => b.revenueRecognized - a.revenueRecognized);
+  }
+
+  async getRevenueTrend(entityId?: string, periods: number = 6): Promise<RevenueTrendPoint[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const currentRecognized = revenues.reduce((sum, r) => sum + r.revenueRecognizedPeriod, 0);
+    const currentDeferred = revenues.reduce((sum, r) => sum + r.deferredRevenue, 0);
+    const result: RevenueTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const recognized = i === 0 ? currentRecognized : currentRecognized * (0.88 + Math.random() * 0.24);
+      const deferred = i === 0 ? currentDeferred : currentDeferred * (1.02 + Math.random() * 0.1);
+      result.push({ 
+        period, 
+        recognized: Math.round(recognized), 
+        deferred: Math.round(deferred) 
+      });
+    }
+
+    return result;
+  }
+
+  async getDeferredRevenueRollforward(entityId?: string, periods: number = 6): Promise<DeferredRevenueRollforward[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE" || r.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const currentDeferred = revenues.reduce((sum, r) => sum + r.deferredRevenue, 0);
+    const currentRecognition = revenues.reduce((sum, r) => sum + r.revenueRecognizedPeriod, 0);
+    const result: DeferredRevenueRollforward[] = [];
+    
+    const today = new Date();
+    let runningBalance = currentDeferred * 1.3; // Start from higher balance
+    
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      
+      const openingBalance = runningBalance;
+      const additions = i === 0 ? currentRecognition * 1.2 : currentRecognition * (1.1 + Math.random() * 0.3);
+      const recognition = i === 0 ? currentRecognition : currentRecognition * (0.9 + Math.random() * 0.2);
+      const endingBalance = openingBalance + additions - recognition;
+      
+      result.push({ 
+        period, 
+        openingBalance: Math.round(openingBalance),
+        additions: Math.round(additions),
+        recognition: Math.round(recognition),
+        endingBalance: Math.round(endingBalance)
+      });
+      
+      runningBalance = endingBalance;
+    }
+
+    return result;
+  }
+
+  async getRevenueMixBreakdown(entityId?: string): Promise<RevenueMixBreakdown[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const totals: Record<RevenueCategory, number> = {
+      SUBSCRIPTIONS: 0,
+      SUPPORT_MAINTENANCE: 0,
+      USAGE_BASED: 0,
+      MILESTONE_BASED: 0,
+      LICENSING: 0,
+      OTHER: 0,
+    };
+
+    for (const revenue of revenues) {
+      totals[revenue.category] += revenue.revenueRecognizedPeriod;
+    }
+
+    const grandTotal = Object.values(totals).reduce((sum, v) => sum + v, 0);
+
+    return Object.entries(totals)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category: category as RevenueCategory,
+        amount,
+        percentage: grandTotal > 0 ? (amount / grandTotal) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }
+
+  async getRevenueRiskPanels(entityId?: string): Promise<RevenueRiskPanel[]> {
+    let revenues = Array.from(this.revenueSchedules.values())
+      .filter(r => r.lifecycleState === "ACTIVE" || r.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      revenues = revenues.filter(r => r.entityId === entityId);
+    }
+
+    const panels: RevenueRiskPanel[] = [];
+
+    const missingPODetail: Record<RevenueCategory, number> = { SUBSCRIPTIONS: 0, SUPPORT_MAINTENANCE: 0, USAGE_BASED: 0, MILESTONE_BASED: 0, LICENSING: 0, OTHER: 0 };
+    const manualRecognition: Record<RevenueCategory, number> = { SUBSCRIPTIONS: 0, SUPPORT_MAINTENANCE: 0, USAGE_BASED: 0, MILESTONE_BASED: 0, LICENSING: 0, OTHER: 0 };
+    const notReviewed: Record<RevenueCategory, number> = { SUBSCRIPTIONS: 0, SUPPORT_MAINTENANCE: 0, USAGE_BASED: 0, MILESTONE_BASED: 0, LICENSING: 0, OTHER: 0 };
+    const largeTrueUp: Record<RevenueCategory, number> = { SUBSCRIPTIONS: 0, SUPPORT_MAINTENANCE: 0, USAGE_BASED: 0, MILESTONE_BASED: 0, LICENSING: 0, OTHER: 0 };
+
+    for (const revenue of revenues) {
+      if (!revenue.hasPerformanceObligationDetail) {
+        missingPODetail[revenue.category]++;
+      }
+      if (revenue.judgmentLevel === "HIGH") {
+        manualRecognition[revenue.category]++;
+      }
+      if (revenue.reviewStatus === "NOT_REVIEWED") {
+        notReviewed[revenue.category]++;
+      }
+      // Consider large true-up if contract assets are significant
+      if (revenue.contractAssets > revenue.revenueRecognizedPeriod * 0.5) {
+        largeTrueUp[revenue.category]++;
+      }
+    }
+
+    const buildCategories = (data: Record<RevenueCategory, number>) => {
+      return Object.entries(data)
+        .filter(([_, count]) => count > 0)
+        .map(([category, count]) => ({ category: category as RevenueCategory, count }));
+    };
+
+    const missingPODetailCategories = buildCategories(missingPODetail);
+    if (missingPODetailCategories.length > 0) {
+      panels.push({
+        type: "MISSING_PO_DETAIL",
+        title: "Contracts missing performance obligation detail",
+        categories: missingPODetailCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const manualRecognitionCategories = buildCategories(manualRecognition);
+    if (manualRecognitionCategories.length > 0) {
+      panels.push({
+        type: "MANUAL_RECOGNITION",
+        title: "Manual or estimate-based recognition",
+        categories: manualRecognitionCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const largeTrueUpCategories = buildCategories(largeTrueUp);
+    if (largeTrueUpCategories.length > 0) {
+      panels.push({
+        type: "LARGE_TRUE_UP",
+        title: "Large recognition true-ups",
+        categories: largeTrueUpCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const notReviewedCategories = buildCategories(notReviewed);
+    if (notReviewedCategories.length > 0) {
+      panels.push({
+        type: "NOT_REVIEWED",
+        title: "Contracts not reviewed this period",
+        categories: notReviewedCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    return panels.sort((a, b) => {
+      const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
   }
 }
 
