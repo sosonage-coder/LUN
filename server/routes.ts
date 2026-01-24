@@ -1098,7 +1098,7 @@ export async function registerRoutes(
   });
 
   // Close Schedules list
-  app.get("/api/close-control/schedules", async (req, res) => {
+  app.get("/api/close-control/schedules", async (_req, res) => {
     try {
       const schedules = [
         { period: "2026-01", scheduleId: "CS-2026-01", scheduleName: "January 2026 Month-End Close", status: "ACTIVE" as const, progressPercent: 65, daysRemaining: 3, tasksTotal: 24, tasksCompleted: 16, tasksApproved: 12, tasksOverdue: 2, riskLevel: "MEDIUM" as const },
@@ -1109,6 +1109,40 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching close schedules:", error);
       res.status(500).json({ error: "Failed to fetch close schedules" });
+    }
+  });
+
+  // Create Close Schedule
+  app.post("/api/close-control/schedules", async (req, res) => {
+    try {
+      const { period, scheduleName, templateId, description } = req.body;
+      
+      if (!period || !scheduleName) {
+        return res.status(400).json({ error: "Period and schedule name are required" });
+      }
+
+      const scheduleId = `CS-${period.replace("-", "")}`;
+      const newSchedule = {
+        scheduleId,
+        period,
+        scheduleName,
+        templateId: templateId || null,
+        description: description || null,
+        status: "PLANNED" as const,
+        progressPercent: 0,
+        daysRemaining: 30,
+        tasksTotal: 0,
+        tasksCompleted: 0,
+        tasksApproved: 0,
+        tasksOverdue: 0,
+        riskLevel: "NONE" as const,
+        createdAt: new Date().toISOString(),
+      };
+
+      res.status(201).json(newSchedule);
+    } catch (error) {
+      console.error("Error creating close schedule:", error);
+      res.status(500).json({ error: "Failed to create close schedule" });
     }
   });
 

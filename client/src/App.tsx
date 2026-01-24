@@ -43,6 +43,7 @@ import CloseControlTemplatesPage from "@/pages/close-control-templates";
 import CloseControlTemplateEditorPage from "@/pages/close-control-template-editor";
 import CloseControlKanbanPage from "@/pages/close-control-kanban";
 import CloseControlCalendarPage from "@/pages/close-control-calendar";
+import CloseControlNewPage from "@/pages/close-control-new";
 import MyTasksPage from "@/pages/my-tasks";
 
 function Router() {
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/close-control/tasklist/:id" component={CloseControlTasklistPage} />
       <Route path="/close-control/tasklist/:id/kanban" component={CloseControlKanbanPage} />
       <Route path="/close-control/calendar" component={CloseControlCalendarPage} />
+      <Route path="/close-control/new" component={CloseControlNewPage} />
       <Route path="/my-tasks" component={MyTasksPage} />
       <Route path="/schedules" component={SchedulesList} />
       <Route path="/schedules/new" component={CreateSchedule} />
