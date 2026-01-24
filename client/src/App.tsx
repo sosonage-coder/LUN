@@ -7,8 +7,14 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { TopNav } from "@/components/top-nav";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import ReconciliationsPage from "@/pages/reconciliations";
+import PoliciesPage from "@/pages/policies";
+import WalkthroughsPage from "@/pages/walkthroughs";
+import ReportsPage from "@/pages/reports";
+import AdminPage from "@/pages/admin";
 import SchedulesList from "@/pages/schedules-list";
 import ScheduleDetail from "@/pages/schedule-detail";
 import CreateSchedule from "@/pages/create-schedule";
@@ -51,6 +57,11 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/reconciliations" component={ReconciliationsPage} />
+      <Route path="/policies" component={PoliciesPage} />
+      <Route path="/walkthroughs" component={WalkthroughsPage} />
+      <Route path="/reports" component={ReportsPage} />
+      <Route path="/admin" component={AdminPage} />
       <Route path="/close-control" component={CloseControlDashboard} />
       <Route path="/close-control/templates" component={CloseControlTemplatesPage} />
       <Route path="/close-control/templates/:id" component={CloseControlTemplateEditorPage} />
@@ -104,20 +115,23 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="schedule-engine-theme">
         <TooltipProvider>
-          <SidebarProvider style={style as React.CSSProperties}>
-            <div className="flex h-screen w-full">
-              <AppSidebar />
-              <div className="flex flex-col flex-1 overflow-hidden">
-                <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <ThemeToggle />
-                </header>
-                <main className="flex-1 overflow-auto">
-                  <Router />
-                </main>
+          <div className="flex flex-col h-screen w-full">
+            <TopNav />
+            <SidebarProvider style={style as React.CSSProperties}>
+              <div className="flex flex-1 w-full overflow-hidden">
+                <AppSidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+                    <SidebarTrigger data-testid="button-sidebar-toggle" />
+                    <ThemeToggle />
+                  </header>
+                  <main className="flex-1 overflow-auto">
+                    <Router />
+                  </main>
+                </div>
               </div>
-            </div>
-          </SidebarProvider>
+            </SidebarProvider>
+          </div>
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
