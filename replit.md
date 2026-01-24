@@ -67,6 +67,8 @@ The application follows a client-server architecture.
 - **Reconciliation Status Workflow**: NOT_STARTED → IN_PROGRESS → PENDING_REVIEW → REVIEWED → APPROVED → LOCKED
 - **Views**: Dashboard (KPIs, accounts by category, reconciliation table), Template Library, Reconciliation Workspace
 - **Key Features**: Period-specific reconciliation instances, GL/reconciled balance tracking with variance calculation, section-based line items, file attachments, certification workflow
+- **Navigation Flow**: Sidebar account categories → Dashboard (filtered view) → Click "Open" button → Workspace (uses reconciliationId, not accountId)
+- **Template Selection**: Workspace has "Change Template" button that opens dialog with template dropdown, preview, and apply functionality. Applying template resets status to NOT_STARTED and rebuilds sections
 - **Query Key Pattern**: Use string URLs (e.g., "/api/reconciliations?period=2026-01") for TanStack Query to match default queryFn behavior
 
 ## External Dependencies
