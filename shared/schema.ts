@@ -1262,3 +1262,254 @@ export const overrideSoDViolationSchema = z.object({
 });
 
 export type OverrideSoDViolation = z.infer<typeof overrideSoDViolationSchema>;
+
+// ============================================
+// RECONCILIATION WORKSPACE SCHEMA
+// ============================================
+
+// Account Types for reconciliation eligibility
+export type ReconciliationAccountType = 
+  | "CASH"
+  | "ACCOUNTS_RECEIVABLE"
+  | "ACCOUNTS_PAYABLE"
+  | "PREPAID"
+  | "FIXED_ASSET"
+  | "ACCRUAL"
+  | "INVENTORY"
+  | "INTERCOMPANY"
+  | "DEBT"
+  | "EQUITY"
+  | "OTHER";
+
+// Reconciliation Template Section Types
+export type ReconciliationSectionType = 
+  | "OPENING_BALANCE"
+  | "ADDITIONS"
+  | "DISPOSALS"
+  | "ADJUSTMENTS"
+  | "CLOSING_BALANCE"
+  | "SUBLEDGER_DETAIL"
+  | "BANK_TRANSACTIONS"
+  | "OUTSTANDING_ITEMS"
+  | "VARIANCE_ANALYSIS"
+  | "SUPPORTING_DOCUMENTATION"
+  | "CUSTOM";
+
+// Reconciliation Status
+export type ReconciliationStatus = 
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "PENDING_REVIEW"
+  | "REVIEWED"
+  | "APPROVED"
+  | "LOCKED";
+
+// Reconciliation Template - defines the structure
+export interface ReconciliationTemplate {
+  templateId: string;
+  name: string;
+  description: string;
+  accountTypes: ReconciliationAccountType[]; // eligible account types
+  sections: ReconciliationTemplateSection[];
+  isSystemTemplate: boolean; // built-in vs custom
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+}
+
+// Template Section Definition
+export interface ReconciliationTemplateSection {
+  sectionId: string;
+  sectionType: ReconciliationSectionType;
+  name: string;
+  description: string;
+  sortOrder: number;
+  isRequired: boolean;
+  fields: ReconciliationTemplateField[];
+}
+
+// Template Field Definition
+export interface ReconciliationTemplateField {
+  fieldId: string;
+  name: string;
+  fieldType: "TEXT" | "NUMBER" | "DATE" | "CURRENCY" | "ATTACHMENT" | "REFERENCE";
+  isRequired: boolean;
+  defaultValue?: string | number | null;
+  formula?: string; // for calculated fields
+}
+
+// GL Account for reconciliation
+export interface ReconciliationAccount {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: ReconciliationAccountType;
+  entityId: string;
+  currency: string;
+  defaultTemplateId: string | null; // preferred template
+  isActive: boolean;
+  createdAt: string;
+}
+
+// Account Balance (per period)
+export interface AccountBalance {
+  accountId: string;
+  period: string; // YYYY-MM
+  glBalance: number;
+  subledgerBalance: number | null;
+  variance: number;
+  lastUpdated: string;
+}
+
+// Reconciliation Instance - created for each account/period
+export interface Reconciliation {
+  reconciliationId: string;
+  accountId: string;
+  templateId: string;
+  period: string; // YYYY-MM
+  status: ReconciliationStatus;
+  glBalance: number;
+  reconciledBalance: number;
+  variance: number;
+  sections: ReconciliationSectionInstance[];
+  preparedBy: string | null;
+  preparedAt: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  notes: string | null;
+  attachmentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Section Instance (filled in during reconciliation)
+export interface ReconciliationSectionInstance {
+  sectionId: string;
+  templateSectionId: string;
+  name: string;
+  sectionType: ReconciliationSectionType;
+  sortOrder: number;
+  isComplete: boolean;
+  items: ReconciliationLineItem[];
+  subtotal: number;
+}
+
+// Line Item within a section
+export interface ReconciliationLineItem {
+  itemId: string;
+  description: string;
+  reference: string | null;
+  date: string | null;
+  amount: number;
+  notes: string | null;
+  attachmentIds: string[];
+  createdAt: string;
+  createdBy: string;
+}
+
+// Reconciliation Attachment
+export interface ReconciliationAttachment {
+  attachmentId: string;
+  reconciliationId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+// Reconciliation Comment/Activity
+export interface ReconciliationActivity {
+  activityId: string;
+  reconciliationId: string;
+  activityType: "COMMENT" | "STATUS_CHANGE" | "ITEM_ADDED" | "ITEM_MODIFIED" | "ATTACHMENT_ADDED";
+  description: string;
+  previousValue?: string;
+  newValue?: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+// Dashboard KPIs for Reconciliations
+export interface ReconciliationKPIs {
+  totalAccounts: number;
+  reconciledCount: number;
+  pendingReviewCount: number;
+  notStartedCount: number;
+  varianceTotal: number;
+  completionPercentage: number;
+}
+
+// Insert Schemas
+export const insertReconciliationTemplateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  description: z.string().min(1, "Description is required"),
+  accountTypes: z.array(z.enum([
+    "CASH", "ACCOUNTS_RECEIVABLE", "ACCOUNTS_PAYABLE", "PREPAID",
+    "FIXED_ASSET", "ACCRUAL", "INVENTORY", "INTERCOMPANY", "DEBT", "EQUITY", "OTHER"
+  ])).min(1, "At least one account type is required"),
+  sections: z.array(z.object({
+    sectionType: z.enum([
+      "OPENING_BALANCE", "ADDITIONS", "DISPOSALS", "ADJUSTMENTS", "CLOSING_BALANCE",
+      "SUBLEDGER_DETAIL", "BANK_TRANSACTIONS", "OUTSTANDING_ITEMS", "VARIANCE_ANALYSIS",
+      "SUPPORTING_DOCUMENTATION", "CUSTOM"
+    ]),
+    name: z.string().min(1),
+    description: z.string(),
+    sortOrder: z.number(),
+    isRequired: z.boolean(),
+    fields: z.array(z.object({
+      name: z.string().min(1),
+      fieldType: z.enum(["TEXT", "NUMBER", "DATE", "CURRENCY", "ATTACHMENT", "REFERENCE"]),
+      isRequired: z.boolean(),
+      defaultValue: z.union([z.string(), z.number(), z.null()]).optional(),
+      formula: z.string().optional(),
+    })),
+  })),
+});
+
+export type InsertReconciliationTemplate = z.infer<typeof insertReconciliationTemplateSchema>;
+
+export const insertReconciliationAccountSchema = z.object({
+  accountCode: z.string().min(1, "Account code is required"),
+  accountName: z.string().min(1, "Account name is required"),
+  accountType: z.enum([
+    "CASH", "ACCOUNTS_RECEIVABLE", "ACCOUNTS_PAYABLE", "PREPAID",
+    "FIXED_ASSET", "ACCRUAL", "INVENTORY", "INTERCOMPANY", "DEBT", "EQUITY", "OTHER"
+  ]),
+  entityId: z.string().min(1, "Entity is required"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  defaultTemplateId: z.string().nullable().optional(),
+});
+
+export type InsertReconciliationAccount = z.infer<typeof insertReconciliationAccountSchema>;
+
+export const insertReconciliationSchema = z.object({
+  accountId: z.string().min(1, "Account is required"),
+  templateId: z.string().min(1, "Template is required"),
+  period: z.string().regex(/^\d{4}-\d{2}$/, "Must be YYYY-MM format"),
+  glBalance: z.number(),
+});
+
+export type InsertReconciliation = z.infer<typeof insertReconciliationSchema>;
+
+export const insertReconciliationLineItemSchema = z.object({
+  reconciliationId: z.string().min(1),
+  sectionId: z.string().min(1),
+  description: z.string().min(1, "Description is required"),
+  reference: z.string().nullable().optional(),
+  date: z.string().nullable().optional(),
+  amount: z.number(),
+  notes: z.string().nullable().optional(),
+});
+
+export type InsertReconciliationLineItem = z.infer<typeof insertReconciliationLineItemSchema>;
+
+export const updateReconciliationStatusSchema = z.object({
+  reconciliationId: z.string().min(1),
+  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "PENDING_REVIEW", "REVIEWED", "APPROVED", "LOCKED"]),
+  notes: z.string().optional(),
+});

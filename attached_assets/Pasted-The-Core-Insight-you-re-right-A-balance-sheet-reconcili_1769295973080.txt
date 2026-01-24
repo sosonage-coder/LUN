@@ -1,0 +1,189 @@
+The Core Insight (you’re right)
+
+A balance sheet reconciliation system is not “one thing.”
+It is a collection of template-driven reconciliations, applied account by account.
+
+In other words:
+
+The balance sheet = a portfolio of reconciliations, each instantiated from a template.
+
+That’s the correct mental model.
+
+How the Model Actually Works (Cleanly)
+1️⃣ The balance sheet is NOT one reconciliation
+
+It is:
+
+Cash reconciliation(s)
+
+Prepaid reconciliations
+
+Fixed asset reconciliations
+
+Accrual reconciliations
+
+Loan / debt reconciliations
+
+Etc.
+
+Each account (or logical group of accounts) is reconciled independently, even if they roll up to the same line item.
+
+2️⃣ Templates are the organizing principle
+
+What you’re really building is a template library, where:
+
+Each template represents a reconciliation logic pattern
+
+Accounts are mapped to templates, not forced into one structure
+
+So the flow becomes:
+
+Select Account (or account group)
+→ Select Reconciliation Template
+→ Instantiate Reconciliation for Period
+
+
+That’s it. That’s the system.
+
+3️⃣ Template variation is not a bug — it’s the feature
+
+You’re absolutely right that:
+
+Cash has variations
+
+Single bank, same currency
+
+Multiple banks, same currency
+
+Multiple banks, multiple currencies
+
+Prepaids have variations
+
+Time-based amortization
+
+Short-term vs long-term
+
+High-volume vs low-volume
+
+Fixed assets have variations
+
+Opening + additions + disposals + adjustments + closing
+
+Asset-class driven vs pooled
+
+And companies differ in what they want to see.
+
+So the platform should not say:
+
+“Here is the one correct reconciliation.”
+
+It should say:
+
+“Here are proven reconciliation templates — pick what fits your account.”
+
+That’s a controller-respecting design.
+
+4️⃣ Controls decide which template can be used
+
+This is an important nuance you caught.
+
+In real organizations:
+
+Some templates are:
+
+Allowed only for certain account types
+
+Locked by policy
+
+Tailored to specific accounts
+
+Your system can support this cleanly by allowing:
+
+Template eligibility rules
+(e.g. “This template can only be used for Cash accounts”)
+
+Optional admin controls on template selection
+
+Default templates per account type
+
+But the core system stays flexible.
+
+5️⃣ Your accrual example is exactly right
+
+Let’s restate it to be crystal clear:
+
+If a company has three different accrual accounts,
+and each one is reconciled independently,
+then the balance sheet reconciliation will have three separate reconciliations —
+even if there is one accrual schedule upstream.
+
+That is 100% correct.
+
+Schedule = explains the economics (one view)
+
+Reconciliation = proves each balance (many instances)
+
+So you might have:
+
+1 Accrual Schedule
+
+3 Accrual Reconciliations
+
+That’s not duplication — that’s control.
+
+6️⃣ The clean conceptual hierarchy (this is the key)
+
+Here’s the hierarchy you’re converging on:
+
+Balance Sheet
+└── Accounts
+    └── Reconciliations (per account, per period)
+        └── Reconciliation Template
+
+
+Templates define:
+
+Structure
+
+Sections
+
+Required inputs
+
+Controls
+
+Reconciliations are:
+
+Instances
+
+Period-specific
+
+Certifiable
+
+Auditable
+
+7️⃣ Why this model is powerful (and scalable)
+
+Because it:
+
+Scales naturally as accounts increase
+
+Supports multinational complexity without special cases
+
+Respects different accounting treatments
+
+Avoids forcing everything into “one giant reconciliation”
+
+Mirrors how auditors and controllers already think
+
+Most importantly:
+
+You never have to redesign the system when the balance sheet grows.
+You just add more reconciliations.
+
+8️⃣ One-sentence confirmation (to lock it in)
+
+If you want the cleanest possible statement of what you’re building:
+
+“A balance sheet reconciliation system is a template-driven framework where each account is reconciled independently using the reconciliation structure that best fits its economic reality.”
+
+That sentence is dead-on.
