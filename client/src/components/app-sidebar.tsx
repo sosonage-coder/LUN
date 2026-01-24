@@ -138,14 +138,10 @@ const categoryItems = [
     icon: Banknote,
     subItems: [
       { title: "Customer Receipts", url: "/cash/customer-receipts" },
-      { title: "Payroll", url: "/cash/payroll" },
       { title: "Vendor Payments", url: "/cash/vendor-payments" },
-      { title: "Rent", url: "/cash/rent" },
-      { title: "Taxes", url: "/cash/taxes" },
-      { title: "Debt Service", url: "/cash/debt-service" },
-      { title: "Intercompany", url: "/cash/intercompany" },
-      { title: "Capital Expenditure", url: "/cash/capital-expenditure" },
+      { title: "Ops Expenses", url: "/cash/ops-expenses" },
       { title: "Other", url: "/cash/other" },
+      { title: "Manual Tagging", url: "/cash/manual-tagging" },
     ],
   },
 ];

@@ -985,6 +985,15 @@ export async function registerRoutes(
           { id: "CD-016", patternName: "Dividend from EU Sub", counterparty: "SUB-EU", direction: "INFLOW" as const, expected: false, amount: 500000, varianceVsExpected: 500000, source: "BANK" as const, notes: "Unplanned repatriation", movementCategory: "INTERCOMPANY" as const, period: "2026-01" },
           { id: "CD-017", patternName: "Capital Injection to JP", counterparty: "SUB-JP", direction: "OUTFLOW" as const, expected: true, amount: 250000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "INTERCOMPANY" as const, period: "2026-01" },
         ],
+        "CM-UTILITIES-2026-01": [
+          { id: "CD-018", patternName: "Electric Bill", counterparty: "City Power Co", direction: "OUTFLOW" as const, expected: true, amount: 45000, varianceVsExpected: 5000, source: "BANK" as const, notes: null, movementCategory: "UTILITIES" as const, period: "2026-01" },
+          { id: "CD-019", patternName: "Water & Sewage", counterparty: "Municipal Water", direction: "OUTFLOW" as const, expected: true, amount: 25000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "UTILITIES" as const, period: "2026-01" },
+          { id: "CD-020", patternName: "Internet & Telecom", counterparty: "Business ISP", direction: "OUTFLOW" as const, expected: true, amount: 15000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "UTILITIES" as const, period: "2026-01" },
+        ],
+        "CM-INSURANCE-2026-01": [
+          { id: "CD-021", patternName: "General Liability", counterparty: "National Insurance Co", direction: "OUTFLOW" as const, expected: true, amount: 75000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "INSURANCE" as const, period: "2026-01" },
+          { id: "CD-022", patternName: "Property Insurance", counterparty: "National Insurance Co", direction: "OUTFLOW" as const, expected: true, amount: 45000, varianceVsExpected: 0, source: "BANK" as const, notes: null, movementCategory: "INSURANCE" as const, period: "2026-01" },
+        ],
       };
       
       const details = detailsByMovementId[id] || [];
@@ -992,6 +1001,42 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching cash movement details:", error);
       res.status(500).json({ error: "Failed to fetch cash movement details" });
+    }
+  });
+
+  // Cash Ops Expenses (aggregated subcategories)
+  app.get("/api/cash/ops-expenses", async (req, res) => {
+    try {
+      const opsExpenses = [
+        { id: "CM-PAYROLL-2026-01", movementCategory: "PAYROLL" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 3200000, netMovement: -3200000, fxImpact: -12000, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-RENT-2026-01", movementCategory: "RENT" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 450000, netMovement: -450000, fxImpact: 0, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-TAXES-2026-01", movementCategory: "TAXES" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 625000, netMovement: -625000, fxImpact: 0, status: "LOCKED" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-UTILITIES-2026-01", movementCategory: "UTILITIES" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 85000, netMovement: -85000, fxImpact: 0, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+        { id: "CM-INSURANCE-2026-01", movementCategory: "INSURANCE" as const, cashFlowType: "OPERATING" as const, nature: "RECURRING" as const, inflows: 0, outflows: 120000, netMovement: -120000, fxImpact: 0, status: "OK" as const, period: "2026-01", entityId: "ALL" },
+      ];
+      res.json(opsExpenses);
+    } catch (error) {
+      console.error("Error fetching ops expenses:", error);
+      res.status(500).json({ error: "Failed to fetch ops expenses" });
+    }
+  });
+
+  // Cash untagged transactions (for manual tagging)
+  app.get("/api/cash/untagged", async (req, res) => {
+    try {
+      const untagged = [
+        { id: "UTX-001", date: "2026-01-15", description: "Wire Transfer - ACME Corp", amount: 45000, direction: "INFLOW" as const, bankReference: "WRF-2026-1542", suggestedCategory: "CUSTOMER_RECEIPTS" },
+        { id: "UTX-002", date: "2026-01-16", description: "ACH Debit - Utility Company", amount: 2350, direction: "OUTFLOW" as const, bankReference: "ACH-2026-8821", suggestedCategory: "UTILITIES" },
+        { id: "UTX-003", date: "2026-01-17", description: "Check Payment #4521", amount: 8500, direction: "OUTFLOW" as const, bankReference: "CHK-4521", suggestedCategory: null },
+        { id: "UTX-004", date: "2026-01-18", description: "International Wire - Unknown", amount: 125000, direction: "INFLOW" as const, bankReference: "INT-2026-0033", suggestedCategory: null },
+        { id: "UTX-005", date: "2026-01-19", description: "Recurring - Cloud Services", amount: 4200, direction: "OUTFLOW" as const, bankReference: "REC-2026-0451", suggestedCategory: "VENDOR_PAYMENTS" },
+        { id: "UTX-006", date: "2026-01-20", description: "Payment Received - Invoice 2341", amount: 67500, direction: "INFLOW" as const, bankReference: "PMT-2026-2341", suggestedCategory: "CUSTOMER_RECEIPTS" },
+        { id: "UTX-007", date: "2026-01-21", description: "Manual Adjustment", amount: 1500, direction: "OUTFLOW" as const, bankReference: "ADJ-2026-0012", suggestedCategory: null },
+      ];
+      res.json(untagged);
+    } catch (error) {
+      console.error("Error fetching untagged transactions:", error);
+      res.status(500).json({ error: "Failed to fetch untagged transactions" });
     }
   });
 
