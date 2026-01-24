@@ -137,6 +137,15 @@ The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH c
 
 ## Recent Changes
 
+- 2026-01-24: Added Prepaids Category Dashboard
+  - Portfolio-level view at /prepaids with KPIs, trends, and category breakdown
+  - 5 KPI tiles: Total Prepaid Balance, Active Schedules, Expense This Period, Remaining Balance, Upcoming Expirations
+  - Amortization Trend chart (6-period bar chart)
+  - Balance by Category breakdown (Insurance, Rent, Software, Other)
+  - Filterable/searchable schedules table with drill-down
+  - Evidence status tracking (ATTACHED/MISSING) with operational alerts
+  - Updated sidebar with Categories section
+
 - 2026-01-24: Added Prepaid Calculator
   - Sophisticated prepaid schedule engine with Decimal.js
   - FIRST_FULL_MONTH convention implementation
