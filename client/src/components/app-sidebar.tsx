@@ -215,16 +215,91 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={location === "/close-control" || location.startsWith("/close-control/")}
-                  data-testid="nav-close-control"
+                <Collapsible 
+                  defaultOpen={location.startsWith("/close-control")}
+                  className="group/collapsible w-full"
                 >
-                  <Link href="/close-control">
-                    <Shield className="h-4 w-4" />
-                    <span>Close Schedules</span>
-                  </Link>
-                </SidebarMenuButton>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      isActive={location === "/close-control"}
+                      data-testid="nav-close-control"
+                      tooltip="Close Control"
+                    >
+                      <Shield className="h-4 w-4" />
+                      <span>Close Schedules</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                          asChild 
+                          isActive={location === "/close-control"}
+                          data-testid="nav-close-control-dashboard"
+                        >
+                          <Link href="/close-control">
+                            <span className="text-muted-foreground">Dashboard</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                      {(() => {
+                        const scheduleMatch = location.match(/\/close-control\/schedule\/([^/]+)/);
+                        if (scheduleMatch) {
+                          const scheduleId = scheduleMatch[1];
+                          return (
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton 
+                                asChild
+                                isActive={true}
+                                data-testid="nav-close-control-schedule"
+                              >
+                                <Link href={`/close-control/schedule/${scheduleId}`}>
+                                  <span>Schedule ({scheduleId})</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        }
+                        return null;
+                      })()}
+                      {(() => {
+                        const tasklistMatch = location.match(/\/close-control\/tasklist\/([^/]+)/);
+                        if (tasklistMatch) {
+                          const tasklistId = tasklistMatch[1];
+                          return (
+                            <>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton 
+                                  asChild
+                                  isActive={false}
+                                  data-testid="nav-close-control-schedule-parent"
+                                >
+                                  <Link href="/close-control">
+                                    <span className="text-muted-foreground">Schedule</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                              <SidebarMenuSubItem>
+                                <SidebarMenuSubButton 
+                                  asChild
+                                  isActive={true}
+                                  data-testid="nav-close-control-tasklist"
+                                >
+                                  <Link href={`/close-control/tasklist/${tasklistId}`}>
+                                    <ListChecks className="h-3 w-3 mr-1" />
+                                    <span>Tasklist ({tasklistId})</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            </>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </Collapsible>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
