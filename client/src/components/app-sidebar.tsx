@@ -15,7 +15,8 @@ import {
   HardDrive,
   Landmark,
   Receipt,
-  TrendingUp
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 import {
   Sidebar,
@@ -79,6 +80,11 @@ const categoryItems = [
     title: "Investment Income",
     url: "/investment-income",
     icon: TrendingUp,
+  },
+  {
+    title: "Loan & Debt",
+    url: "/debt",
+    icon: TrendingDown,
   },
 ];
 
