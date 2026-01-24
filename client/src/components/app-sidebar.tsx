@@ -5,7 +5,8 @@ import {
   FileText, 
   Settings,
   Building2,
-  Clock
+  Clock,
+  Calculator
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,11 @@ const navigationItems = [
     title: "Schedules",
     url: "/schedules",
     icon: Calendar,
+  },
+  {
+    title: "Prepaid Calculator",
+    url: "/prepaid-calculator",
+    icon: Calculator,
   },
   {
     title: "Entities",

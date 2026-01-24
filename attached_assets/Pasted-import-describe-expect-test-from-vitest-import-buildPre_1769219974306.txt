@@ -1,0 +1,80 @@
+import { describe, expect, test } from "vitest";
+import { buildPrepaidSchedule, PrepaidRecognitionInput } from "../math/prepaid";
+
+describe("Prepaid Schedule", () => {
+  test("allocates monthly amortization with first full month convention", () => {
+    const recognition: PrepaidRecognitionInput = {
+      start_date: "2025-01-15",
+      end_date: "2025-12-31",
+      total_amount_reporting: "1200.00",
+      total_amount_local: "1000.00"
+    };
+
+    const results = buildPrepaidSchedule(recognition);
+
+    expect(results[0]?.period).toBe("2025-02");
+    expect(results.at(-1)?.period).toBe("2025-12");
+    expect(results).toHaveLength(11);
+    expect(results[0]?.reporting_amount.toString()).toBe("109.09");
+    expect(results.at(-1)?.reporting_amount.toString()).toBe("109.10");
+    expect(results[0]?.local_amount.toString()).toBe("90.91");
+  });
+
+  test("rebasis preserves locked periods and adjusts forward-only", () => {
+    const recognition: PrepaidRecognitionInput = {
+      start_date: "2025-01-01",
+      end_date: "2025-06-30",
+      total_amount_reporting: "600.00",
+      total_amount_local: "600.00"
+    };
+
+    const results = buildPrepaidSchedule(
+      recognition,
+      [
+        {
+          eventType: "REBASIS_AMOUNT",
+          eventPeriod: "2025-05",
+          new_total_reporting: "900.00"
+        }
+      ],
+      {
+        closed_periods: ["2025-02"]
+      }
+    );
+
+    const february = results.find((row) => row.period === "2025-02");
+    const may = results.find((row) => row.period === "2025-05");
+    const june = results.find((row) => row.period === "2025-06");
+
+    expect(february?.state).toBe("CLOSED");
+    expect(may?.reporting_amount.toString()).toBe("250.00");
+    expect(june?.reporting_amount.toString()).toBe("250.00");
+    expect(may?.state).toBe("SYSTEM_ADJUSTED");
+    expect(june?.state).toBe("SYSTEM_ADJUSTED");
+  });
+
+  test("catch-up onboarding posts cumulative external amount", () => {
+    const recognition: PrepaidRecognitionInput = {
+      start_date: "2025-01-01",
+      end_date: "2025-03-31",
+      total_amount_reporting: "300.00",
+      total_amount_local: "300.00"
+    };
+
+    const results = buildPrepaidSchedule(recognition, [], {
+      system_posting_start_period: "2025-03",
+      onboarding_mode: "CATCH_UP"
+    });
+
+    const january = results.find((row) => row.period === "2025-01");
+    const february = results.find((row) => row.period === "2025-02");
+    const march = results.find((row) => row.period === "2025-03");
+
+    expect(january?.state).toBe("EXTERNAL");
+    expect(january?.posting_amount.toString()).toBe("0");
+    expect(february?.state).toBe("EXTERNAL");
+    expect(march?.posting_amount.toString()).toBe("300");
+    expect(march?.state).toBe("SYSTEM_ADJUSTED");
+    expect(march?.adjustment_reason).toBe("CATCH_UP");
+  });
+});

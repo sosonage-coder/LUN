@@ -1,0 +1,312 @@
+# Fixed Asset Schedule Engine (Non-Monetary Extension v1)
+
+This specification extends the **Non-Monetary Schedule Engine – Base Specification (v1)** with
+fixed-asset-specific behavior. All base principles, objects, FX rules, period locking, rebuild
+logic, and posting contracts apply unchanged.
+
+---
+
+## 0. Purpose (Fixed-Asset-specific)
+
+Model **Fixed Assets** as **non-monetary schedules with identity and lifecycle**, producing:
+
+- systematic depreciation over time
+- reporting-currency truth
+- local-currency visibility
+- event-based changes
+- terminal accounting outcomes (disposal, impairment)
+
+Fixed Assets are **finite but terminable** schedules.
+
+---
+
+## 1. What makes Fixed Assets distinct
+
+Fixed Assets differ from Prepaids in exactly these ways:
+
+| Dimension | Fixed Asset |
+| --- | --- |
+| Schedule identity | Persistent register item |
+| Useful life | Explicit (months) |
+| Residual value | Possible (salvage) |
+| Terminal events | Yes (disposal) |
+| Gain / loss | Yes |
+| Componentization | Required |
+| Impairment | Supported |
+
+Anything else is inherited from the Base Engine.
+
+---
+
+## 2. Fixed Asset Recognition Snapshot
+
+*(extends Base §4.1 – Schedule Master)*
+
+### Additional required fields
+
+- `useful_life_months_initial`
+- `depr_method_initial`
+  - v1 supported: `STRAIGHT_LINE`
+- `convention_initial`
+  - v1 supported: `FIRST_FULL_MONTH`
+- `salvage_reporting_initial` (default = 0)
+
+### Interpretation
+
+- Recognition snapshot defines:
+  - depreciation base
+  - depreciation profile
+- After recognition:
+  - **no fields are edited**
+  - all changes occur via events
+
+---
+
+## 3. Fixed Asset Event Types
+
+*(extends Base §4.2 – Schedule Events)*
+
+Fixed Assets support the following **additional event types**.
+
+### A) `REBASIS_COST`
+
+*(same mechanics as Base, different implications)*
+
+Used when:
+
+- asset cost was entered incorrectly
+- capitalization amount changes
+
+**Effect**
+
+- Updates depreciation base prospectively
+- FX remains derived
+- Delta flows into first open period
+
+---
+
+### B) `ADDITION` (Capital Improvement)
+
+**Required behavior**
+
+- **Always creates a component asset** (default, non-optional)
+
+Each component:
+
+- has its own recognition snapshot
+- has its own useful life
+- rolls up visually to the parent asset
+
+This is not configuration — it is enforcement.
+
+---
+
+### C) `CHANGE_LIFE`
+
+**Inputs**
+
+- `new_useful_life_months`
+
+**Rules**
+
+- Applies prospectively only
+- No restatement
+- Remaining NBV is spread over remaining life
+
+---
+
+### D) `IMPAIRMENT`
+
+**Inputs**
+
+- `impairment_amount_reporting`
+- optional local (otherwise derived)
+
+**Rules**
+
+- Event-based only (never periodic)
+- Reduces carrying value (NBV)
+- Does **not** restate prior depreciation
+- Remaining depreciation recomputed prospectively
+
+Impairment is **irreversible** except via disposal.
+
+---
+
+### E) `DISPOSAL_FULL` (Terminal)
+
+**Inputs**
+
+- `disposal_date`
+- optional proceeds (local / reporting)
+
+**Rules**
+
+- Terminates schedule
+- Stops depreciation
+- Triggers gain / loss calculation
+- No events may apply after disposal
+
+---
+
+### F) `DISPOSAL_PARTIAL`
+
+*(implemented as component split)*
+
+**Required behavior**
+
+- Split asset into:
+  - disposed component
+  - remaining component
+- Apply `DISPOSAL_FULL` to disposed component
+- Remaining component continues independently
+
+Percent-based disposal without componentization is **not supported**.
+
+---
+
+## 4. Depreciation Logic (Fixed-Asset-specific)
+
+*(Base calculation rules apply; this section only adds asset semantics)*
+
+### 4.1 Depreciable base (reporting currency)
+
+```
+depreciable_base =
+  cost_reporting_effective
+  − salvage_reporting_effective
+  − impairment_adjustments_effective
+```
+
+### 4.2 Monthly depreciation
+
+- Straight-line only (v1)
+- Monthly
+- Rounded per period
+- Final active period true-up applied
+
+---
+
+## 5. Late Onboarding (inherits Base §6)
+
+Fixed Assets fully support **external history**.
+
+### Interpretation
+
+- External periods:
+  - represent depreciation that occurred outside the system
+  - contribute to NBV
+  - are never posted
+
+### Onboarding modes
+
+- `CONTINUE_ONLY` (default)
+- `CATCH_UP` (optional)
+
+Same mechanics as Base — no asset-specific deviation.
+
+---
+
+## 6. Disposal Rules (explicit override)
+
+### 6.1 Depreciation stop rule (v1)
+
+If disposal occurs in month **M**:
+
+- No depreciation in **M**
+- Last depreciation period is **M-1**
+
+(Simple, conservative, auditable.)
+
+### 6.2 Gain / Loss calculation (reporting currency)
+
+```
+gain_or_loss =
+  proceeds_reporting
+  − nbv_reporting_at_disposal
+```
+
+NBV includes:
+
+- external history
+- system-posted depreciation
+- impairment effects
+
+### 6.3 Disposal journals (prepared, not auto-posted)
+
+- Dr Cash / AR (if proceeds)
+- Dr Accumulated Depreciation
+- Cr Asset Cost
+- Dr / Cr Gain or Loss
+
+Local currency shown for reference only.
+
+---
+
+## 7. Schedule States (Fixed-Asset subset)
+
+Fixed Assets use all Base states **plus one**:
+
+- `STOPPED` – asset disposed, no further allocation
+
+A disposed asset:
+
+- remains visible
+- is read-only
+- cannot accept new events
+
+---
+
+## 8. UI Expectations (Fixed-Asset-specific)
+
+### Collapsed register row
+
+Show:
+
+- asset name
+- in-service date
+- useful life
+- depreciation progress
+- monthly depreciation (reporting)
+- NBV (reporting)
+- implied FX 🔒
+- local cost (muted)
+
+### Expanded schedule view
+
+- Same grid as Base
+- Clear stop marker at disposal
+- Gain/loss shown inline at disposal period
+- Component hierarchy visible on expand
+
+---
+
+## 9. Guardrails (Fixed-Asset-specific)
+
+### Always block
+
+- Editing depreciation directly
+- Editing FX
+- Applying events after disposal
+- Merging components manually
+- Back-dating impairment or disposal into closed periods
+
+### Warn
+
+- Salvage > cost
+- Impairment > NBV
+- Large forward depreciation adjustments
+
+---
+
+## 10. Fixed Asset vs Prepaid (clean alignment)
+
+| Dimension | Prepaid | Fixed Asset |
+| --- | --- | --- |
+| Base engine | Non-Monetary | Non-Monetary |
+| Time-bound | Yes | Yes |
+| Terminal event | ❌ | ✅ |
+| Salvage | ❌ | ✅ |
+| Impairment | ❌ | ✅ |
+| Gain / loss | ❌ | ✅ |
+| Components | ❌ | ✅ |

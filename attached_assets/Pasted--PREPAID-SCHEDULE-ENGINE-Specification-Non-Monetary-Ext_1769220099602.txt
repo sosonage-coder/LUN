@@ -1,0 +1,355 @@
+# PREPAID SCHEDULE ENGINE
+
+**Specification (Non-Monetary Extension)**
+
+> Inherits from: Non-Monetary Schedule Engine – Base Spec (v1)
+> 
+> 
+> This document defines **only prepaid-specific rules**.
+> 
+
+---
+
+## 0️⃣ Purpose (Prepaid-specific)
+
+Model **prepaid expenses** as non-monetary schedules that:
+
+- allocate a fixed cost over time
+- recognize expense in reporting currency
+- preserve visibility of local currency
+- support corrections and late onboarding
+- never remeasure FX
+- never restate closed periods
+
+Prepaids are **finite, non-terminal schedules**:
+
+they always complete; they never dispose.
+
+---
+
+## 1️⃣ What makes Prepaids distinct (scope boundaries)
+
+Prepaid schedules:
+
+- ✅ Have a **defined start and end date**
+- ✅ Allocate **100% of the basis**
+- ✅ Do **not** have salvage value
+- ✅ Do **not** have gain/loss
+- ❌ Do **not** terminate early (no disposal)
+- ❌ Do **not** change identity mid-life
+
+If a use case violates this → it is **not a prepaid**.
+
+---
+
+## 2️⃣ Prepaid Recognition Snapshot (extends Base §4.1)
+
+### Required fields (in addition to Base)
+
+- `start_date` (date)
+- `end_date` (date)
+- `total_periods` (derived from dates, monthly granularity)
+
+### Derived at recognition
+
+- `total_amount_reporting_initial`
+- `total_amount_local_initial`
+- `implied_fx_initial`
+- `period_count_initial`
+
+### Rules
+
+- Dates define the schedule length.
+- Amount defines the allocation base.
+- FX is derived and locked.
+
+---
+
+## 3️⃣ Prepaid Event Types (extends Base §4.2)
+
+Prepaids support **only these event types**:
+
+### A) `REBASIS_AMOUNT`
+
+(Correction of total prepaid amount)
+
+**Inputs**
+
+- `new_total_reporting` (optional)
+- `new_total_local` (optional)
+
+**Rules**
+
+- At least one amount required.
+- If both supplied → FX is re-derived.
+- If one supplied → other derived using effective FX.
+- Adjustment is **prospective only**.
+
+---
+
+### B) `CHANGE_DATES`
+
+(Change to start and/or end date)
+
+**Inputs**
+
+- `new_start_date` (optional)
+- `new_end_date` (optional)
+
+**Rules**
+
+- Recomputes total periods.
+- Allocation recalculated in reporting currency.
+- Closed periods untouched.
+- Delta flows forward.
+
+---
+
+### C) `RECLASSIFICATION` (optional, accounting-only)
+
+(Used when prepaid is reclassified but not remeasured)
+
+**Inputs**
+
+- `new_expense_account`
+- `effective_period`
+
+**Rules**
+
+- No schedule math change.
+- Posting classification only.
+
+---
+
+## 4️⃣ Allocation Logic (Prepaid-specific)
+
+### 4.1 Period generation
+
+- Monthly periods from `start_date` to `end_date`
+- Uses **FIRST_FULL_MONTH** convention by default
+
+Example:
+
+- Start: Jan 15 → first amortization = Feb
+- End: Dec 31 → last amortization = Dec
+
+---
+
+### 4.2 Monthly amortization (reporting currency)
+
+```
+monthly_amortization =
+  total_reporting_effective / total_periods_effective
+
+```
+
+- Rounded to 2 decimals per period
+- Final active period uses **true-up** to eliminate rounding drift
+
+---
+
+### 4.3 Local currency amounts
+
+For each period:
+
+```
+period_local_amount =
+  period_reporting_amount / effective_implied_fx
+
+```
+
+Local amounts are:
+
+- displayed
+- never used for posting
+- never independently edited
+
+---
+
+## 5️⃣ Late Onboarding (External History)
+
+### 5.1 System posting boundary
+
+Each prepaid may define:
+
+- `system_posting_start_period`
+
+Periods before this are:
+
+- marked `EXTERNAL`
+- included in timeline/progress
+- excluded from posting
+
+---
+
+### 5.2 Onboarding modes
+
+### Default: `CONTINUE_ONLY`
+
+- Prior periods assumed expensed externally
+- System posts only future periods
+- No catch-up entry
+
+### Optional: `CATCH_UP`
+
+- System posts cumulative difference in first open period
+- Marked as adjustment
+- Explicitly labeled in UI
+
+---
+
+## 6️⃣ Closed Period Behavior (inherits Base §7)
+
+### Immutable behavior
+
+- Closed periods cannot be recalculated
+- Any change creates a **forward-only delta**
+
+### Adjustment landing
+
+- Delta always lands in:
+    - current open period, or
+    - next open period if current is closed
+
+Marked as:
+
+- `SYSTEM_ADJUSTED`
+
+---
+
+## 7️⃣ Schedule States (Prepaid subset)
+
+Prepaids use these Base states:
+
+- `EXTERNAL`
+- `SYSTEM_BASE`
+- `SYSTEM_ADJUSTED`
+- `CLOSED`
+
+They **never** use:
+
+- `STOPPED`
+- terminal states
+
+A prepaid is complete when:
+
+- all periods are allocated
+- remaining balance = 0
+
+---
+
+## 8️⃣ Posting Output (Prepaid-specific)
+
+### Journal intent (reporting currency only)
+
+Per eligible period:
+
+- Dr Prepaid Expense
+- Cr Prepaid Asset
+
+Adjustments:
+
+- Dr/Cr Prepaid Expense
+- Cr/Dr Prepaid Asset
+
+No gain/loss.
+
+No disposal entries.
+
+No salvage logic.
+
+---
+
+## 9️⃣ UI Expectations (Prepaid-specific)
+
+### Collapsed view
+
+Show:
+
+- vendor / description
+- date range
+- progress bar (time-based)
+- monthly amortization (reporting)
+- total reporting amount
+- implied FX 🔒
+- local total (muted)
+
+---
+
+### Expanded view
+
+Timeline grid:
+
+- Row 1: Reporting currency (dominant)
+- Row 2: Local currency (muted)
+
+Pinned:
+
+- FX @ recognition (derived)
+- total periods / elapsed / remaining
+- posting start period (if late onboarding)
+
+Each adjusted period must explain **why**.
+
+---
+
+## 🔟 Guardrails (Prepaid-specific)
+
+### Always block
+
+- Manual edits to individual periods
+- FX entry or override
+- Disposal logic
+- Salvage value fields
+- Gain/loss logic
+
+### Warn
+
+- FX implied out of range
+- Large forward adjustments
+- Date changes that materially alter period count
+
+---
+
+## 1️⃣1️⃣ What Prepaids deliberately do *not* support
+
+- Partial termination
+- Componentization
+- Balance-driven remeasurement
+- Life extensions beyond end date without explicit date change
+- Period-specific overrides
+
+If users ask for these → it’s the wrong instrument.
+
+---
+
+## 1️⃣2️⃣ Why this works (Prepaid lens)
+
+Because it:
+
+- mirrors how accountants *actually* treat prepaids
+- never lies about what the system posted
+- makes corrections explicit
+- makes FX visible but powerless
+- treats time as the only driver
+
+This is a **schedule**, not a spreadsheet.
+
+---
+
+## 🔁 Relationship to Fixed Assets
+
+| Dimension | Prepaid | Fixed Asset |
+| --- | --- | --- |
+| Engine base | Non-Monetary | Non-Monetary |
+| Time-bound | Yes | Often |
+| Terminal event | No | Yes (disposal) |
+| Salvage | No | Yes |
+| Gain/loss | No | Yes |
+| Components | No | Yes |
+
+Same engine.
+
+Different rules.
+
+No ambiguity.

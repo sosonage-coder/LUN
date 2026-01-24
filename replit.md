@@ -31,6 +31,7 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   │   │   ├── schedules-list.tsx
 │   │   │   ├── schedule-detail.tsx
 │   │   │   ├── create-schedule.tsx
+│   │   │   ├── prepaid-calculator.tsx  # Prepaid schedule calculator
 │   │   │   └── not-found.tsx
 │   │   ├── lib/            # Utilities
 │   │   └── App.tsx         # Main app with routing
@@ -41,7 +42,8 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   ├── storage.ts          # In-memory storage with rebuild algorithm
 │   └── vite.ts             # Vite integration
 └── shared/
-    └── schema.ts           # Data models and types
+    ├── schema.ts           # Data models and types
+    └── prepaid-engine.ts   # Prepaid schedule calculation engine (Decimal.js)
 ```
 
 ## Key Data Models
@@ -117,7 +119,29 @@ This starts both the Express backend and Vite frontend on port 5000.
 - **Backend**: Express, TypeScript
 - **Data**: In-memory storage (MemStorage)
 
+## Prepaid Calculator
+
+The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH convention with Decimal.js precision:
+
+### Features
+- **FIRST_FULL_MONTH Convention**: Start date Jan 15 → first amortization = Feb
+- **Decimal.js Precision**: Accurate financial calculations with proper rounding
+- **Event Support**: REBASIS_AMOUNT, CHANGE_DATES, RECLASSIFICATION events
+- **Onboarding Modes**: CONTINUE_ONLY (default) or CATCH_UP
+- **Period States**: EXTERNAL, SYSTEM_BASE, SYSTEM_ADJUSTED, CLOSED
+
+### Key Rules
+- FX is derived from reporting/local amounts and locked at recognition
+- Closed periods are immutable - adjustments flow forward only
+- True-up applied on final period to eliminate rounding drift
+
 ## Recent Changes
+
+- 2026-01-24: Added Prepaid Calculator
+  - Sophisticated prepaid schedule engine with Decimal.js
+  - FIRST_FULL_MONTH convention implementation
+  - Rebasis and date change event support
+  - CATCH_UP onboarding mode for late onboarding
 
 - 2026-01-24: Initial implementation complete
   - Full schema with Schedule Master, Events, Period Lines
