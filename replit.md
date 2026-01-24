@@ -1,7 +1,7 @@
 # Non-Monetary Schedule Engine
 
 ## Overview
-A sophisticated financial accounting application for deterministic, auditable cost allocation over time. The system handles prepaid expenses and fixed assets with time-based allocation, append-only event tracking, and derived FX rates.
+A sophisticated financial accounting application for deterministic, auditable cost allocation over time. The system handles prepaid expenses, fixed assets, and accruals with time-based allocation, append-only event tracking, and derived FX rates.
 
 ## Core Principles
 
@@ -34,6 +34,7 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   │   │   ├── prepaid-calculator.tsx     # Prepaid schedule calculator
 │   │   │   ├── prepaids-dashboard.tsx     # Prepaids Category Dashboard
 │   │   │   ├── fixed-assets-dashboard.tsx # Fixed Assets Category Dashboard
+│   │   │   ├── accruals-dashboard.tsx     # Accruals Category Dashboard
 │   │   │   └── not-found.tsx
 │   │   ├── lib/            # Utilities
 │   │   └── App.tsx         # Main app with routing
@@ -117,6 +118,17 @@ Calculated period allocations (not stored, rebuilt from events):
 | GET | /api/fixed-assets/flags | Get control flags |
 | POST | /api/fixed-assets | Create new fixed asset |
 
+### Accruals Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/accruals | List all accrual schedules |
+| GET | /api/accruals/kpis | Get dashboard KPIs |
+| GET | /api/accruals/categories | Get category summaries |
+| GET | /api/accruals/trend | Get accrual balance trend |
+| GET | /api/accruals/risks | Get risk panels |
+| GET | /api/accruals/mix | Get accrual mix breakdown |
+| POST | /api/accruals | Create new accrual |
+
 ## Rebuild Algorithm
 
 The deterministic rebuild algorithm processes events in order to calculate period allocations:
@@ -159,6 +171,17 @@ The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH c
 - True-up applied on final period to eliminate rounding drift
 
 ## Recent Changes
+
+- 2026-01-24: Added Accruals Category Dashboard
+  - Category-level aggregation view at /accruals with period-aware snapshot
+  - 5 KPI tiles: Ending Accrual Balance, Active Categories, Net True-Up (Period), High-Risk Categories, Dormant Accruals
+  - 3 charts: Accrual Balance Trend (6-period bar), True-Up Volatility by Category, Accrual Mix (current period)
+  - Risk Panels section for exception management (Missing Evidence, Large True-Ups, Low Confidence, Not Reviewed)
+  - Category Summary table with aggregated metrics, risk levels, and review status
+  - Accrual categories: Payroll, Bonuses & Commissions, Professional Fees, Hosting & SaaS, Utilities, Other
+  - Lifecycle states: Active, Dormant, Closed, Archived with visibility filtering
+  - Confidence levels (High/Medium/Low) and evidence tracking (ATTACHED/MISSING)
+  - E2E testing passed
 
 - 2026-01-24: Added Fixed Assets Category Dashboard
   - Portfolio-level view at /fixed-assets with period-aware snapshot
