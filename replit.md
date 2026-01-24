@@ -31,7 +31,9 @@ A sophisticated financial accounting application for deterministic, auditable co
 │   │   │   ├── schedules-list.tsx
 │   │   │   ├── schedule-detail.tsx
 │   │   │   ├── create-schedule.tsx
-│   │   │   ├── prepaid-calculator.tsx  # Prepaid schedule calculator
+│   │   │   ├── prepaid-calculator.tsx     # Prepaid schedule calculator
+│   │   │   ├── prepaids-dashboard.tsx     # Prepaids Category Dashboard
+│   │   │   ├── fixed-assets-dashboard.tsx # Fixed Assets Category Dashboard
 │   │   │   └── not-found.tsx
 │   │   ├── lib/            # Utilities
 │   │   └── App.tsx         # Main app with routing
@@ -82,6 +84,7 @@ Calculated period allocations (not stored, rebuilt from events):
 
 ## API Endpoints
 
+### Schedule Management
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | /api/schedules | List all schedules |
@@ -93,6 +96,26 @@ Calculated period allocations (not stored, rebuilt from events):
 | GET | /api/entities | List entities |
 | GET | /api/entities/:id/periods | Get period statuses |
 | POST | /api/entities/:id/periods/:period/close | Close a period |
+
+### Prepaids Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/prepaids | List all prepaid schedules |
+| GET | /api/prepaids/kpis | Get dashboard KPIs |
+| GET | /api/prepaids/breakdown | Get category breakdown |
+| GET | /api/prepaids/trend | Get amortization trend |
+| POST | /api/prepaids | Create new prepaid schedule |
+
+### Fixed Assets Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/fixed-assets | List all fixed assets |
+| GET | /api/fixed-assets/kpis | Get dashboard KPIs |
+| GET | /api/fixed-assets/breakdown | Get asset class breakdown |
+| GET | /api/fixed-assets/trend | Get depreciation trend |
+| GET | /api/fixed-assets/lifecycle | Get useful life distribution |
+| GET | /api/fixed-assets/flags | Get control flags |
+| POST | /api/fixed-assets | Create new fixed asset |
 
 ## Rebuild Algorithm
 
@@ -136,6 +159,16 @@ The Prepaid Calculator (`/prepaid-calculator`) implements the FIRST_FULL_MONTH c
 - True-up applied on final period to eliminate rounding drift
 
 ## Recent Changes
+
+- 2026-01-24: Added Fixed Assets Category Dashboard
+  - Portfolio-level view at /fixed-assets with period-aware snapshot
+  - 6 KPI tiles: Gross Asset Value, Accumulated Depreciation, Net Book Value, Depreciation This Period, Assets In Service, Assets Fully Depreciated
+  - 3 charts: Depreciation Trend (6-period bar), Asset Mix by Class, Remaining Useful Life Distribution
+  - Control Flags section for compliance risks (missing evidence, not in service, fully depreciated)
+  - Fixed Asset Register table with drill-down, progress bars, and filtering
+  - Asset classes: IT, Furniture, Leasehold, Vehicles, Machinery, Other
+  - Depreciation methods: Straight Line, Double Declining Balance, Units of Production, Custom
+  - E2E testing passed
 
 - 2026-01-24: Added Prepaids Category Dashboard
   - Portfolio-level view at /prepaids with KPIs, trends, and category breakdown
