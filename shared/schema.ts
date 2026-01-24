@@ -1120,3 +1120,145 @@ export const updateCloseTemplateTaskSchema = z.object({
 });
 
 export type UpdateCloseTemplateTask = z.infer<typeof updateCloseTemplateTaskSchema>;
+
+// ===== CERTIFICATION & SOD TYPES =====
+
+// User role for SoD enforcement
+export type SoDRole = "PREPARER" | "REVIEWER" | "APPROVER";
+
+// Certification status
+export type CertificationStatus = "NOT_CERTIFIED" | "PENDING" | "CERTIFIED" | "DECERTIFIED";
+
+// SoD violation severity
+export type SoDViolationSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
+// Close Control User (extended with SoD roles)
+export interface CloseControlUser {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  roles: SoDRole[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+// SoD Policy Rule
+export interface SoDPolicyRule {
+  id: string;
+  name: string;
+  description: string;
+  conflictingRoles: [SoDRole, SoDRole]; // e.g., ["PREPARER", "APPROVER"]
+  severity: SoDViolationSeverity;
+  isActive: boolean;
+  allowOverride: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
+// SoD Violation
+export interface SoDViolation {
+  id: string;
+  policyRuleId: string;
+  policyRuleName: string;
+  taskId: string;
+  taskName: string;
+  tasklistId: string;
+  scheduleId: string;
+  userId: string;
+  userName: string;
+  conflictingRole1: SoDRole;
+  conflictingRole2: SoDRole;
+  severity: SoDViolationSeverity;
+  status: "ACTIVE" | "OVERRIDDEN" | "RESOLVED";
+  overrideReason: string | null;
+  overriddenBy: string | null;
+  overriddenAt: string | null;
+  detectedAt: string;
+}
+
+// Certification record for tasklist/schedule
+export interface Certification {
+  id: string;
+  objectType: "TASKLIST" | "SCHEDULE";
+  objectId: string;
+  objectName: string;
+  period: string;
+  status: CertificationStatus;
+  certifiedBy: string | null;
+  certifiedByName: string | null;
+  certifiedAt: string | null;
+  certificationStatement: string | null;
+  decertifiedBy: string | null;
+  decertifiedByName: string | null;
+  decertifiedAt: string | null;
+  decertificationReason: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+// Certification sign-off form
+export interface CertificationSignOff {
+  objectType: "TASKLIST" | "SCHEDULE";
+  objectId: string;
+  statement: string;
+  acknowledgments: CertificationAcknowledgment[];
+}
+
+// Acknowledgment item in certification
+export interface CertificationAcknowledgment {
+  id: string;
+  text: string;
+  isRequired: boolean;
+  isAcknowledged: boolean;
+}
+
+// SoD Configuration
+export interface SoDConfiguration {
+  isEnabled: boolean;
+  enforcementLevel: "WARN" | "BLOCK";
+  allowOverrides: boolean;
+  requireOverrideApproval: boolean;
+  rules: SoDPolicyRule[];
+}
+
+// Certification Dashboard KPIs
+export interface CertificationKPIs {
+  totalTasklists: number;
+  certifiedTasklists: number;
+  pendingCertification: number;
+  expiringSoon: number;
+  sodViolationsActive: number;
+  sodViolationsOverridden: number;
+}
+
+// Insert schemas for certification
+export const insertCertificationSchema = z.object({
+  objectType: z.enum(["TASKLIST", "SCHEDULE"]),
+  objectId: z.string().min(1),
+  statement: z.string().min(1, "Certification statement is required"),
+});
+
+export type InsertCertification = z.infer<typeof insertCertificationSchema>;
+
+// Insert schema for SoD policy rule
+export const insertSoDPolicyRuleSchema = z.object({
+  name: z.string().min(1, "Policy name is required"),
+  description: z.string().min(1, "Description is required"),
+  conflictingRoles: z.tuple([
+    z.enum(["PREPARER", "REVIEWER", "APPROVER"]),
+    z.enum(["PREPARER", "REVIEWER", "APPROVER"])
+  ]),
+  severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+  allowOverride: z.boolean().default(false),
+});
+
+export type InsertSoDPolicyRule = z.infer<typeof insertSoDPolicyRuleSchema>;
+
+// Override SoD violation schema
+export const overrideSoDViolationSchema = z.object({
+  violationId: z.string().min(1),
+  reason: z.string().min(10, "Override reason must be at least 10 characters"),
+});
+
+export type OverrideSoDViolation = z.infer<typeof overrideSoDViolationSchema>;

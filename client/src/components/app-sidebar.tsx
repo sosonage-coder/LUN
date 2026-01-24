@@ -265,6 +265,17 @@ export function AppSidebar() {
                           </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                          asChild 
+                          isActive={location === "/close-control/certification"}
+                          data-testid="nav-close-control-certification"
+                        >
+                          <Link href="/close-control/certification">
+                            <span>Certification & SoD</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                       {(() => {
                         const scheduleMatch = location.match(/\/close-control\/schedule\/([^/]+)/);
                         if (scheduleMatch) {

@@ -1498,5 +1498,396 @@ export async function registerRoutes(
     }
   });
 
+  // ===== CERTIFICATION & SOD ENDPOINTS =====
+
+  // Get SoD configuration
+  app.get("/api/close-control/sod/config", async (_req, res) => {
+    try {
+      const config = {
+        isEnabled: true,
+        enforcementLevel: "WARN" as const,
+        allowOverrides: true,
+        requireOverrideApproval: true,
+        rules: [
+          {
+            id: "SOD-001",
+            name: "Preparer Cannot Approve",
+            description: "The same person who prepares a task cannot approve it",
+            conflictingRoles: ["PREPARER", "APPROVER"] as [string, string],
+            severity: "CRITICAL" as const,
+            isActive: true,
+            allowOverride: true,
+            createdAt: "2026-01-01T00:00:00Z",
+            createdBy: "SYSTEM",
+          },
+          {
+            id: "SOD-002",
+            name: "Reviewer Cannot Be Preparer",
+            description: "The same person who reviews a task should not have prepared it",
+            conflictingRoles: ["PREPARER", "REVIEWER"] as [string, string],
+            severity: "HIGH" as const,
+            isActive: true,
+            allowOverride: true,
+            createdAt: "2026-01-01T00:00:00Z",
+            createdBy: "SYSTEM",
+          },
+        ],
+      };
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching SoD config:", error);
+      res.status(500).json({ error: "Failed to fetch SoD configuration" });
+    }
+  });
+
+  // Get SoD policy rules
+  app.get("/api/close-control/sod/rules", async (_req, res) => {
+    try {
+      const rules = [
+        {
+          id: "SOD-001",
+          name: "Preparer Cannot Approve",
+          description: "The same person who prepares a task cannot approve it",
+          conflictingRoles: ["PREPARER", "APPROVER"] as [string, string],
+          severity: "CRITICAL" as const,
+          isActive: true,
+          allowOverride: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          createdBy: "SYSTEM",
+        },
+        {
+          id: "SOD-002",
+          name: "Reviewer Cannot Be Preparer",
+          description: "The same person who reviews a task should not have prepared it",
+          conflictingRoles: ["PREPARER", "REVIEWER"] as [string, string],
+          severity: "HIGH" as const,
+          isActive: true,
+          allowOverride: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          createdBy: "SYSTEM",
+        },
+        {
+          id: "SOD-003",
+          name: "Reviewer Cannot Approve",
+          description: "The same person who reviews a task should not approve it",
+          conflictingRoles: ["REVIEWER", "APPROVER"] as [string, string],
+          severity: "MEDIUM" as const,
+          isActive: false,
+          allowOverride: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          createdBy: "SYSTEM",
+        },
+      ];
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching SoD rules:", error);
+      res.status(500).json({ error: "Failed to fetch SoD rules" });
+    }
+  });
+
+  // Get SoD violations
+  app.get("/api/close-control/sod/violations", async (req, res) => {
+    try {
+      const { scheduleId, status } = req.query;
+      let violations = [
+        {
+          id: "VIO-001",
+          policyRuleId: "SOD-001",
+          policyRuleName: "Preparer Cannot Approve",
+          taskId: "T-003",
+          taskName: "Reconcile Cash Accounts",
+          tasklistId: "TL-001",
+          scheduleId: "CS-2026-01",
+          userId: "U001",
+          userName: "Jane Controller",
+          conflictingRole1: "PREPARER" as const,
+          conflictingRole2: "APPROVER" as const,
+          severity: "CRITICAL" as const,
+          status: "ACTIVE" as const,
+          overrideReason: null,
+          overriddenBy: null,
+          overriddenAt: null,
+          detectedAt: "2026-01-28T10:00:00Z",
+        },
+        {
+          id: "VIO-002",
+          policyRuleId: "SOD-002",
+          policyRuleName: "Reviewer Cannot Be Preparer",
+          taskId: "T-008",
+          taskName: "Review Revenue Recognition",
+          tasklistId: "TL-002",
+          scheduleId: "CS-2026-01",
+          userId: "U002",
+          userName: "Sarah Analyst",
+          conflictingRole1: "PREPARER" as const,
+          conflictingRole2: "REVIEWER" as const,
+          severity: "HIGH" as const,
+          status: "OVERRIDDEN" as const,
+          overrideReason: "Staffing constraints - only qualified person available",
+          overriddenBy: "Jane Controller",
+          overriddenAt: "2026-01-29T14:00:00Z",
+          detectedAt: "2026-01-28T11:00:00Z",
+        },
+      ];
+
+      if (scheduleId) {
+        violations = violations.filter(v => v.scheduleId === scheduleId);
+      }
+      if (status) {
+        violations = violations.filter(v => v.status === status);
+      }
+
+      res.json(violations);
+    } catch (error) {
+      console.error("Error fetching SoD violations:", error);
+      res.status(500).json({ error: "Failed to fetch SoD violations" });
+    }
+  });
+
+  // Override SoD violation
+  app.post("/api/close-control/sod/violations/:id/override", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      
+      if (!reason || reason.length < 10) {
+        return res.status(400).json({ error: "Override reason must be at least 10 characters" });
+      }
+
+      const overriddenViolation = {
+        id,
+        status: "OVERRIDDEN" as const,
+        overrideReason: reason,
+        overriddenBy: "Current User",
+        overriddenAt: new Date().toISOString(),
+      };
+
+      res.json(overriddenViolation);
+    } catch (error) {
+      console.error("Error overriding SoD violation:", error);
+      res.status(500).json({ error: "Failed to override SoD violation" });
+    }
+  });
+
+  // Get certifications
+  app.get("/api/close-control/certifications", async (req, res) => {
+    try {
+      const { scheduleId, objectType } = req.query;
+      let certifications = [
+        {
+          id: "CERT-001",
+          objectType: "TASKLIST" as const,
+          objectId: "TL-001",
+          objectName: "Cash Close",
+          period: "2026-01",
+          status: "CERTIFIED" as const,
+          certifiedBy: "U001",
+          certifiedByName: "Jane Controller",
+          certifiedAt: "2026-01-30T16:00:00Z",
+          certificationStatement: "I certify that all tasks in this tasklist have been completed accurately and in accordance with company policies.",
+          decertifiedBy: null,
+          decertifiedByName: null,
+          decertifiedAt: null,
+          decertificationReason: null,
+          expiresAt: "2026-02-28T23:59:59Z",
+          createdAt: "2026-01-30T16:00:00Z",
+        },
+        {
+          id: "CERT-002",
+          objectType: "TASKLIST" as const,
+          objectId: "TL-002",
+          objectName: "Revenue Close",
+          period: "2026-01",
+          status: "PENDING" as const,
+          certifiedBy: null,
+          certifiedByName: null,
+          certifiedAt: null,
+          certificationStatement: null,
+          decertifiedBy: null,
+          decertifiedByName: null,
+          decertifiedAt: null,
+          decertificationReason: null,
+          expiresAt: null,
+          createdAt: "2026-01-28T00:00:00Z",
+        },
+        {
+          id: "CERT-003",
+          objectType: "TASKLIST" as const,
+          objectId: "TL-004",
+          objectName: "Fixed Assets Close",
+          period: "2026-01",
+          status: "CERTIFIED" as const,
+          certifiedBy: "U001",
+          certifiedByName: "Jane Controller",
+          certifiedAt: "2026-01-29T14:00:00Z",
+          certificationStatement: "I certify that all fixed asset depreciation calculations are correct and properly recorded.",
+          decertifiedBy: null,
+          decertifiedByName: null,
+          decertifiedAt: null,
+          decertificationReason: null,
+          expiresAt: "2026-02-28T23:59:59Z",
+          createdAt: "2026-01-29T14:00:00Z",
+        },
+        {
+          id: "CERT-004",
+          objectType: "SCHEDULE" as const,
+          objectId: "CS-2025-12",
+          objectName: "December 2025 Month-End Close",
+          period: "2025-12",
+          status: "CERTIFIED" as const,
+          certifiedBy: "U001",
+          certifiedByName: "Jane Controller",
+          certifiedAt: "2026-01-05T18:00:00Z",
+          certificationStatement: "I certify that all close activities for December 2025 have been completed and reviewed in accordance with established procedures.",
+          decertifiedBy: null,
+          decertifiedByName: null,
+          decertifiedAt: null,
+          decertificationReason: null,
+          expiresAt: null,
+          createdAt: "2026-01-05T18:00:00Z",
+        },
+      ];
+
+      if (scheduleId) {
+        certifications = certifications.filter(c => 
+          c.objectId === scheduleId || 
+          (c.objectType === "TASKLIST" && scheduleId === "CS-2026-01" && ["TL-001", "TL-002", "TL-004"].includes(c.objectId))
+        );
+      }
+      if (objectType) {
+        certifications = certifications.filter(c => c.objectType === objectType);
+      }
+
+      res.json(certifications);
+    } catch (error) {
+      console.error("Error fetching certifications:", error);
+      res.status(500).json({ error: "Failed to fetch certifications" });
+    }
+  });
+
+  // Create certification (sign-off)
+  app.post("/api/close-control/certifications", async (req, res) => {
+    try {
+      const { objectType, objectId, statement } = req.body;
+
+      if (!objectType || !objectId || !statement) {
+        return res.status(400).json({ error: "objectType, objectId, and statement are required" });
+      }
+
+      const certification = {
+        id: `CERT-${Date.now()}`,
+        objectType,
+        objectId,
+        objectName: objectType === "TASKLIST" ? "Tasklist" : "Schedule",
+        period: "2026-01",
+        status: "CERTIFIED" as const,
+        certifiedBy: "U001",
+        certifiedByName: "Current User",
+        certifiedAt: new Date().toISOString(),
+        certificationStatement: statement,
+        decertifiedBy: null,
+        decertifiedByName: null,
+        decertifiedAt: null,
+        decertificationReason: null,
+        expiresAt: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      res.status(201).json(certification);
+    } catch (error) {
+      console.error("Error creating certification:", error);
+      res.status(500).json({ error: "Failed to create certification" });
+    }
+  });
+
+  // Decertify
+  app.post("/api/close-control/certifications/:id/decertify", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      if (!reason) {
+        return res.status(400).json({ error: "Decertification reason is required" });
+      }
+
+      const decertification = {
+        id,
+        status: "DECERTIFIED" as const,
+        decertifiedBy: "U001",
+        decertifiedByName: "Current User",
+        decertifiedAt: new Date().toISOString(),
+        decertificationReason: reason,
+      };
+
+      res.json(decertification);
+    } catch (error) {
+      console.error("Error decertifying:", error);
+      res.status(500).json({ error: "Failed to decertify" });
+    }
+  });
+
+  // Certification KPIs
+  app.get("/api/close-control/certifications/kpis", async (_req, res) => {
+    try {
+      const kpis = {
+        totalTasklists: 6,
+        certifiedTasklists: 2,
+        pendingCertification: 3,
+        expiringSoon: 1,
+        sodViolationsActive: 1,
+        sodViolationsOverridden: 1,
+      };
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching certification KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch certification KPIs" });
+    }
+  });
+
+  // Get close control users (for assignment)
+  app.get("/api/close-control/users", async (_req, res) => {
+    try {
+      const users = [
+        { id: "U001", name: "Jane Controller", email: "jane@company.com", department: "Finance", roles: ["PREPARER", "REVIEWER", "APPROVER"] as string[], isActive: true, createdAt: "2025-01-01T00:00:00Z" },
+        { id: "U002", name: "Sarah Analyst", email: "sarah@company.com", department: "Finance", roles: ["PREPARER", "REVIEWER"] as string[], isActive: true, createdAt: "2025-01-01T00:00:00Z" },
+        { id: "U003", name: "Mike Accountant", email: "mike@company.com", department: "Accounting", roles: ["PREPARER"] as string[], isActive: true, createdAt: "2025-01-01T00:00:00Z" },
+        { id: "U004", name: "John Preparer", email: "john@company.com", department: "Accounting", roles: ["PREPARER"] as string[], isActive: true, createdAt: "2025-01-01T00:00:00Z" },
+        { id: "U005", name: "Lisa CFO", email: "lisa@company.com", department: "Executive", roles: ["APPROVER"] as string[], isActive: true, createdAt: "2025-01-01T00:00:00Z" },
+      ];
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Check SoD for task assignment
+  app.post("/api/close-control/sod/check", async (req, res) => {
+    try {
+      const { taskId, userId, role } = req.body;
+
+      // Simulate SoD check - in real app would check against actual assignments
+      const mockViolation = userId === "U001" && role === "APPROVER" ? {
+        hasViolation: true,
+        violation: {
+          policyRuleId: "SOD-001",
+          policyRuleName: "Preparer Cannot Approve",
+          conflictingRole1: "PREPARER",
+          conflictingRole2: "APPROVER",
+          severity: "CRITICAL",
+          message: "This user is already assigned as Preparer for this task",
+        },
+      } : {
+        hasViolation: false,
+        violation: null,
+      };
+
+      res.json(mockViolation);
+    } catch (error) {
+      console.error("Error checking SoD:", error);
+      res.status(500).json({ error: "Failed to check SoD" });
+    }
+  });
+
   return httpServer;
 }
