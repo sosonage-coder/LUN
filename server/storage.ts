@@ -48,7 +48,16 @@ import type {
   YieldMixBreakdown,
   AccruedVsReceivedPoint,
   InvestmentIncomeRiskPanel,
-  InvestmentCategory
+  InvestmentCategory,
+  DebtSchedule,
+  InsertDebtSchedule,
+  DebtDashboardKPIs,
+  DebtCategorySummary,
+  DebtTrendPoint,
+  PrincipalInterestSplit,
+  DebtMixBreakdown,
+  DebtRiskPanel,
+  DebtCategory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -125,6 +134,17 @@ export interface IStorage {
   getYieldMixBreakdown(entityId?: string): Promise<YieldMixBreakdown[]>;
   getAccruedVsReceived(entityId?: string, periods?: number): Promise<AccruedVsReceivedPoint[]>;
   getInvestmentIncomeRiskPanels(entityId?: string): Promise<InvestmentIncomeRiskPanel[]>;
+  
+  // Loan & Debt Amortization Dashboard
+  getDebtSchedules(entityId?: string, category?: DebtCategory): Promise<DebtSchedule[]>;
+  getDebtSchedule(id: string): Promise<DebtSchedule | undefined>;
+  createDebtSchedule(data: InsertDebtSchedule): Promise<DebtSchedule>;
+  getDebtDashboardKPIs(entityId?: string, period?: string): Promise<DebtDashboardKPIs>;
+  getDebtCategorySummaries(entityId?: string): Promise<DebtCategorySummary[]>;
+  getDebtTrend(entityId?: string, periods?: number): Promise<DebtTrendPoint[]>;
+  getPrincipalInterestSplit(entityId?: string, periods?: number): Promise<PrincipalInterestSplit[]>;
+  getDebtMixBreakdown(entityId?: string): Promise<DebtMixBreakdown[]>;
+  getDebtRiskPanels(entityId?: string): Promise<DebtRiskPanel[]>;
 }
 
 // Helper functions
@@ -166,6 +186,7 @@ export class MemStorage implements IStorage {
   private accrualSchedules: Map<string, AccrualSchedule>;
   private revenueSchedules: Map<string, RevenueSchedule>;
   private investmentIncomeSchedules: Map<string, InvestmentIncomeSchedule>;
+  private debtSchedules: Map<string, DebtSchedule>;
 
   constructor() {
     this.schedules = new Map();
@@ -178,6 +199,7 @@ export class MemStorage implements IStorage {
     this.accrualSchedules = new Map();
     this.revenueSchedules = new Map();
     this.investmentIncomeSchedules = new Map();
+    this.debtSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -274,6 +296,9 @@ export class MemStorage implements IStorage {
     
     // Seed investment income schedules for Category Dashboard
     this.seedInvestmentIncomeSchedules();
+    
+    // Seed debt schedules for Category Dashboard
+    this.seedDebtSchedules();
   }
 
   private seedPrepaidSchedules() {
@@ -3042,6 +3067,611 @@ export class MemStorage implements IStorage {
         type: "ACCRUED_OUTSTANDING",
         title: "Accrued income outstanding beyond threshold",
         categories: accruedOutstandingCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const notReviewedCategories = buildCategories(notReviewed);
+    if (notReviewedCategories.length > 0) {
+      panels.push({
+        type: "NOT_REVIEWED",
+        title: "Schedules not reviewed this period",
+        categories: notReviewedCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    return panels.sort((a, b) => {
+      const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
+  }
+
+  // ========================
+  // Loan & Debt Amortization Methods
+  // ========================
+
+  private seedDebtSchedules() {
+    const now = new Date().toISOString();
+    const currentPeriod = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    
+    const sampleDebts: DebtSchedule[] = [
+      {
+        id: randomUUID(),
+        instrumentName: "Senior Secured Term Loan A",
+        lenderName: "First National Bank",
+        category: "TERM_LOANS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "EFFECTIVE",
+        interestType: "FIXED",
+        originationDate: "2022-06-15",
+        maturityDate: "2029-06-15",
+        originalPrincipal: 10000000,
+        outstandingPrincipal: 7500000,
+        principalRepaidPeriod: 125000,
+        interestIncurredPeriod: 31250,
+        accruedInterest: 15625,
+        interestRate: 5.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "John Smith",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Term Loan B - Equipment Financing",
+        lenderName: "Equipment Finance Corp",
+        category: "TERM_LOANS",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "FIXED",
+        originationDate: "2023-03-01",
+        maturityDate: "2028-03-01",
+        originalPrincipal: 2500000,
+        outstandingPrincipal: 1875000,
+        principalRepaidPeriod: 52083,
+        interestIncurredPeriod: 9375,
+        accruedInterest: 4688,
+        interestRate: 6.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Sarah Chen",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "ABL Revolver",
+        lenderName: "Wells Fargo",
+        category: "REVOLVING_CREDIT",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "VARIABLE",
+        originationDate: "2024-01-01",
+        maturityDate: "2027-01-01",
+        originalPrincipal: 5000000,
+        outstandingPrincipal: 2000000,
+        principalRepaidPeriod: 0,
+        interestIncurredPeriod: 11667,
+        accruedInterest: 5833,
+        interestRate: 7.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: "2025-12",
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Corporate Bond Series A",
+        lenderName: "Public Market",
+        category: "BONDS_NOTES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "EFFECTIVE",
+        interestType: "FIXED",
+        originationDate: "2021-09-01",
+        maturityDate: "2031-09-01",
+        originalPrincipal: 50000000,
+        outstandingPrincipal: 50000000,
+        principalRepaidPeriod: 0,
+        interestIncurredPeriod: 187500,
+        accruedInterest: 93750,
+        interestRate: 4.5,
+        currency: "USD",
+        hasEffectiveInterestOverride: true,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Maria Garcia",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Convertible Notes 2025",
+        lenderName: "Venture Partners LP",
+        category: "BONDS_NOTES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "FIXED",
+        originationDate: "2023-06-01",
+        maturityDate: "2028-06-01",
+        originalPrincipal: 15000000,
+        outstandingPrincipal: 15000000,
+        principalRepaidPeriod: 0,
+        interestIncurredPeriod: 75000,
+        accruedInterest: 375000,
+        interestRate: 6.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "John Smith",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Intercompany Loan - EU Sub",
+        lenderName: "Corp HQ",
+        category: "INTERCOMPANY_LOANS",
+        entityId: "SUB-EU",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "FIXED",
+        originationDate: "2024-01-01",
+        maturityDate: "2027-01-01",
+        originalPrincipal: 3000000,
+        outstandingPrincipal: 2500000,
+        principalRepaidPeriod: 41667,
+        interestIncurredPeriod: 10417,
+        accruedInterest: 5208,
+        interestRate: 5.0,
+        currency: "EUR",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "MISSING",
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Intercompany",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Intercompany Loan - UK Sub",
+        lenderName: "Corp HQ",
+        category: "INTERCOMPANY_LOANS",
+        entityId: "SUB-UK",
+        lifecycleState: "DORMANT",
+        amortizationMethod: "NOMINAL",
+        interestType: "FIXED",
+        originationDate: "2022-07-01",
+        maturityDate: "2025-07-01",
+        originalPrincipal: 1500000,
+        outstandingPrincipal: 500000,
+        principalRepaidPeriod: 0,
+        interestIncurredPeriod: 2083,
+        accruedInterest: 8333,
+        interestRate: 5.0,
+        currency: "GBP",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: "2025-10",
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Intercompany",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Office Lease - HQ Building",
+        lenderName: "Commercial Properties LLC",
+        category: "LEASE_LIABILITIES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "EFFECTIVE",
+        interestType: "FIXED",
+        originationDate: "2020-01-01",
+        maturityDate: "2030-01-01",
+        originalPrincipal: 8000000,
+        outstandingPrincipal: 5200000,
+        principalRepaidPeriod: 55556,
+        interestIncurredPeriod: 21667,
+        accruedInterest: 0,
+        interestRate: 5.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Sarah Chen",
+        owner: "Real Estate",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Vehicle Fleet Lease",
+        lenderName: "Auto Leasing Inc",
+        category: "LEASE_LIABILITIES",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "FIXED",
+        originationDate: "2024-06-01",
+        maturityDate: "2027-06-01",
+        originalPrincipal: 450000,
+        outstandingPrincipal: 337500,
+        principalRepaidPeriod: 12500,
+        interestIncurredPeriod: 1406,
+        accruedInterest: 0,
+        interestRate: 5.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: currentPeriod,
+        principalEvidenceStatus: "ATTACHED",
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Fleet Management",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Bridge Loan - Acquisition",
+        lenderName: "Private Credit Fund",
+        category: "OTHER",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        amortizationMethod: "NOMINAL",
+        interestType: "VARIABLE",
+        originationDate: "2025-01-01",
+        maturityDate: "2026-01-01",
+        originalPrincipal: 8000000,
+        outstandingPrincipal: 8000000,
+        principalRepaidPeriod: 0,
+        interestIncurredPeriod: 66667,
+        accruedInterest: 33333,
+        interestRate: 10.0,
+        currency: "USD",
+        hasEffectiveInterestOverride: false,
+        lastRateUpdatePeriod: "2025-11",
+        principalEvidenceStatus: "MISSING",
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "M&A Team",
+        createdAt: now,
+      },
+    ];
+
+    for (const debt of sampleDebts) {
+      this.debtSchedules.set(debt.id, debt);
+    }
+  }
+
+  async getDebtSchedules(entityId?: string, category?: DebtCategory): Promise<DebtSchedule[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE" || d.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+    if (category) {
+      debts = debts.filter(d => d.category === category);
+    }
+    
+    return debts.sort((a, b) => b.outstandingPrincipal - a.outstandingPrincipal);
+  }
+
+  async getDebtSchedule(id: string): Promise<DebtSchedule | undefined> {
+    return this.debtSchedules.get(id);
+  }
+
+  async createDebtSchedule(data: InsertDebtSchedule): Promise<DebtSchedule> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    
+    const schedule: DebtSchedule = {
+      id,
+      instrumentName: data.instrumentName,
+      lenderName: data.lenderName,
+      category: data.category,
+      entityId: data.entityId,
+      lifecycleState: "ACTIVE",
+      amortizationMethod: data.amortizationMethod,
+      interestType: data.interestType,
+      originationDate: data.originationDate,
+      maturityDate: data.maturityDate,
+      originalPrincipal: data.originalPrincipal,
+      outstandingPrincipal: data.originalPrincipal,
+      principalRepaidPeriod: 0,
+      interestIncurredPeriod: 0,
+      accruedInterest: 0,
+      interestRate: data.interestRate,
+      currency: data.currency,
+      hasEffectiveInterestOverride: false,
+      lastRateUpdatePeriod: null,
+      principalEvidenceStatus: "MISSING",
+      evidence: "MISSING",
+      reviewStatus: "NOT_REVIEWED",
+      lastReviewedAt: null,
+      lastReviewedBy: null,
+      owner: data.owner,
+      createdAt: now,
+    };
+    
+    this.debtSchedules.set(id, schedule);
+    return schedule;
+  }
+
+  async getDebtDashboardKPIs(entityId?: string, period?: string): Promise<DebtDashboardKPIs> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE" || d.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const activeDebts = debts.filter(d => d.lifecycleState === "ACTIVE");
+    const highRiskDebts = debts.filter(d => 
+      d.interestType === "VARIABLE" || 
+      d.hasEffectiveInterestOverride ||
+      d.principalEvidenceStatus === "MISSING"
+    );
+
+    return {
+      outstandingPrincipal: debts.reduce((sum, d) => sum + d.outstandingPrincipal, 0),
+      principalRepaidPeriod: debts.reduce((sum, d) => sum + d.principalRepaidPeriod, 0),
+      interestIncurredPeriod: debts.reduce((sum, d) => sum + d.interestIncurredPeriod, 0),
+      accruedInterest: debts.reduce((sum, d) => sum + d.accruedInterest, 0),
+      activeDebtInstruments: activeDebts.length,
+      highRiskDebt: highRiskDebts.length,
+    };
+  }
+
+  async getDebtCategorySummaries(entityId?: string): Promise<DebtCategorySummary[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE" || d.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const categories: DebtCategory[] = ["TERM_LOANS", "REVOLVING_CREDIT", "BONDS_NOTES", "INTERCOMPANY_LOANS", "LEASE_LIABILITIES", "OTHER"];
+    
+    return categories
+      .map(category => {
+        const categoryDebts = debts.filter(d => d.category === category);
+        const activeCount = categoryDebts.filter(d => d.lifecycleState === "ACTIVE").length;
+        const outstandingPrincipal = categoryDebts.reduce((sum, d) => sum + d.outstandingPrincipal, 0);
+        const principalRepaid = categoryDebts.reduce((sum, d) => sum + d.principalRepaidPeriod, 0);
+        const interestIncurred = categoryDebts.reduce((sum, d) => sum + d.interestIncurredPeriod, 0);
+        
+        const hasHighRisk = categoryDebts.some(d => 
+          d.interestType === "VARIABLE" || 
+          d.hasEffectiveInterestOverride ||
+          d.principalEvidenceStatus === "MISSING"
+        );
+        const hasMediumRisk = categoryDebts.some(d => d.reviewStatus === "NOT_REVIEWED");
+        
+        const riskLevel: "LOW" | "MEDIUM" | "HIGH" = hasHighRisk ? "HIGH" : hasMediumRisk ? "MEDIUM" : "LOW";
+        const allReviewed = categoryDebts.every(d => d.reviewStatus === "REVIEWED");
+        
+        return {
+          category,
+          activeCount,
+          outstandingPrincipal,
+          principalRepaid,
+          interestIncurred,
+          riskLevel,
+          reviewStatus: allReviewed ? "REVIEWED" as const : "NOT_REVIEWED" as const,
+        };
+      })
+      .filter(s => s.activeCount > 0 || s.outstandingPrincipal > 0)
+      .sort((a, b) => b.outstandingPrincipal - a.outstandingPrincipal);
+  }
+
+  async getDebtTrend(entityId?: string, periods: number = 6): Promise<DebtTrendPoint[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const currentPrincipal = debts.reduce((sum, d) => sum + d.outstandingPrincipal, 0);
+    const monthlyRepayment = debts.reduce((sum, d) => sum + d.principalRepaidPeriod, 0);
+    const result: DebtTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const outstandingPrincipal = i === 0 
+        ? currentPrincipal 
+        : currentPrincipal + (monthlyRepayment * i);
+      result.push({ 
+        period, 
+        outstandingPrincipal: Math.round(outstandingPrincipal)
+      });
+    }
+
+    return result;
+  }
+
+  async getPrincipalInterestSplit(entityId?: string, periods: number = 6): Promise<PrincipalInterestSplit[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const currentPrincipal = debts.reduce((sum, d) => sum + d.principalRepaidPeriod, 0);
+    const currentInterest = debts.reduce((sum, d) => sum + d.interestIncurredPeriod, 0);
+    const result: PrincipalInterestSplit[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const principalRepaid = i === 0 ? currentPrincipal : currentPrincipal * (0.9 + Math.random() * 0.2);
+      const interestIncurred = i === 0 ? currentInterest : currentInterest * (0.95 + Math.random() * 0.1);
+      result.push({ 
+        period, 
+        principalRepaid: Math.round(principalRepaid),
+        interestIncurred: Math.round(interestIncurred)
+      });
+    }
+
+    return result;
+  }
+
+  async getDebtMixBreakdown(entityId?: string): Promise<DebtMixBreakdown[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE" || d.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const totals: Record<DebtCategory, number> = {
+      TERM_LOANS: 0,
+      REVOLVING_CREDIT: 0,
+      BONDS_NOTES: 0,
+      INTERCOMPANY_LOANS: 0,
+      LEASE_LIABILITIES: 0,
+      OTHER: 0,
+    };
+
+    for (const debt of debts) {
+      totals[debt.category] += debt.outstandingPrincipal;
+    }
+
+    const grandTotal = Object.values(totals).reduce((sum, v) => sum + v, 0);
+
+    return Object.entries(totals)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category: category as DebtCategory,
+        amount,
+        percentage: grandTotal > 0 ? (amount / grandTotal) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }
+
+  async getDebtRiskPanels(entityId?: string): Promise<DebtRiskPanel[]> {
+    let debts = Array.from(this.debtSchedules.values())
+      .filter(d => d.lifecycleState === "ACTIVE" || d.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      debts = debts.filter(d => d.entityId === entityId);
+    }
+
+    const panels: DebtRiskPanel[] = [];
+
+    const principalNoEvidence: Record<DebtCategory, number> = { TERM_LOANS: 0, REVOLVING_CREDIT: 0, BONDS_NOTES: 0, INTERCOMPANY_LOANS: 0, LEASE_LIABILITIES: 0, OTHER: 0 };
+    const variableRateNotUpdated: Record<DebtCategory, number> = { TERM_LOANS: 0, REVOLVING_CREDIT: 0, BONDS_NOTES: 0, INTERCOMPANY_LOANS: 0, LEASE_LIABILITIES: 0, OTHER: 0 };
+    const effectiveInterestOverride: Record<DebtCategory, number> = { TERM_LOANS: 0, REVOLVING_CREDIT: 0, BONDS_NOTES: 0, INTERCOMPANY_LOANS: 0, LEASE_LIABILITIES: 0, OTHER: 0 };
+    const accruedInterestOutstanding: Record<DebtCategory, number> = { TERM_LOANS: 0, REVOLVING_CREDIT: 0, BONDS_NOTES: 0, INTERCOMPANY_LOANS: 0, LEASE_LIABILITIES: 0, OTHER: 0 };
+    const notReviewed: Record<DebtCategory, number> = { TERM_LOANS: 0, REVOLVING_CREDIT: 0, BONDS_NOTES: 0, INTERCOMPANY_LOANS: 0, LEASE_LIABILITIES: 0, OTHER: 0 };
+
+    const currentPeriod = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+
+    for (const debt of debts) {
+      if (debt.principalEvidenceStatus === "MISSING") {
+        principalNoEvidence[debt.category]++;
+      }
+      if (debt.interestType === "VARIABLE" && debt.lastRateUpdatePeriod && debt.lastRateUpdatePeriod < currentPeriod) {
+        variableRateNotUpdated[debt.category]++;
+      }
+      if (debt.hasEffectiveInterestOverride) {
+        effectiveInterestOverride[debt.category]++;
+      }
+      if (debt.accruedInterest > debt.interestIncurredPeriod * 2) {
+        accruedInterestOutstanding[debt.category]++;
+      }
+      if (debt.reviewStatus === "NOT_REVIEWED") {
+        notReviewed[debt.category]++;
+      }
+    }
+
+    const buildCategories = (data: Record<DebtCategory, number>) => {
+      return Object.entries(data)
+        .filter(([_, count]) => count > 0)
+        .map(([category, count]) => ({ category: category as DebtCategory, count }));
+    };
+
+    const principalNoEvidenceCategories = buildCategories(principalNoEvidence);
+    if (principalNoEvidenceCategories.length > 0) {
+      panels.push({
+        type: "PRINCIPAL_NO_EVIDENCE",
+        title: "Principal movements not supported by cash evidence",
+        categories: principalNoEvidenceCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const variableRateNotUpdatedCategories = buildCategories(variableRateNotUpdated);
+    if (variableRateNotUpdatedCategories.length > 0) {
+      panels.push({
+        type: "VARIABLE_RATE_NOT_UPDATED",
+        title: "Variable-rate debt not updated this period",
+        categories: variableRateNotUpdatedCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const effectiveInterestOverrideCategories = buildCategories(effectiveInterestOverride);
+    if (effectiveInterestOverrideCategories.length > 0) {
+      panels.push({
+        type: "EFFECTIVE_INTEREST_OVERRIDE",
+        title: "Effective interest method overrides",
+        categories: effectiveInterestOverrideCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const accruedInterestOutstandingCategories = buildCategories(accruedInterestOutstanding);
+    if (accruedInterestOutstandingCategories.length > 0) {
+      panels.push({
+        type: "ACCRUED_INTEREST_OUTSTANDING",
+        title: "Accrued interest outstanding beyond threshold",
+        categories: accruedInterestOutstandingCategories,
         severity: "MEDIUM",
       });
     }

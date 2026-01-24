@@ -554,6 +554,113 @@ export const insertInvestmentIncomeScheduleSchema = z.object({
 
 export type InsertInvestmentIncomeSchedule = z.infer<typeof insertInvestmentIncomeScheduleSchema>;
 
+// ===================
+// Loan & Debt Amortization Types
+// ===================
+
+export type DebtCategory = 
+  | "TERM_LOANS"
+  | "REVOLVING_CREDIT"
+  | "BONDS_NOTES"
+  | "INTERCOMPANY_LOANS"
+  | "LEASE_LIABILITIES"
+  | "OTHER";
+
+export type DebtLifecycleState = "ACTIVE" | "DORMANT" | "REPAID" | "ARCHIVED";
+
+export type AmortizationMethod = "NOMINAL" | "EFFECTIVE";
+
+export type InterestType = "FIXED" | "VARIABLE";
+
+export interface DebtSchedule {
+  id: string;
+  instrumentName: string;
+  lenderName: string;
+  category: DebtCategory;
+  entityId: string;
+  lifecycleState: DebtLifecycleState;
+  amortizationMethod: AmortizationMethod;
+  interestType: InterestType;
+  originationDate: string;
+  maturityDate: string;
+  originalPrincipal: number;
+  outstandingPrincipal: number;
+  principalRepaidPeriod: number;
+  interestIncurredPeriod: number;
+  accruedInterest: number;
+  interestRate: number; // as percentage (e.g., 5.25 for 5.25%)
+  currency: string;
+  hasEffectiveInterestOverride: boolean;
+  lastRateUpdatePeriod: string | null;
+  principalEvidenceStatus: EvidenceStatus;
+  evidence: EvidenceStatus;
+  reviewStatus: ReviewStatus;
+  lastReviewedAt: string | null;
+  lastReviewedBy: string | null;
+  owner: string;
+  createdAt: string;
+}
+
+export interface DebtDashboardKPIs {
+  outstandingPrincipal: number;
+  principalRepaidPeriod: number;
+  interestIncurredPeriod: number;
+  accruedInterest: number;
+  activeDebtInstruments: number;
+  highRiskDebt: number;
+}
+
+export interface DebtCategorySummary {
+  category: DebtCategory;
+  activeCount: number;
+  outstandingPrincipal: number;
+  principalRepaid: number;
+  interestIncurred: number;
+  riskLevel: RiskLevel;
+  reviewStatus: ReviewStatus;
+}
+
+export interface DebtTrendPoint {
+  period: string;
+  outstandingPrincipal: number;
+}
+
+export interface PrincipalInterestSplit {
+  period: string;
+  principalRepaid: number;
+  interestIncurred: number;
+}
+
+export interface DebtMixBreakdown {
+  category: DebtCategory;
+  amount: number;
+  percentage: number;
+}
+
+export interface DebtRiskPanel {
+  type: "PRINCIPAL_NO_EVIDENCE" | "VARIABLE_RATE_NOT_UPDATED" | "EFFECTIVE_INTEREST_OVERRIDE" | "ACCRUED_INTEREST_OUTSTANDING" | "EXPECTED_MISSING" | "NOT_REVIEWED";
+  title: string;
+  categories: { category: DebtCategory; count: number }[];
+  severity: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export const insertDebtScheduleSchema = z.object({
+  instrumentName: z.string().min(1, "Instrument name is required"),
+  lenderName: z.string().min(1, "Lender name is required"),
+  category: z.enum(["TERM_LOANS", "REVOLVING_CREDIT", "BONDS_NOTES", "INTERCOMPANY_LOANS", "LEASE_LIABILITIES", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  amortizationMethod: z.enum(["NOMINAL", "EFFECTIVE"]),
+  interestType: z.enum(["FIXED", "VARIABLE"]),
+  originationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  maturityDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  originalPrincipal: z.number().min(0, "Principal cannot be negative"),
+  interestRate: z.number().min(0, "Interest rate cannot be negative"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertDebtSchedule = z.infer<typeof insertDebtScheduleSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;
