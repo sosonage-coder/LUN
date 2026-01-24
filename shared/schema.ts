@@ -778,3 +778,261 @@ export const insertCashMovementSchema = z.object({
 });
 
 export type InsertCashMovement = z.infer<typeof insertCashMovementSchema>;
+
+// ===== CLOSE CONTROL SYSTEM TYPES =====
+
+// Task lifecycle states
+export type CloseTaskStatus = 
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "SUBMITTED"
+  | "REVIEWED"
+  | "APPROVED"
+  | "LOCKED";
+
+// Tasklist status
+export type TasklistStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "LOCKED";
+
+// Close schedule status
+export type CloseScheduleStatus = "PLANNED" | "ACTIVE" | "AT_RISK" | "COMPLETE" | "LOCKED";
+
+// Close period type
+export type ClosePeriodType = "MONTHLY" | "QUARTERLY" | "YEARLY" | "AD_HOC";
+
+// User roles for close control
+export type CloseRole = "PREPARER" | "REVIEWER" | "CONTROLLER" | "AUDITOR";
+
+// Evidence status for close tasks
+export type CloseEvidenceStatus = "ATTACHED" | "MISSING" | "PENDING";
+
+// Priority levels
+export type TaskPriority = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
+// Risk indicator
+export type CloseRiskLevel = "HIGH" | "MEDIUM" | "LOW" | "NONE";
+
+// Linked accounting schedule types
+export type LinkedScheduleType = 
+  | "PREPAID"
+  | "FIXED_ASSET"
+  | "ACCRUAL"
+  | "REVENUE"
+  | "INVESTMENT_INCOME"
+  | "DEBT"
+  | "CASH";
+
+// Close Task (individual work unit)
+export interface CloseTask {
+  id: string;
+  tasklistId: string;
+  closeScheduleId: string;
+  name: string;
+  description: string;
+  status: CloseTaskStatus;
+  priority: TaskPriority;
+  preparerId: string | null;
+  preparerName: string | null;
+  reviewerId: string | null;
+  reviewerName: string | null;
+  dueDate: string;
+  completedAt: string | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  evidenceStatus: CloseEvidenceStatus;
+  evidenceCount: number;
+  linkedSchedules: LinkedScheduleReference[];
+  dependencies: string[];
+  order: number;
+  period: string;
+  createdAt: string;
+}
+
+// Reference to linked accounting schedule
+export interface LinkedScheduleReference {
+  type: LinkedScheduleType;
+  scheduleId: string;
+  scheduleName: string;
+  period: string;
+}
+
+// Close Tasklist (work package)
+export interface CloseTasklist {
+  id: string;
+  closeScheduleId: string;
+  name: string;
+  description: string;
+  templateId: string | null;
+  status: TasklistStatus;
+  ownerId: string | null;
+  ownerName: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  approvedTasks: number;
+  dueDate: string;
+  completedAt: string | null;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  period: string;
+  order: number;
+  createdAt: string;
+}
+
+// Close Schedule (period timeline)
+export interface CloseSchedule {
+  id: string;
+  name: string;
+  period: string;
+  periodType: ClosePeriodType;
+  templateId: string | null;
+  status: CloseScheduleStatus;
+  startDate: string;
+  endDate: string;
+  totalTasklists: number;
+  completedTasklists: number;
+  lockedTasklists: number;
+  totalTasks: number;
+  completedTasks: number;
+  approvedTasks: number;
+  riskLevel: CloseRiskLevel;
+  overdueTasks: number;
+  ownerId: string | null;
+  ownerName: string | null;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  createdAt: string;
+}
+
+// Close Template
+export interface CloseTemplate {
+  id: string;
+  name: string;
+  description: string;
+  periodType: ClosePeriodType;
+  templateType: "TASKLIST" | "SCHEDULE";
+  isSystemTemplate: boolean;
+  version: number;
+  taskCount: number;
+  estimatedDays: number;
+  createdAt: string;
+  createdBy: string;
+}
+
+// Close Evidence
+export interface CloseEvidence {
+  id: string;
+  taskId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  description: string | null;
+  isLocked: boolean;
+}
+
+// Close Comment
+export interface CloseComment {
+  id: string;
+  objectType: "TASK" | "TASKLIST" | "SCHEDULE";
+  objectId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  mentions: string[];
+}
+
+// Close Audit Log Entry
+export interface CloseAuditLogEntry {
+  id: string;
+  objectType: "TASK" | "TASKLIST" | "SCHEDULE" | "EVIDENCE";
+  objectId: string;
+  action: string;
+  userId: string;
+  userName: string;
+  beforeValue: string | null;
+  afterValue: string | null;
+  timestamp: string;
+  period: string;
+}
+
+// Dashboard KPIs
+export interface CloseControlKPIs {
+  totalSchedules: number;
+  activeSchedules: number;
+  atRiskSchedules: number;
+  completedSchedules: number;
+  totalTasks: number;
+  completedTasks: number;
+  approvedTasks: number;
+  overdueTasks: number;
+  tasksNeedingReview: number;
+  evidencePending: number;
+}
+
+// Close Progress Summary
+export interface CloseProgressSummary {
+  period: string;
+  scheduleId: string;
+  scheduleName: string;
+  status: CloseScheduleStatus;
+  progressPercent: number;
+  daysRemaining: number;
+  tasksTotal: number;
+  tasksCompleted: number;
+  tasksApproved: number;
+  tasksOverdue: number;
+  riskLevel: CloseRiskLevel;
+}
+
+// Tasklist Summary for dashboard
+export interface TasklistSummary {
+  id: string;
+  name: string;
+  status: TasklistStatus;
+  ownerName: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  approvedTasks: number;
+  progressPercent: number;
+  dueDate: string;
+  isOverdue: boolean;
+  riskLevel: CloseRiskLevel;
+}
+
+// Insert schemas
+export const insertCloseTaskSchema = z.object({
+  tasklistId: z.string().min(1),
+  name: z.string().min(1, "Task name is required"),
+  description: z.string().optional(),
+  priority: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+  preparerId: z.string().nullable().optional(),
+  reviewerId: z.string().nullable().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  dependencies: z.array(z.string()).optional(),
+});
+
+export type InsertCloseTask = z.infer<typeof insertCloseTaskSchema>;
+
+export const insertCloseTasklistSchema = z.object({
+  closeScheduleId: z.string().min(1),
+  name: z.string().min(1, "Tasklist name is required"),
+  description: z.string().optional(),
+  templateId: z.string().nullable().optional(),
+  ownerId: z.string().nullable().optional(),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+});
+
+export type InsertCloseTasklist = z.infer<typeof insertCloseTasklistSchema>;
+
+export const insertCloseScheduleSchema = z.object({
+  name: z.string().min(1, "Schedule name is required"),
+  period: z.string().regex(/^\d{4}-\d{2}$/, "Must be YYYY-MM format"),
+  periodType: z.enum(["MONTHLY", "QUARTERLY", "YEARLY", "AD_HOC"]),
+  templateId: z.string().nullable().optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  ownerId: z.string().nullable().optional(),
+});
+
+export type InsertCloseSchedule = z.infer<typeof insertCloseScheduleSchema>;

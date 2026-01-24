@@ -1,0 +1,414 @@
+🧱 SYSTEM SPEC — CLOSE TASK & SCHEDULE CONTROL SYSTEM
+
+Purpose
+Provide a governance-first orchestration layer for period close using tasklists and close schedules, with standardized templates, workflow enforcement, collaboration, and audit-ready controls — while linking to existing accounting schedules without duplicating them.
+
+1️⃣ Scope & Philosophy
+What this system IS
+
+A month-end / period-end close orchestration system
+
+A single source of truth for:
+
+What must be done during close
+
+In what order
+
+By whom
+
+With what evidence
+
+A control surface that sits above accounting schedules
+
+What this system is NOT
+
+❌ Not an ERP
+
+❌ Not an accounting calculation engine
+
+❌ Not an accounting schedule builder (already exists)
+
+❌ Not a reconciliation system
+
+❌ Not a reporting or forecasting platform
+
+This system manages execution, sequencing, and assurance — not balances.
+
+2️⃣ Core Objects (Minimal & Intentional)
+Primary Objects
+
+Task
+
+Tasklist
+
+Close Schedule (Month-End / Period Timeline)
+
+Template
+
+Evidence
+
+Workflow
+
+Comment
+
+Audit Log
+
+User / Role
+
+Linked Objects (External)
+
+Accounting Schedules (Accruals, Cash, Loans, etc.)
+
+Referenced by link
+
+Never duplicated
+
+Never edited here
+
+3️⃣ Core Feature Set
+A️⃣ Task Management
+
+Purpose: Represent close activities as accountable units of work.
+
+Capabilities
+
+Manual or template-generated tasks
+
+Period-aware (monthly, quarterly, ad-hoc)
+
+Role-based assignment:
+
+Preparer
+
+Reviewer
+
+Dependencies between tasks
+
+Due dates & escalation rules
+
+Task Lifecycle
+Not Started → In Progress → Submitted → Reviewed → Approved → Locked
+
+Controls
+
+Tasks require evidence before approval
+
+Reviewer ≠ Preparer (SoD enforced)
+
+Locked tasks are immutable
+
+B️⃣ Tasklists (Close Work Packages)
+
+Purpose: Group related close tasks into standardized work bundles.
+
+What a Tasklist Is
+
+A repeatable collection of tasks representing a close activity.
+
+Examples (Pre-Populated)
+
+Month-End Close – Core
+
+Cash Close
+
+Revenue Close
+
+Payroll Close
+
+Tax Close
+
+Audit PBC Prep
+
+Capabilities
+
+Generate from template by period
+
+Assign owners by role
+
+Track completion at tasklist level
+
+Lock entire tasklist upon approval
+
+C️⃣ Close Schedules (This Is the “Schedule”)
+
+Purpose: Orchestrate when close work happens — not how accounting is calculated.
+
+What a Close Schedule Is
+
+A time-based close timeline that:
+
+Orders tasklists and tasks
+
+Defines sequencing and dependencies
+
+Provides close visibility and critical-path awareness
+
+This is a close calendar with intelligence, not a checklist.
+
+Close Schedule Capabilities
+
+Period-based instantiation (Month, Quarter)
+
+Start / due dates per tasklist
+
+Dependency logic:
+
+“Cash close must finish before variance review”
+
+Status tracking:
+
+Planned → Active → At Risk → Complete → Locked
+
+
+Overall close progress indicator
+
+What Close Schedules Do NOT Do
+
+❌ Perform accounting calculations
+
+❌ Replace accounting schedules
+
+❌ Validate balances
+
+They orchestrate work only.
+
+4️⃣ Linking to Accounting Schedules (Critical Design Point)
+
+Accounting schedules already exist (Accruals, Cash, Loans, etc.).
+
+How Linking Works
+
+Tasks may reference one or more accounting schedules
+
+Links are:
+
+Read-only
+
+Period-specific
+
+Evidence-backed
+
+Example
+
+Task: “Review Accrued Expenses”
+→ Linked to: Accrual Schedule – March 2026
+
+This system:
+
+Confirms the schedule was reviewed
+
+Captures evidence & sign-off
+
+Does not touch the math
+
+5️⃣ Templates (The Real Leverage)
+
+Templates encode best-practice close behavior.
+
+A️⃣ Tasklist Templates
+
+Pre-Populated Examples
+
+Month-End Close (Lean)
+
+Month-End Close (SOX-Style)
+
+Quarter-End Close
+
+Year-End Close
+
+Audit Readiness Close
+
+Template Contents
+
+Predefined tasks
+
+Suggested sequencing
+
+Role assignments
+
+Evidence requirements
+
+Approval rules
+
+B️⃣ Close Schedule Templates
+
+Purpose: Standardize close timelines.
+
+Examples
+
+5-Day Close
+
+7-Day Close
+
+10-Day Close
+
+Audit-Intensive Close
+
+Template Includes
+
+Default start / due offsets
+
+Dependency rules
+
+Critical-path milestones
+
+C️⃣ Custom Templates
+
+Clone system templates
+
+Versioned
+
+Locked for audit-critical processes
+
+6️⃣ Workflow Automation (Light, Explicit)
+
+Purpose: Enforce consistency without hiding logic.
+
+Capabilities
+
+Auto-generate close schedules by period
+
+Auto-instantiate tasklists
+
+Conditional escalation:
+
+Overdue task → notify reviewer
+
+Missed dependency → flag close at risk
+
+Role-based approvals
+
+Guardrails
+
+No silent automation
+
+All actions logged
+
+All workflows explainable
+
+7️⃣ Collaboration (Contextual & Auditable)
+
+Purpose: Keep all close discussion in one place.
+
+Capabilities
+
+Comments on:
+
+Tasks
+
+Tasklists
+
+Close schedules
+
+@mentions
+
+Decision logging
+
+Threaded discussions
+
+Controls
+
+Comments immutable
+
+Fully auditable
+
+Period-bound
+
+8️⃣ Compliance, Audit & Governance
+A️⃣ Audit Trail (Always On)
+
+Tracks:
+
+All object changes
+
+User actions
+
+Timestamps
+
+Before / after values
+
+Immutable, exportable, queryable.
+
+B️⃣ Evidence Management
+
+Evidence required by template
+
+Version-controlled
+
+Locked on approval
+
+Tied to period + object
+
+C️⃣ Segregation of Duties (Mandatory)
+Role	Restriction
+Preparer	Cannot approve
+Reviewer	Cannot prepare same work
+Controller	Override with justification
+Auditor	Read-only
+D️⃣ Period Locking
+
+Locks:
+
+Tasks
+
+Tasklists
+
+Close schedules
+
+Evidence
+
+Unlock requires:
+
+Justification
+
+Approval
+
+Audit log entry
+
+9️⃣ Reporting (Operational & Control Only)
+Standard Views
+
+Close progress by period
+
+At-risk tasklists
+
+Overdue tasks
+
+Evidence completeness
+
+Approval coverage
+
+🚫 No financial KPIs
+🚫 No balances
+🚫 No analytics creep
+
+🔟 Certification Meaning (Explicit)
+
+When a tasklist or close schedule is locked, it means:
+
+Required close work was completed
+
+Reviewed under defined controls
+
+Supported by evidence
+
+Approved by the right role
+
+It does not mean:
+
+Accounting balances are correct
+
+Financial statements are accurate
+
+Those assurances live elsewhere.
+
+1️⃣1️⃣ One-Sentence Product Definition
+
+“A governance-first close orchestration system that manages month-end schedules and tasklists, links to accounting schedules, and enforces audit-ready execution and control.”
+
+🔒 Final Design Rule
+
+Accounting schedules calculate.
+Close schedules orchestrate.
+Tasks prove work was done.
