@@ -150,6 +150,18 @@ const reconciliationsNav = [
   { title: "Templates", url: "/reconciliations/templates", icon: FileText },
 ];
 
+const accountCategories = [
+  { title: "Cash", key: "CASH", icon: Banknote },
+  { title: "Accounts Receivable", key: "ACCOUNTS_RECEIVABLE", icon: TrendingUp },
+  { title: "Accounts Payable", key: "ACCOUNTS_PAYABLE", icon: TrendingDown },
+  { title: "Prepaid Expenses", key: "PREPAID", icon: Clock },
+  { title: "Fixed Assets", key: "FIXED_ASSET", icon: Building2 },
+  { title: "Accruals", key: "ACCRUAL", icon: Receipt },
+  { title: "Inventory", key: "INVENTORY", icon: HardDrive },
+  { title: "Intercompany", key: "INTERCOMPANY", icon: Users },
+  { title: "Debt", key: "DEBT", icon: Landmark },
+];
+
 const systemItems = [
   { title: "Period Status", url: "/periods", icon: Clock },
   { title: "Audit Log", url: "/audit", icon: FileText },
@@ -353,31 +365,69 @@ export function AppSidebar() {
   );
 
   const renderReconciliations = () => (
-    <SidebarGroup>
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {reconciliationsNav.map((item) => {
-            const isActive = location === item.url || 
-              (item.url !== "/reconciliations" && location.startsWith(item.url));
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive}
-                  data-testid={`nav-reconciliations-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  <Link href={item.url}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {reconciliationsNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/reconciliations" && location.startsWith(item.url));
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-reconciliations-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      
+      <SidebarGroup>
+        <SidebarGroupLabel>Account Categories</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <Collapsible defaultOpen className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton data-testid="nav-account-categories">
+                    <FileCheck className="h-4 w-4" />
+                    <span>All Categories</span>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {accountCategories.map((category) => (
+                      <SidebarMenuSubItem key={category.key}>
+                        <SidebarMenuSubButton 
+                          asChild
+                          data-testid={`nav-category-${category.key.toLowerCase()}`}
+                        >
+                          <Link href={`/reconciliations?category=${category.key}`}>
+                            <category.icon className="h-4 w-4" />
+                            <span>{category.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
               </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+            </Collapsible>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
   );
 
   const renderComingSoon = () => (
