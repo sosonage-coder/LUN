@@ -8,15 +8,12 @@ import {
   Clock,
   Calculator,
   Wallet,
-  Shield,
-  Building,
-  Monitor,
-  Layers,
   HardDrive,
   Landmark,
   Receipt,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  ChevronRight
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,10 +24,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const navigationItems = [
   {
@@ -60,31 +61,75 @@ const categoryItems = [
     title: "Prepaids",
     url: "/prepaids",
     icon: Wallet,
+    subItems: [
+      { title: "Insurance", url: "/prepaids/insurance" },
+      { title: "Rent", url: "/prepaids/rent" },
+      { title: "Software", url: "/prepaids/software" },
+      { title: "Other", url: "/prepaids/other" },
+    ],
   },
   {
     title: "Fixed Assets",
     url: "/fixed-assets",
     icon: HardDrive,
+    subItems: [
+      { title: "IT Equipment", url: "/fixed-assets/it" },
+      { title: "Furniture", url: "/fixed-assets/furniture" },
+      { title: "Leasehold", url: "/fixed-assets/leasehold" },
+      { title: "Vehicles", url: "/fixed-assets/vehicles" },
+      { title: "Machinery", url: "/fixed-assets/machinery" },
+      { title: "Other", url: "/fixed-assets/other" },
+    ],
   },
   {
     title: "Accruals",
     url: "/accruals",
     icon: Landmark,
+    subItems: [
+      { title: "Payroll", url: "/accruals/payroll" },
+      { title: "Bonuses & Commissions", url: "/accruals/bonuses-commissions" },
+      { title: "Professional Fees", url: "/accruals/professional-fees" },
+      { title: "Hosting & SaaS", url: "/accruals/hosting-saas" },
+      { title: "Utilities", url: "/accruals/utilities" },
+      { title: "Other", url: "/accruals/other" },
+    ],
   },
   {
     title: "Revenue & Contracts",
     url: "/revenue",
     icon: Receipt,
+    subItems: [
+      { title: "Subscriptions", url: "/revenue/subscriptions" },
+      { title: "Support & Maintenance", url: "/revenue/support-maintenance" },
+      { title: "Usage-Based", url: "/revenue/usage-based" },
+      { title: "Milestone-Based", url: "/revenue/milestone-based" },
+      { title: "Licensing", url: "/revenue/licensing" },
+    ],
   },
   {
     title: "Investment Income",
     url: "/investment-income",
     icon: TrendingUp,
+    subItems: [
+      { title: "Interest Bearing", url: "/investment-income/interest-bearing" },
+      { title: "Dividends", url: "/investment-income/dividends" },
+      { title: "Fixed Income", url: "/investment-income/fixed-income" },
+      { title: "Equity Method", url: "/investment-income/equity-method" },
+      { title: "Other", url: "/investment-income/other" },
+    ],
   },
   {
     title: "Loan & Debt",
     url: "/debt",
     icon: TrendingDown,
+    subItems: [
+      { title: "Term Loans", url: "/debt/term-loans" },
+      { title: "Revolving Credit", url: "/debt/revolving-credit" },
+      { title: "Bonds & Notes", url: "/debt/bonds-notes" },
+      { title: "Intercompany Loans", url: "/debt/intercompany-loans" },
+      { title: "Lease Liabilities", url: "/debt/lease-liabilities" },
+      { title: "Other", url: "/debt/other" },
+    ],
   },
 ];
 
@@ -136,7 +181,7 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
@@ -157,18 +202,54 @@ export function AppSidebar() {
               {categoryItems.map((item) => {
                 const isActive = location === item.url || 
                   (item.url !== "/" && location.startsWith(item.url));
+                const isSubItemActive = item.subItems?.some(sub => location === sub.url);
+                
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
+                    <Collapsible 
+                      defaultOpen={isActive || isSubItemActive}
+                      className="group/collapsible w-full"
                     >
-                      <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton 
+                          isActive={isActive && !isSubItemActive}
+                          data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
+                          tooltip={item.title}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                          <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton 
+                              asChild 
+                              isActive={location === item.url}
+                              data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}-dashboard`}
+                            >
+                              <Link href={item.url}>
+                                <span className="text-muted-foreground">Dashboard</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                          {item.subItems?.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton 
+                                asChild 
+                                isActive={location === subItem.url}
+                                data-testid={`nav-sub-${subItem.title.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
+                              >
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </SidebarMenuItem>
                 );
               })}
@@ -187,7 +268,7 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
+                      data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                     >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
