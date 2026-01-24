@@ -254,6 +254,96 @@ export const insertFixedAssetSchema = z.object({
 
 export type InsertFixedAsset = z.infer<typeof insertFixedAssetSchema>;
 
+// ========================
+// Accruals Dashboard Types
+// ========================
+
+export type AccrualCategory = 
+  | "PAYROLL" 
+  | "BONUSES_COMMISSIONS" 
+  | "PROFESSIONAL_FEES" 
+  | "HOSTING_SAAS" 
+  | "UTILITIES" 
+  | "OTHER";
+
+export type AccrualLifecycleState = "ACTIVE" | "DORMANT" | "CLOSED" | "ARCHIVED";
+export type AccrualConfidenceLevel = "HIGH" | "MEDIUM" | "LOW";
+export type ReviewStatus = "REVIEWED" | "NOT_REVIEWED";
+export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export interface AccrualSchedule {
+  id: string;
+  name: string;
+  category: AccrualCategory;
+  entityId: string;
+  lifecycleState: AccrualLifecycleState;
+  accrualAmount: number; // Current period accrual
+  priorPeriodAmount: number; // Previous period for comparison
+  trueUpAmount: number; // Adjustment delta
+  currency: string;
+  confidenceLevel: AccrualConfidenceLevel;
+  evidence: EvidenceStatus;
+  reviewStatus: ReviewStatus;
+  lastReviewedAt: string | null;
+  lastReviewedBy: string | null;
+  owner: string;
+  createdAt: string;
+}
+
+export interface AccrualCategorySummary {
+  category: AccrualCategory;
+  activeCount: number;
+  dormantCount: number;
+  endingBalance: number;
+  netTrueUp: number;
+  riskLevel: RiskLevel;
+  reviewStatus: ReviewStatus;
+}
+
+export interface AccrualDashboardKPIs {
+  endingAccrualBalance: number;
+  activeCategories: number;
+  netTrueUpPeriod: number;
+  highRiskCategories: number;
+  dormantAccruals: number;
+}
+
+export interface AccrualTrendPoint {
+  period: string;
+  balance: number;
+  trueUp: number;
+}
+
+export interface AccrualCategoryTrend {
+  category: AccrualCategory;
+  data: AccrualTrendPoint[];
+}
+
+export interface AccrualRiskPanel {
+  type: "MISSING_EVIDENCE" | "LARGE_TRUE_UP" | "LOW_CONFIDENCE" | "EXPECTED_MISSING" | "NOT_REVIEWED";
+  title: string;
+  categories: { category: AccrualCategory; count: number }[];
+  severity: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface AccrualMixBreakdown {
+  category: AccrualCategory;
+  amount: number;
+  percentage: number;
+}
+
+export const insertAccrualScheduleSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  category: z.enum(["PAYROLL", "BONUSES_COMMISSIONS", "PROFESSIONAL_FEES", "HOSTING_SAAS", "UTILITIES", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  accrualAmount: z.number().min(0, "Amount cannot be negative"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  confidenceLevel: z.enum(["HIGH", "MEDIUM", "LOW"]),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertAccrualSchedule = z.infer<typeof insertAccrualScheduleSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;

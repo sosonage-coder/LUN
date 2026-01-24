@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, type PrepaidSubcategory, type AssetClass } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -362,6 +362,120 @@ export async function registerRoutes(
       }
       console.error("Error creating fixed asset:", error);
       res.status(500).json({ error: "Failed to create fixed asset" });
+    }
+  });
+
+  // ======================
+  // Accruals Dashboard Routes
+  // ======================
+
+  // Get accruals dashboard KPIs
+  app.get("/api/accruals/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getAccrualDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching accrual KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch accrual KPIs" });
+    }
+  });
+
+  // Get category summaries
+  app.get("/api/accruals/categories", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const summaries = await storage.getAccrualCategorySummaries(entityId);
+      res.json(summaries);
+    } catch (error) {
+      console.error("Error fetching category summaries:", error);
+      res.status(500).json({ error: "Failed to fetch category summaries" });
+    }
+  });
+
+  // Get accrual trend
+  app.get("/api/accruals/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getAccrualTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching accrual trend:", error);
+      res.status(500).json({ error: "Failed to fetch accrual trend" });
+    }
+  });
+
+  // Get risk panels
+  app.get("/api/accruals/risks", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const panels = await storage.getAccrualRiskPanels(entityId);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching risk panels:", error);
+      res.status(500).json({ error: "Failed to fetch risk panels" });
+    }
+  });
+
+  // Get accrual mix breakdown
+  app.get("/api/accruals/mix", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const mix = await storage.getAccrualMixBreakdown(entityId);
+      res.json(mix);
+    } catch (error) {
+      console.error("Error fetching accrual mix:", error);
+      res.status(500).json({ error: "Failed to fetch accrual mix" });
+    }
+  });
+
+  // Get all accruals (for drilldown)
+  app.get("/api/accruals", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const category = req.query.category as AccrualCategory | undefined;
+      const accruals = await storage.getAccrualSchedules(entityId, category);
+      res.json(accruals);
+    } catch (error) {
+      console.error("Error fetching accruals:", error);
+      res.status(500).json({ error: "Failed to fetch accruals" });
+    }
+  });
+
+  // Get single accrual
+  app.get("/api/accruals/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const accrual = await storage.getAccrualSchedule(id);
+      
+      if (!accrual) {
+        return res.status(404).json({ error: "Accrual not found" });
+      }
+
+      res.json(accrual);
+    } catch (error) {
+      console.error("Error fetching accrual:", error);
+      res.status(500).json({ error: "Failed to fetch accrual" });
+    }
+  });
+
+  // Create new accrual
+  app.post("/api/accruals", async (req, res) => {
+    try {
+      const validatedData = insertAccrualScheduleSchema.parse(req.body);
+      const accrual = await storage.createAccrualSchedule(validatedData);
+      res.status(201).json(accrual);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating accrual:", error);
+      res.status(500).json({ error: "Failed to create accrual" });
     }
   });
 

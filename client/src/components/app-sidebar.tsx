@@ -12,7 +12,8 @@ import {
   Building,
   Monitor,
   Layers,
-  HardDrive
+  HardDrive,
+  Landmark
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,6 +62,11 @@ const categoryItems = [
     title: "Fixed Assets",
     url: "/fixed-assets",
     icon: HardDrive,
+  },
+  {
+    title: "Accruals",
+    url: "/accruals",
+    icon: Landmark,
   },
 ];
 

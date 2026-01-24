@@ -1,0 +1,315 @@
+🧾 CATEGORY DASHBOARD SPEC — ACCRUALS (SCHEDULER)
+
+Product: Scheduler
+Category: Accruals
+Audience: Preparer, Reviewer, Controller, Audit
+Purpose: Provide a period-aware, category-level view of accrued expenses and risk, while deliberately excluding historical clutter through lifecycle states, time windows, and progressive disclosure.
+
+🔒 Design Rule (Non-Negotiable)
+
+Dashboards surface current state and risk by category and time window.
+Accrual history and line-level detail are never listed by default.
+
+All design decisions below enforce this rule.
+
+1️⃣ Scope & Philosophy
+What this dashboard IS
+
+A current-period control surface
+
+A category-level risk and completeness view
+
+A decision screen for close readiness
+
+What this dashboard is NOT
+
+❌ A list of all accruals ever created
+
+❌ A multi-year history viewer
+
+❌ A substitute for accrual workspaces
+
+❌ A posting or AP engine
+
+This dashboard answers:
+
+“For this period, do we have the right accruals, with acceptable risk, and are they ready to close?”
+
+2️⃣ Accrual Lifecycle Model (Foundation)
+
+Every accrual schedule must be in exactly one state:
+
+State	Meaning	Dashboard Visibility
+Active	Expected to exist this period	✅ Included
+Dormant	Temporarily inactive, expected to return	⚠ Included (separate count)
+Closed	Fully resolved, no future expectation	❌ Excluded
+Archived	Historical reference only	❌ Excluded
+Hard Rule
+
+Only Active and Dormant accruals are ever surfaced on the dashboard.
+
+Closed and Archived accruals are accessible only via search or history views.
+
+3️⃣ Entry Points & Navigation
+URL
+/scheduler/accruals
+
+Navigation context
+
+Top Nav: Scheduler (active)
+
+Left Sidebar: Categories
+
+Prepaids
+
+Fixed Assets
+
+Accruals (active)
+
+Payroll
+
+Bonuses & Commissions
+
+Professional Fees
+
+Hosting & SaaS
+
+Utilities
+
+Other
+
+Main Area: Accruals Dashboard (Category-Level Only)
+
+4️⃣ Time Window Enforcement
+Default Time Horizon
+
+Primary view: Current period only
+
+Trends: Rolling last 6–12 periods (configurable, capped)
+
+Prohibited by Design
+
+❌ Listing accruals older than the trend window
+
+❌ Displaying closed periods by default
+
+❌ Auto-loading multi-year history
+
+Explicit Rule
+
+Anything outside the active time window is history and must require deliberate drilldown.
+
+5️⃣ Page Layout (State-Driven, Not Row-Driven)
+┌──────────────────────────────────────────┐
+│ Header (Title + Period + Entity)         │
+├──────────────────────────────────────────┤
+│ KPI Summary Tiles (Current State)        │
+├──────────────────────────────────────────┤
+│ Category-Level Trends & Volatility       │
+├──────────────────────────────────────────┤
+│ Exceptions & Risk Panels                 │
+├──────────────────────────────────────────┤
+│ Category Summary Table (Not Accruals)    │
+└──────────────────────────────────────────┘
+
+
+⚠️ No individual accrual schedules appear on this page.
+
+6️⃣ Header Section
+Elements
+
+Title: Accruals
+
+Context Bar:
+
+Entity selector
+
+Period selector
+
+Status badge (Open / Locked)
+
+Time Horizon indicator (e.g., “Current Period + 12-month trend”)
+
+Actions
+
+➕ New Accrual Schedule
+
+📄 New Accrual Template
+
+⬇ Export Dashboard Summary
+
+7️⃣ KPI Summary Tiles (State, Not Volume)
+
+Purpose: Summarize exposure and risk, not activity volume.
+
+Tile	Definition
+Ending Accrual Balance	Total accrued liability (Active + Dormant only)
+Active Categories	# of categories with active accruals
+Net True-Up (Period)	Σ adjustments for current period
+High-Risk Categories	Categories with flagged accruals
+Dormant Accruals	Count of dormant (non-zero expectation)
+Behavior
+
+Clicking a tile filters category summaries
+
+No tile ever expands into a raw accrual list
+
+8️⃣ Charts & Visuals (Aggregated Only)
+Chart 1: Accrual Balance Trend
+
+Line or stacked bar
+
+Rolling 6–12 periods
+
+Aggregated by category
+
+Drilldown: click a category → Category Dashboard (not individual accruals)
+
+Chart 2: True-Up Volatility by Category
+
+Bar / waterfall
+
+Σ|Δₚ| by category per period
+
+Highlights judgment-heavy areas
+
+Drilldown: category → Category View → Accrual Register (filtered)
+
+Chart 3: Accrual Mix (Current Period)
+
+Donut / stacked bar
+
+Active accrual balance by category
+
+9️⃣ Exceptions & Risk Panels (Primary Focus)
+
+Purpose: Surface what needs attention, not everything that exists.
+
+Panels
+
+⚠ Categories with missing evidence
+
+🔄 Categories with large true-ups
+
+🧠 Categories dominated by low-confidence accruals
+
+📭 Expected categories with no active accruals
+
+⏱ Categories not reviewed for current period
+
+Each panel shows:
+
+Category name
+
+Count of affected accruals
+
+Severity
+
+“View Category” link
+
+🔽 10️⃣ Category Summary Table (Not an Accrual List)
+Table rows = Categories, not schedules
+Column	Description
+Category	Payroll / Legal / Hosting
+Active Accruals	Count
+Ending Balance	Total for category
+Net True-Up	Period adjustment
+Risk Level	Low / Medium / High
+Status	Reviewed / Not Reviewed
+Behavior
+
+Clicking a row navigates to:
+
+/scheduler/accruals/{category}
+
+11️⃣ Drilldown Path (Progressive Disclosure)
+Level 1 → Accruals Dashboard (this page)
+/scheduler/accruals
+
+Level 2 → Category Dashboard
+/scheduler/accruals/payroll
+
+
+Shows active accrual schedules only
+
+Current period + prior context
+
+Level 3 → Accrual Workspace
+/scheduler/accruals/payroll/accrual/789
+
+
+Full history
+
+Line-level math
+
+Evidence
+
+Audit trail
+
+🔐 12️⃣ Controls & Permissions
+Role behavior
+Role	Access
+Preparer	Create/edit assigned accruals
+Reviewer	Review & comment
+Controller	Approve + lock period
+Auditor	Read-only + evidence
+Dashboard enforcement
+
+Locked periods freeze dashboard values
+
+No edits possible from dashboard level
+
+All actions route to workspaces
+
+13️⃣ Empty & Edge States
+No active accruals
+
+Message: “No active accruals for this period”
+
+CTA: “Create accrual” or “View archived accruals”
+
+All accruals closed
+
+Dashboard shows zero exposure
+
+Risk panels suppressed
+
+14️⃣ Technical Guardrails (Anti-Bloat)
+
+Dashboard queries aggregates only
+
+Category summaries pre-computed per period
+
+Accrual registers load on demand
+
+Hard UI limits:
+
+Max charts: 4
+
+Max rows: number of categories
+
+Max trend window: 12 periods
+
+🚫 Raw accrual lists are prohibited on the main dashboard
+
+15️⃣ Why this design survives 10+ years
+
+Lifecycle states prevent accumulation
+
+Category aggregation caps surface area
+
+Time windows limit historical noise
+
+Progressive disclosure preserves depth without clutter
+
+This is how:
+
+Controllers stay sane
+
+Auditors trust the system
+
+Engineers don’t fight performance fires
+
+16️⃣ One-sentence explanation (use everywhere)
+
+“The Accruals dashboard surfaces current-period exposure and risk by category and time window, while all historical detail is accessed only through deliberate drilldown.”

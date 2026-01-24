@@ -22,7 +22,15 @@ import type {
   DepreciationTrendPoint,
   UsefulLifeDistribution,
   ControlFlag,
-  AssetClass
+  AssetClass,
+  AccrualSchedule,
+  InsertAccrualSchedule,
+  AccrualDashboardKPIs,
+  AccrualCategorySummary,
+  AccrualTrendPoint,
+  AccrualRiskPanel,
+  AccrualMixBreakdown,
+  AccrualCategory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -67,6 +75,16 @@ export interface IStorage {
   getDepreciationTrend(entityId?: string, periods?: number): Promise<DepreciationTrendPoint[]>;
   getUsefulLifeDistribution(entityId?: string): Promise<UsefulLifeDistribution[]>;
   getControlFlags(entityId?: string): Promise<ControlFlag[]>;
+  
+  // Accruals Dashboard
+  getAccrualSchedules(entityId?: string, category?: AccrualCategory): Promise<AccrualSchedule[]>;
+  getAccrualSchedule(id: string): Promise<AccrualSchedule | undefined>;
+  createAccrualSchedule(data: InsertAccrualSchedule): Promise<AccrualSchedule>;
+  getAccrualDashboardKPIs(entityId?: string, period?: string): Promise<AccrualDashboardKPIs>;
+  getAccrualCategorySummaries(entityId?: string): Promise<AccrualCategorySummary[]>;
+  getAccrualTrend(entityId?: string, periods?: number): Promise<AccrualTrendPoint[]>;
+  getAccrualRiskPanels(entityId?: string): Promise<AccrualRiskPanel[]>;
+  getAccrualMixBreakdown(entityId?: string): Promise<AccrualMixBreakdown[]>;
 }
 
 // Helper functions
@@ -105,6 +123,7 @@ export class MemStorage implements IStorage {
   private cachedPeriods: Map<string, PeriodLine[]>;
   private prepaidSchedules: Map<string, PrepaidSchedule>;
   private fixedAssets: Map<string, FixedAsset>;
+  private accrualSchedules: Map<string, AccrualSchedule>;
 
   constructor() {
     this.schedules = new Map();
@@ -114,6 +133,7 @@ export class MemStorage implements IStorage {
     this.cachedPeriods = new Map();
     this.prepaidSchedules = new Map();
     this.fixedAssets = new Map();
+    this.accrualSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -201,6 +221,9 @@ export class MemStorage implements IStorage {
     
     // Seed fixed assets for Category Dashboard
     this.seedFixedAssets();
+    
+    // Seed accrual schedules for Category Dashboard
+    this.seedAccrualSchedules();
   }
 
   private seedPrepaidSchedules() {
@@ -1235,6 +1258,529 @@ export class MemStorage implements IStorage {
       const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
       return severityOrder[a.severity] - severityOrder[b.severity];
     });
+  }
+
+  // ========================
+  // Accruals Methods
+  // ========================
+
+  private seedAccrualSchedules() {
+    const now = new Date().toISOString();
+    const sampleAccruals: AccrualSchedule[] = [
+      {
+        id: randomUUID(),
+        name: "Monthly Payroll Accrual - US",
+        category: "PAYROLL",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 285000,
+        priorPeriodAmount: 278000,
+        trueUpAmount: 7000,
+        currency: "USD",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Controller",
+        owner: "HR Finance",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Monthly Payroll Accrual - EU",
+        category: "PAYROLL",
+        entityId: "SUB-EU",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 125000,
+        priorPeriodAmount: 122000,
+        trueUpAmount: 3000,
+        currency: "EUR",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "EU Controller",
+        owner: "EU HR",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Q4 Bonus Pool",
+        category: "BONUSES_COMMISSIONS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 450000,
+        priorPeriodAmount: 380000,
+        trueUpAmount: 70000,
+        currency: "USD",
+        confidenceLevel: "MEDIUM",
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Compensation Team",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Sales Commissions - US",
+        category: "BONUSES_COMMISSIONS",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 185000,
+        priorPeriodAmount: 165000,
+        trueUpAmount: 20000,
+        currency: "USD",
+        confidenceLevel: "MEDIUM",
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Sales Ops",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "External Audit Fees",
+        category: "PROFESSIONAL_FEES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 95000,
+        priorPeriodAmount: 95000,
+        trueUpAmount: 0,
+        currency: "USD",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Controller",
+        owner: "Finance",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Legal Services - M&A",
+        category: "PROFESSIONAL_FEES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 175000,
+        priorPeriodAmount: 120000,
+        trueUpAmount: 55000,
+        currency: "USD",
+        confidenceLevel: "LOW",
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Legal",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "AWS Infrastructure",
+        category: "HOSTING_SAAS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 82000,
+        priorPeriodAmount: 78000,
+        trueUpAmount: 4000,
+        currency: "USD",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "IT Finance",
+        owner: "Cloud Ops",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Salesforce Enterprise",
+        category: "HOSTING_SAAS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 45000,
+        priorPeriodAmount: 45000,
+        trueUpAmount: 0,
+        currency: "USD",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "IT Finance",
+        owner: "Sales Ops",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Office Utilities - HQ",
+        category: "UTILITIES",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 18000,
+        priorPeriodAmount: 16500,
+        trueUpAmount: 1500,
+        currency: "USD",
+        confidenceLevel: "MEDIUM",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Facilities",
+        owner: "Facilities",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Office Utilities - Berlin",
+        category: "UTILITIES",
+        entityId: "SUB-EU",
+        lifecycleState: "DORMANT",
+        accrualAmount: 8500,
+        priorPeriodAmount: 9200,
+        trueUpAmount: -700,
+        currency: "EUR",
+        confidenceLevel: "MEDIUM",
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "EU Facilities",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Miscellaneous Accruals",
+        category: "OTHER",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 12000,
+        priorPeriodAmount: 15000,
+        trueUpAmount: -3000,
+        currency: "USD",
+        confidenceLevel: "LOW",
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Accounting",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Japan Payroll",
+        category: "PAYROLL",
+        entityId: "SUB-JP",
+        lifecycleState: "ACTIVE",
+        accrualAmount: 45000,
+        priorPeriodAmount: 42000,
+        trueUpAmount: 3000,
+        currency: "JPY",
+        confidenceLevel: "HIGH",
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "JP Controller",
+        owner: "JP HR",
+        createdAt: now,
+      },
+    ];
+
+    for (const accrual of sampleAccruals) {
+      this.accrualSchedules.set(accrual.id, accrual);
+    }
+  }
+
+  async getAccrualSchedules(entityId?: string, category?: AccrualCategory): Promise<AccrualSchedule[]> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE" || a.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+    
+    if (category) {
+      accruals = accruals.filter(a => a.category === category);
+    }
+
+    return accruals.sort((a, b) => b.accrualAmount - a.accrualAmount);
+  }
+
+  async getAccrualSchedule(id: string): Promise<AccrualSchedule | undefined> {
+    return this.accrualSchedules.get(id);
+  }
+
+  async createAccrualSchedule(data: InsertAccrualSchedule): Promise<AccrualSchedule> {
+    const now = new Date().toISOString();
+    const accrual: AccrualSchedule = {
+      id: randomUUID(),
+      name: data.name,
+      category: data.category,
+      entityId: data.entityId,
+      lifecycleState: "ACTIVE",
+      accrualAmount: data.accrualAmount,
+      priorPeriodAmount: 0,
+      trueUpAmount: data.accrualAmount,
+      currency: data.currency,
+      confidenceLevel: data.confidenceLevel,
+      evidence: "MISSING",
+      reviewStatus: "NOT_REVIEWED",
+      lastReviewedAt: null,
+      lastReviewedBy: null,
+      owner: data.owner,
+      createdAt: now,
+    };
+
+    this.accrualSchedules.set(accrual.id, accrual);
+    return accrual;
+  }
+
+  async getAccrualDashboardKPIs(entityId?: string, period?: string): Promise<AccrualDashboardKPIs> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE" || a.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+
+    const activeAccruals = accruals.filter(a => a.lifecycleState === "ACTIVE");
+    const dormantAccruals = accruals.filter(a => a.lifecycleState === "DORMANT");
+
+    const endingAccrualBalance = activeAccruals.reduce((sum, a) => sum + a.accrualAmount, 0) +
+                                  dormantAccruals.reduce((sum, a) => sum + a.accrualAmount, 0);
+    
+    const categories = new Set(activeAccruals.map(a => a.category));
+    const activeCategories = categories.size;
+
+    const netTrueUpPeriod = accruals.reduce((sum, a) => sum + a.trueUpAmount, 0);
+
+    const highRiskCategories = this.calculateHighRiskCategories(accruals);
+
+    return {
+      endingAccrualBalance,
+      activeCategories,
+      netTrueUpPeriod,
+      highRiskCategories,
+      dormantAccruals: dormantAccruals.length,
+    };
+  }
+
+  private calculateHighRiskCategories(accruals: AccrualSchedule[]): number {
+    const categoryRisks: Record<AccrualCategory, { lowConfidence: number; missingEvidence: number; largeTrueUp: number }> = {
+      PAYROLL: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+      BONUSES_COMMISSIONS: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+      PROFESSIONAL_FEES: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+      HOSTING_SAAS: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+      UTILITIES: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+      OTHER: { lowConfidence: 0, missingEvidence: 0, largeTrueUp: 0 },
+    };
+
+    for (const accrual of accruals) {
+      if (accrual.confidenceLevel === "LOW") {
+        categoryRisks[accrual.category].lowConfidence++;
+      }
+      if (accrual.evidence === "MISSING") {
+        categoryRisks[accrual.category].missingEvidence++;
+      }
+      if (Math.abs(accrual.trueUpAmount) > accrual.accrualAmount * 0.2) {
+        categoryRisks[accrual.category].largeTrueUp++;
+      }
+    }
+
+    let highRiskCount = 0;
+    for (const category of Object.keys(categoryRisks) as AccrualCategory[]) {
+      const risks = categoryRisks[category];
+      if (risks.lowConfidence > 0 || risks.missingEvidence > 0 || risks.largeTrueUp > 0) {
+        highRiskCount++;
+      }
+    }
+
+    return highRiskCount;
+  }
+
+  async getAccrualCategorySummaries(entityId?: string): Promise<AccrualCategorySummary[]> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE" || a.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+
+    const summaries: Record<AccrualCategory, AccrualCategorySummary> = {
+      PAYROLL: { category: "PAYROLL", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      BONUSES_COMMISSIONS: { category: "BONUSES_COMMISSIONS", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      PROFESSIONAL_FEES: { category: "PROFESSIONAL_FEES", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      HOSTING_SAAS: { category: "HOSTING_SAAS", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      UTILITIES: { category: "UTILITIES", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      OTHER: { category: "OTHER", activeCount: 0, dormantCount: 0, endingBalance: 0, netTrueUp: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+    };
+
+    for (const accrual of accruals) {
+      const cat = accrual.category;
+      if (accrual.lifecycleState === "ACTIVE") {
+        summaries[cat].activeCount++;
+      } else {
+        summaries[cat].dormantCount++;
+      }
+      summaries[cat].endingBalance += accrual.accrualAmount;
+      summaries[cat].netTrueUp += accrual.trueUpAmount;
+      
+      if (accrual.confidenceLevel === "LOW" || accrual.evidence === "MISSING") {
+        summaries[cat].riskLevel = "HIGH";
+      } else if (accrual.confidenceLevel === "MEDIUM" && summaries[cat].riskLevel !== "HIGH") {
+        summaries[cat].riskLevel = "MEDIUM";
+      }
+      
+      if (accrual.reviewStatus === "NOT_REVIEWED") {
+        summaries[cat].reviewStatus = "NOT_REVIEWED";
+      }
+    }
+
+    return Object.values(summaries)
+      .filter(s => s.activeCount > 0 || s.dormantCount > 0)
+      .sort((a, b) => b.endingBalance - a.endingBalance);
+  }
+
+  async getAccrualTrend(entityId?: string, periods: number = 6): Promise<AccrualTrendPoint[]> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE" || a.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+
+    const currentBalance = accruals.reduce((sum, a) => sum + a.accrualAmount, 0);
+    const currentTrueUp = accruals.reduce((sum, a) => sum + a.trueUpAmount, 0);
+    const result: AccrualTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const balance = i === 0 ? currentBalance : currentBalance * (0.92 + Math.random() * 0.16);
+      const trueUp = i === 0 ? currentTrueUp : currentTrueUp * (0.7 + Math.random() * 0.6);
+      result.push({ 
+        period, 
+        balance: Math.round(balance), 
+        trueUp: Math.round(trueUp) 
+      });
+    }
+
+    return result;
+  }
+
+  async getAccrualRiskPanels(entityId?: string): Promise<AccrualRiskPanel[]> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE" || a.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+
+    const panels: AccrualRiskPanel[] = [];
+
+    const missingEvidence: Record<AccrualCategory, number> = { PAYROLL: 0, BONUSES_COMMISSIONS: 0, PROFESSIONAL_FEES: 0, HOSTING_SAAS: 0, UTILITIES: 0, OTHER: 0 };
+    const largeTrueUp: Record<AccrualCategory, number> = { PAYROLL: 0, BONUSES_COMMISSIONS: 0, PROFESSIONAL_FEES: 0, HOSTING_SAAS: 0, UTILITIES: 0, OTHER: 0 };
+    const lowConfidence: Record<AccrualCategory, number> = { PAYROLL: 0, BONUSES_COMMISSIONS: 0, PROFESSIONAL_FEES: 0, HOSTING_SAAS: 0, UTILITIES: 0, OTHER: 0 };
+    const notReviewed: Record<AccrualCategory, number> = { PAYROLL: 0, BONUSES_COMMISSIONS: 0, PROFESSIONAL_FEES: 0, HOSTING_SAAS: 0, UTILITIES: 0, OTHER: 0 };
+
+    for (const accrual of accruals) {
+      if (accrual.evidence === "MISSING") {
+        missingEvidence[accrual.category]++;
+      }
+      if (Math.abs(accrual.trueUpAmount) > accrual.accrualAmount * 0.2) {
+        largeTrueUp[accrual.category]++;
+      }
+      if (accrual.confidenceLevel === "LOW") {
+        lowConfidence[accrual.category]++;
+      }
+      if (accrual.reviewStatus === "NOT_REVIEWED") {
+        notReviewed[accrual.category]++;
+      }
+    }
+
+    const buildCategories = (data: Record<AccrualCategory, number>) => {
+      return Object.entries(data)
+        .filter(([_, count]) => count > 0)
+        .map(([category, count]) => ({ category: category as AccrualCategory, count }));
+    };
+
+    const missingEvidenceCategories = buildCategories(missingEvidence);
+    if (missingEvidenceCategories.length > 0) {
+      panels.push({
+        type: "MISSING_EVIDENCE",
+        title: "Categories with missing evidence",
+        categories: missingEvidenceCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const largeTrueUpCategories = buildCategories(largeTrueUp);
+    if (largeTrueUpCategories.length > 0) {
+      panels.push({
+        type: "LARGE_TRUE_UP",
+        title: "Categories with large true-ups",
+        categories: largeTrueUpCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const lowConfidenceCategories = buildCategories(lowConfidence);
+    if (lowConfidenceCategories.length > 0) {
+      panels.push({
+        type: "LOW_CONFIDENCE",
+        title: "Categories dominated by low-confidence accruals",
+        categories: lowConfidenceCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const notReviewedCategories = buildCategories(notReviewed);
+    if (notReviewedCategories.length > 0) {
+      panels.push({
+        type: "NOT_REVIEWED",
+        title: "Categories not reviewed for current period",
+        categories: notReviewedCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    return panels.sort((a, b) => {
+      const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
+  }
+
+  async getAccrualMixBreakdown(entityId?: string): Promise<AccrualMixBreakdown[]> {
+    let accruals = Array.from(this.accrualSchedules.values())
+      .filter(a => a.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      accruals = accruals.filter(a => a.entityId === entityId);
+    }
+
+    const totals: Record<AccrualCategory, number> = {
+      PAYROLL: 0,
+      BONUSES_COMMISSIONS: 0,
+      PROFESSIONAL_FEES: 0,
+      HOSTING_SAAS: 0,
+      UTILITIES: 0,
+      OTHER: 0,
+    };
+
+    for (const accrual of accruals) {
+      totals[accrual.category] += accrual.accrualAmount;
+    }
+
+    const grandTotal = Object.values(totals).reduce((sum, v) => sum + v, 0);
+
+    return Object.entries(totals)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category: category as AccrualCategory,
+        amount,
+        percentage: grandTotal > 0 ? (amount / grandTotal) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
   }
 }
 
