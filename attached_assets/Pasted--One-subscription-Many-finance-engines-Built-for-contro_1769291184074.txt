@@ -1,0 +1,195 @@
+# 
+
+---
+
+# **One subscription. Many finance engines. Built for controllers, not ERPs.**
+
+---
+
+## 🧠 CORE PLATFORM (Always On)
+
+### **Lunari Core**
+
+- Period & entity management
+- ERP integration layer
+- Roles, permissions, SoD
+- Audit trails & immutability
+- AI pattern memory shared across engines
+
+---
+
+# 🎬 **FINANCE ENGINES — FINAL LIST (COMPLETE)**
+
+---
+
+## 1️⃣ **OneClose™**
+
+**Category:** Close Management
+
+**Tagline:** *Close isn’t a checklist. It’s a system.*
+
+**Purpose:** Orchestrates the close with dynamic tasks, controls, ownership, and memory.
+
+---
+
+## 2️⃣ **Reconciliation Workspace™**
+
+**Category:** Reconciliations
+
+**Tagline:** *Trust your balances — continuously.*
+
+**Purpose:** Governed reconciliations with judgment, evidence, and certification.
+
+---
+
+## 3️⃣ **ControlEYE™**
+
+**Category:** GL Control Intelligence
+
+**Tagline:** *Know what matters before it becomes a problem.*
+
+**Purpose:** Continuous GL monitoring, pattern detection, and explainable variance signals.
+
+---
+
+## 4️⃣ **Schedule Studio™**
+
+**Category:** Finance Schedules
+
+**Tagline:** *Excel — with memory and controls.*
+
+**Purpose:** Controlled, repeatable schedules for accruals, prepaids, FA, leases, revenue, equity.
+
+---
+
+## 5️⃣ **Revenue Engine™**
+
+**Category:** Revenue Recognition (ASC 606 / IFRS 15)
+
+**Tagline:** *Revenue that survives audit.*
+
+**Purpose:** Contract-driven revenue recognition with audit-ready schedules and disclosures.
+
+---
+
+## 6️⃣ **Lease Engine™**
+
+**Category:** Lease Accounting (ASC 842 / IFRS 16)
+
+**Tagline:** *Lease compliance without the pain.*
+
+**Purpose:** End-to-end lease accounting, remeasurement, and disclosure support.
+
+---
+
+## 7️⃣ **AP Intelligence™**
+
+**Category:** Accounts Payable
+
+**Tagline:** *Payables with judgment.*
+
+**Purpose:**
+
+- Invoice intake & extraction
+- Smart coding & tax handling (VAT/HST/WHT)
+- Approval workflows
+- Exception & anomaly detection
+
+**Why it’s different:** Context-aware AP that understands finance logic, not just OCR.
+
+---
+
+## 8️⃣ **AR Intelligence™**
+
+**Category:** Accounts Receivable
+
+**Tagline:** *Cash flow, decoded.*
+
+**Purpose:**
+
+- Invoice generation
+- Cash application rules
+- Collections signals
+- Dispute tracking
+
+**Why it’s different:** Focuses on **cash behavior**, not just billing.
+
+---
+
+## 9️⃣ **InterSettle™**
+
+**Category:** Intercompany Management
+
+**Tagline:** *Intercompany — explainable, nettable, auditable.*
+
+**Purpose:** Intercompany agreement, FX, netting, settlement, and elimination readiness.
+
+---
+
+## 🔟 **Disclosure Manager™ (FINotes)**
+
+**Category:** Financial Statements & Notes
+
+**Tagline:** *Financial reporting as a system of record.*
+
+**Purpose:** TB → FS → Notes → MD&A with review, approval, and audit layers.
+
+---
+
+## 1️⃣1️⃣ **Governance Calendar™**
+
+**Category:** Entity Compliance & Governance
+
+**Tagline:** *Never miss an obligation again.*
+
+**Purpose:** Entity-level statutory, regulatory, and internal compliance tracking.
+
+---
+
+## 1️⃣2️⃣ **Equity Tracker™**
+
+**Category:** Equity & Ownership Governance
+
+**Tagline:** *Ownership you can prove.*
+
+**Purpose:** Cap tables, share classes, equity events, dividends, and audit trails.
+
+---
+
+## 1️⃣3️⃣ **Tracquire™**
+
+**Category:** Asset Management
+
+**Tagline:** *Know where your assets are — and why.*
+
+**Purpose:** Asset registers, depreciation, custody, disposals, and audit logs.
+
+---
+
+## 1️⃣4️⃣ **SOPMemo™**
+
+**Category:** SOP & Policy Management
+
+**Tagline:** *This is how we work.*
+
+**Purpose:** Walkthroughs, SOPs, policies, and institutional memory.
+
+---
+
+## 1️⃣5️⃣ **RedBeam™**
+
+**Category:** Internal Control & Audit
+
+**Tagline:** *Independent control signals you can defend.*
+
+**Purpose:** Internal control testing, risk patterns, and audit support.
+
+---
+
+# 🧩 **FINAL PLATFORM SNAPSHOT**
+
+- **1 platform**
+- **15 finance engines**
+- Modular, subscription-based
+- Built for **controllers first**
+- AI that supports judgment, not replaces it
