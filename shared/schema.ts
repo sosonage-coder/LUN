@@ -128,6 +128,60 @@ export interface ScheduleSummary {
   schedulesByType: Record<ScheduleType, number>;
 }
 
+// Prepaid Schedule for Category Dashboard
+export type PrepaidSubcategory = "INSURANCE" | "RENT" | "SOFTWARE" | "OTHER";
+export type PrepaidStatus = "ACTIVE" | "COMPLETED" | "ON_HOLD";
+export type EvidenceStatus = "ATTACHED" | "MISSING";
+
+export interface PrepaidSchedule {
+  id: string;
+  name: string;
+  subcategory: PrepaidSubcategory;
+  entityId: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  originalAmount: number;
+  currency: string;
+  monthlyExpense: number;
+  remainingBalance: number;
+  status: PrepaidStatus;
+  evidence: EvidenceStatus;
+  owner: string;
+  createdAt: string;
+}
+
+export interface PrepaidDashboardKPIs {
+  totalPrepaidBalance: number;
+  activeSchedules: number;
+  expenseThisPeriod: number;
+  remainingBalance: number;
+  upcomingExpirations: number;
+}
+
+export interface PrepaidCategoryBreakdown {
+  category: PrepaidSubcategory;
+  amount: number;
+  count: number;
+}
+
+export interface AmortizationTrendPoint {
+  period: string;
+  expense: number;
+}
+
+export const insertPrepaidScheduleSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  subcategory: z.enum(["INSURANCE", "RENT", "SOFTWARE", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  originalAmount: z.number().positive("Amount must be positive"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertPrepaidSchedule = z.infer<typeof insertPrepaidScheduleSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;

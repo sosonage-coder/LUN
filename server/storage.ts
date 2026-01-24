@@ -8,7 +8,13 @@ import type {
   Entity,
   PeriodStatus,
   ScheduleSummary,
-  PeriodState
+  PeriodState,
+  PrepaidSchedule,
+  InsertPrepaidSchedule,
+  PrepaidDashboardKPIs,
+  PrepaidCategoryBreakdown,
+  AmortizationTrendPoint,
+  PrepaidSubcategory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -35,6 +41,14 @@ export interface IStorage {
   
   // Summary
   getScheduleSummary(): Promise<ScheduleSummary>;
+  
+  // Prepaid Dashboard
+  getPrepaidSchedules(entityId?: string, subcategory?: PrepaidSubcategory): Promise<PrepaidSchedule[]>;
+  getPrepaidSchedule(id: string): Promise<PrepaidSchedule | undefined>;
+  createPrepaidSchedule(data: InsertPrepaidSchedule): Promise<PrepaidSchedule>;
+  getPrepaidDashboardKPIs(entityId?: string, period?: string): Promise<PrepaidDashboardKPIs>;
+  getPrepaidCategoryBreakdown(entityId?: string): Promise<PrepaidCategoryBreakdown[]>;
+  getAmortizationTrend(entityId?: string, periods?: number): Promise<AmortizationTrendPoint[]>;
 }
 
 // Helper functions
@@ -71,6 +85,7 @@ export class MemStorage implements IStorage {
   private entities: Map<string, Entity>;
   private periodStatuses: Map<string, PeriodStatus>;
   private cachedPeriods: Map<string, PeriodLine[]>;
+  private prepaidSchedules: Map<string, PrepaidSchedule>;
 
   constructor() {
     this.schedules = new Map();
@@ -78,6 +93,7 @@ export class MemStorage implements IStorage {
     this.entities = new Map();
     this.periodStatuses = new Map();
     this.cachedPeriods = new Map();
+    this.prepaidSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -157,6 +173,163 @@ export class MemStorage implements IStorage {
     // Rebuild all schedules to incorporate closed period statuses
     for (const scheduleId of this.schedules.keys()) {
       this.rebuildScheduleSync(scheduleId);
+    }
+
+    // Seed prepaid schedules for Category Dashboard
+    this.seedPrepaidSchedules();
+  }
+
+  private seedPrepaidSchedules() {
+    const now = new Date().toISOString();
+    const samplePrepaids: PrepaidSchedule[] = [
+      {
+        id: randomUUID(),
+        name: "Annual D&O Insurance Premium",
+        subcategory: "INSURANCE",
+        entityId: "CORP-001",
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        originalAmount: 48000,
+        currency: "USD",
+        monthlyExpense: 4000,
+        remainingBalance: 40000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "Sarah Chen",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Cybersecurity Insurance",
+        subcategory: "INSURANCE",
+        entityId: "CORP-001",
+        startDate: "2025-02-01",
+        endDate: "2026-01-31",
+        originalAmount: 36000,
+        currency: "USD",
+        monthlyExpense: 3000,
+        remainingBalance: 33000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "Michael Torres",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "HQ Office Lease Q1-Q4",
+        subcategory: "RENT",
+        entityId: "CORP-001",
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        originalAmount: 180000,
+        currency: "USD",
+        monthlyExpense: 15000,
+        remainingBalance: 150000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "James Wilson",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Berlin Office Rent",
+        subcategory: "RENT",
+        entityId: "SUB-EU",
+        startDate: "2025-01-01",
+        endDate: "2025-06-30",
+        originalAmount: 72000,
+        currency: "EUR",
+        monthlyExpense: 12000,
+        remainingBalance: 48000,
+        status: "ACTIVE",
+        evidence: "MISSING",
+        owner: "Anna Schmidt",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Salesforce Enterprise License",
+        subcategory: "SOFTWARE",
+        entityId: "CORP-001",
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        originalAmount: 96000,
+        currency: "USD",
+        monthlyExpense: 8000,
+        remainingBalance: 80000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "Emily Park",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "AWS Reserved Instances",
+        subcategory: "SOFTWARE",
+        entityId: "CORP-001",
+        startDate: "2025-01-01",
+        endDate: "2025-12-31",
+        originalAmount: 120000,
+        currency: "USD",
+        monthlyExpense: 10000,
+        remainingBalance: 100000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "David Kim",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Microsoft 365 Annual",
+        subcategory: "SOFTWARE",
+        entityId: "SUB-US",
+        startDate: "2024-07-01",
+        endDate: "2025-06-30",
+        originalAmount: 24000,
+        currency: "USD",
+        monthlyExpense: 2000,
+        remainingBalance: 10000,
+        status: "ACTIVE",
+        evidence: "ATTACHED",
+        owner: "Lisa Brown",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "Annual Trade Show Booth",
+        subcategory: "OTHER",
+        entityId: "CORP-001",
+        startDate: "2025-03-01",
+        endDate: "2026-02-28",
+        originalAmount: 60000,
+        currency: "USD",
+        monthlyExpense: 5000,
+        remainingBalance: 60000,
+        status: "ACTIVE",
+        evidence: "MISSING",
+        owner: "Robert Johnson",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        name: "2024 Software Maintenance",
+        subcategory: "SOFTWARE",
+        entityId: "CORP-001",
+        startDate: "2024-01-01",
+        endDate: "2024-12-31",
+        originalAmount: 36000,
+        currency: "USD",
+        monthlyExpense: 3000,
+        remainingBalance: 0,
+        status: "COMPLETED",
+        evidence: "ATTACHED",
+        owner: "Emily Park",
+        createdAt: now,
+      },
+    ];
+
+    for (const prepaid of samplePrepaids) {
+      this.prepaidSchedules.set(prepaid.id, prepaid);
     }
   }
 
@@ -508,6 +681,131 @@ export class MemStorage implements IStorage {
       activeSchedules: schedules.length,
       schedulesByType: schedulesByType as Record<"PREPAID" | "FIXED_ASSET", number>,
     };
+  }
+
+  // Prepaid Dashboard Methods
+  async getPrepaidSchedules(entityId?: string, subcategory?: PrepaidSubcategory): Promise<PrepaidSchedule[]> {
+    let schedules = Array.from(this.prepaidSchedules.values());
+    
+    if (entityId) {
+      schedules = schedules.filter(s => s.entityId === entityId);
+    }
+    if (subcategory) {
+      schedules = schedules.filter(s => s.subcategory === subcategory);
+    }
+    
+    return schedules.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getPrepaidSchedule(id: string): Promise<PrepaidSchedule | undefined> {
+    return this.prepaidSchedules.get(id);
+  }
+
+  async createPrepaidSchedule(data: InsertPrepaidSchedule): Promise<PrepaidSchedule> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    const months = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const monthlyExpense = Math.round((data.originalAmount / months) * 100) / 100;
+
+    const schedule: PrepaidSchedule = {
+      id,
+      name: data.name,
+      subcategory: data.subcategory,
+      entityId: data.entityId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      originalAmount: data.originalAmount,
+      currency: data.currency,
+      monthlyExpense,
+      remainingBalance: data.originalAmount,
+      status: "ACTIVE",
+      evidence: "MISSING",
+      owner: data.owner,
+      createdAt: now,
+    };
+
+    this.prepaidSchedules.set(id, schedule);
+    return schedule;
+  }
+
+  async getPrepaidDashboardKPIs(entityId?: string, period?: string): Promise<PrepaidDashboardKPIs> {
+    let schedules = Array.from(this.prepaidSchedules.values());
+    
+    if (entityId) {
+      schedules = schedules.filter(s => s.entityId === entityId);
+    }
+
+    const activeSchedules = schedules.filter(s => s.status === "ACTIVE");
+    const totalPrepaidBalance = activeSchedules.reduce((sum, s) => sum + s.remainingBalance, 0);
+    const expenseThisPeriod = activeSchedules.reduce((sum, s) => sum + s.monthlyExpense, 0);
+    const remainingBalance = totalPrepaidBalance;
+    
+    const today = new Date();
+    const days90 = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const upcomingExpirations = activeSchedules.filter(s => {
+      const endDate = new Date(s.endDate);
+      return endDate <= days90;
+    }).length;
+
+    return {
+      totalPrepaidBalance,
+      activeSchedules: activeSchedules.length,
+      expenseThisPeriod,
+      remainingBalance,
+      upcomingExpirations,
+    };
+  }
+
+  async getPrepaidCategoryBreakdown(entityId?: string): Promise<PrepaidCategoryBreakdown[]> {
+    let schedules = Array.from(this.prepaidSchedules.values()).filter(s => s.status === "ACTIVE");
+    
+    if (entityId) {
+      schedules = schedules.filter(s => s.entityId === entityId);
+    }
+
+    const breakdown: Record<PrepaidSubcategory, { amount: number; count: number }> = {
+      INSURANCE: { amount: 0, count: 0 },
+      RENT: { amount: 0, count: 0 },
+      SOFTWARE: { amount: 0, count: 0 },
+      OTHER: { amount: 0, count: 0 },
+    };
+
+    for (const schedule of schedules) {
+      breakdown[schedule.subcategory].amount += schedule.remainingBalance;
+      breakdown[schedule.subcategory].count += 1;
+    }
+
+    return Object.entries(breakdown)
+      .filter(([_, data]) => data.count > 0)
+      .map(([category, data]) => ({
+        category: category as PrepaidSubcategory,
+        amount: data.amount,
+        count: data.count,
+      }));
+  }
+
+  async getAmortizationTrend(entityId?: string, periods: number = 6): Promise<AmortizationTrendPoint[]> {
+    let schedules = Array.from(this.prepaidSchedules.values()).filter(s => s.status === "ACTIVE");
+    
+    if (entityId) {
+      schedules = schedules.filter(s => s.entityId === entityId);
+    }
+
+    const totalMonthlyExpense = schedules.reduce((sum, s) => sum + s.monthlyExpense, 0);
+    const result: AmortizationTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const expense = i === 0 ? totalMonthlyExpense : totalMonthlyExpense * (0.9 + Math.random() * 0.2);
+      result.push({ period, expense: Math.round(expense) });
+    }
+
+    return result;
   }
 }
 
