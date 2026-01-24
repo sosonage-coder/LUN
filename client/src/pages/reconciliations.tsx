@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,15 +10,25 @@ import {
   Clock, 
   CheckCircle2, 
   AlertCircle,
-  ArrowRight,
   CircleDot,
   FileQuestion,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronRight,
+  Building2,
+  DollarSign,
+  TrendingUp,
+  ExternalLink
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { ReconciliationKPIs, ReconciliationAccount, Reconciliation } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; color: string; icon: typeof CircleDot }> = {
   NOT_STARTED: { label: "Not Started", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300", icon: CircleDot },
   IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300", icon: Clock },
   PENDING_REVIEW: { label: "Pending Review", color: "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300", icon: FileQuestion },
@@ -40,7 +51,23 @@ const accountTypeLabels: Record<string, string> = {
   OTHER: "Other",
 };
 
+const accountTypeIcons: Record<string, typeof DollarSign> = {
+  CASH: DollarSign,
+  ACCOUNTS_RECEIVABLE: TrendingUp,
+  ACCOUNTS_PAYABLE: Building2,
+  PREPAID: Clock,
+  FIXED_ASSET: Building2,
+  ACCRUAL: Clock,
+  INVENTORY: Building2,
+  INTERCOMPANY: Building2,
+  DEBT: DollarSign,
+  EQUITY: DollarSign,
+  OTHER: FileCheck,
+};
+
 export default function ReconciliationsPage() {
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  
   const { data: kpis, isLoading: kpisLoading, error: kpisError } = useQuery<ReconciliationKPIs>({
     queryKey: ["/api/reconciliations/kpis"],
   });
@@ -75,7 +102,23 @@ export default function ReconciliationsPage() {
     const pending = recs.filter(r => r?.status === "PENDING_REVIEW" || r?.status === "REVIEWED").length;
     const inProgress = recs.filter(r => r?.status === "IN_PROGRESS").length;
     const notStarted = recs.filter(r => r?.status === "NOT_STARTED").length + (accts.length - recs.length);
-    return { total: accts.length, approved, pending, inProgress, notStarted };
+    const totalGLBalance = accts.reduce((sum, a) => sum + (getReconciliationForAccount(a.accountId)?.glBalance || 0), 0);
+    return { total: accts.length, approved, pending, inProgress, notStarted, totalGLBalance };
+  };
+
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const getCompletionPercent = (summary: ReturnType<typeof getCategorySummary>) => {
+    if (summary.total === 0) return 0;
+    return Math.round((summary.approved / summary.total) * 100);
   };
 
   return (
@@ -163,53 +206,131 @@ export default function ReconciliationsPage() {
                 Accounts by Category
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {Object.entries(accountsByType).map(([accountType, accts]) => {
-                  const summary = getCategorySummary(accountType);
-                  const allComplete = summary.approved === summary.total;
-                  const hasPending = summary.pending > 0;
-                  const hasInProgress = summary.inProgress > 0;
-                  
-                  return (
-                    <div
-                      key={accountType}
-                      className="flex items-center justify-between p-3 rounded-lg border hover-elevate cursor-pointer"
-                      data-testid={`category-${accountType.toLowerCase()}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileCheck className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{accountTypeLabels[accountType] || accountType}</span>
-                        <Badge variant="secondary">{summary.total} accounts</Badge>
+            <CardContent className="space-y-2">
+              {Object.entries(accountsByType).map(([accountType, accts]) => {
+                const summary = getCategorySummary(accountType);
+                const isExpanded = expandedCategories.has(accountType);
+                const completionPercent = getCompletionPercent(summary);
+                const CategoryIcon = accountTypeIcons[accountType] || FileCheck;
+
+                return (
+                  <Collapsible
+                    key={accountType}
+                    open={isExpanded}
+                    onOpenChange={() => toggleCategory(accountType)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <div
+                        className="flex items-center justify-between p-4 rounded-lg border hover-elevate cursor-pointer transition-all"
+                        data-testid={`category-${accountType.toLowerCase()}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10">
+                            <CategoryIcon className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{accountTypeLabels[accountType] || accountType}</span>
+                              <Badge variant="secondary">{summary.total}</Badge>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                              <span>{formatCurrency(summary.totalGLBalance)} total</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="hidden md:flex items-center gap-3">
+                            {summary.approved > 0 && (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle2 className="h-4 w-4" />
+                                <span className="text-sm">{summary.approved}</span>
+                              </div>
+                            )}
+                            {summary.pending > 0 && (
+                              <div className="flex items-center gap-1 text-amber-600">
+                                <FileQuestion className="h-4 w-4" />
+                                <span className="text-sm">{summary.pending}</span>
+                              </div>
+                            )}
+                            {summary.inProgress > 0 && (
+                              <div className="flex items-center gap-1 text-blue-600">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-sm">{summary.inProgress}</span>
+                              </div>
+                            )}
+                            {summary.notStarted > 0 && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <CircleDot className="h-4 w-4" />
+                                <span className="text-sm">{summary.notStarted}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="hidden sm:block w-24">
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 transition-all duration-300" 
+                                style={{ width: `${completionPercent}%` }}
+                              />
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 text-right">
+                              {completionPercent}%
+                            </div>
+                          </div>
+                          {isExpanded ? (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        {allComplete ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span className="text-sm">Complete</span>
-                          </div>
-                        ) : hasPending ? (
-                          <div className="flex items-center gap-1 text-amber-600">
-                            <Clock className="h-4 w-4" />
-                            <span className="text-sm">{summary.pending} pending review</span>
-                          </div>
-                        ) : hasInProgress ? (
-                          <div className="flex items-center gap-1 text-blue-600">
-                            <Clock className="h-4 w-4" />
-                            <span className="text-sm">{summary.inProgress} in progress</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <CircleDot className="h-4 w-4" />
-                            <span className="text-sm">{summary.notStarted} not started</span>
-                          </div>
-                        )}
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 ml-4 border-l-2 border-muted pl-4 space-y-2">
+                        {accts.map((account) => {
+                          const rec = getReconciliationForAccount(account.accountId);
+                          const status = rec?.status || "NOT_STARTED";
+                          const config = statusConfig[status];
+                          const StatusIcon = config.icon;
+
+                          return (
+                            <div
+                              key={account.accountId}
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover-elevate"
+                              data-testid={`account-row-${account.accountCode}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="font-mono text-sm font-medium">{account.accountCode}</div>
+                                <div className="text-sm">{account.accountName}</div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="text-sm font-medium text-right">
+                                  {formatCurrency(rec?.glBalance || 0)}
+                                </div>
+                                {rec?.variance !== undefined && rec.variance !== 0 && (
+                                  <Badge variant={rec.variance === 0 ? "secondary" : "destructive"} className="text-xs">
+                                    {formatCurrency(rec.variance)} var
+                                  </Badge>
+                                )}
+                                <Badge className={`${config.color} text-xs`}>
+                                  <StatusIcon className="h-3 w-3 mr-1" />
+                                  {config.label}
+                                </Badge>
+                                {rec && (
+                                  <Link href={`/reconciliations/workspace/${rec.reconciliationId}`}>
+                                    <Button size="sm" variant="ghost" data-testid={`button-open-${account.accountId}`}>
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </Link>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -227,7 +348,6 @@ export default function ReconciliationsPage() {
                       <th className="px-4 py-3 text-right text-sm font-medium">GL Balance</th>
                       <th className="px-4 py-3 text-right text-sm font-medium">Variance</th>
                       <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Prepared By</th>
                       <th className="px-4 py-3 text-right text-sm font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -237,23 +357,25 @@ export default function ReconciliationsPage() {
                       const status = rec?.status || "NOT_STARTED";
                       const config = statusConfig[status];
                       const StatusIcon = config.icon;
-                      
+
                       return (
-                        <tr key={account.accountId} className="border-b hover:bg-muted/30" data-testid={`row-${account.accountId}`}>
+                        <tr key={account.accountId} className="border-b last:border-0" data-testid={`table-row-${account.accountCode}`}>
                           <td className="px-4 py-3">
                             <div className="font-medium">{account.accountCode}</div>
                             <div className="text-sm text-muted-foreground">{account.accountName}</div>
                           </td>
-                          <td className="px-4 py-3 text-sm">{accountTypeLabels[account.accountType]}</td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {rec ? formatCurrency(rec.glBalance) : "-"}
+                          <td className="px-4 py-3">
+                            <Badge variant="outline">{accountTypeLabels[account.accountType]}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono">
-                            {rec ? (
-                              <span className={rec.variance !== 0 ? "text-red-600" : "text-green-600"}>
-                                {formatCurrency(rec.variance)}
-                              </span>
-                            ) : "-"}
+                          <td className="px-4 py-3 text-right font-medium">
+                            {formatCurrency(rec?.glBalance || 0)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {rec?.variance !== undefined && rec.variance !== 0 ? (
+                              <span className="text-destructive">{formatCurrency(rec.variance)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <Badge className={config.color}>
@@ -261,18 +383,15 @@ export default function ReconciliationsPage() {
                               {config.label}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">
-                            {rec?.preparedBy || "-"}
-                          </td>
                           <td className="px-4 py-3 text-right">
                             {rec ? (
                               <Link href={`/reconciliations/workspace/${rec.reconciliationId}`}>
-                                <Button variant="outline" size="sm" data-testid={`button-open-${account.accountId}`}>
+                                <Button size="sm" variant="outline" data-testid={`button-open-${account.accountId}`}>
                                   Open
                                 </Button>
                               </Link>
                             ) : (
-                              <Button variant="outline" size="sm" data-testid={`button-start-${account.accountId}`}>
+                              <Button size="sm" variant="outline" disabled>
                                 Start
                               </Button>
                             )}
