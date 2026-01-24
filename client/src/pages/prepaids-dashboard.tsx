@@ -88,20 +88,31 @@ export default function PrepaidsDashboard() {
     queryKey: ["/api/entities"],
   });
 
+  const buildQueryString = (params: Record<string, string | undefined>) => {
+    const filtered = Object.entries(params).filter(([_, v]) => v && v !== "all");
+    return filtered.length > 0 
+      ? "?" + filtered.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&")
+      : "";
+  };
+
+  const kpisUrl = `/api/prepaids/kpis${buildQueryString({ entityId: selectedEntity, period: selectedPeriod })}`;
   const { data: kpis } = useQuery<PrepaidDashboardKPIs>({
-    queryKey: ["/api/prepaids/kpis", selectedEntity],
+    queryKey: [kpisUrl],
   });
 
+  const breakdownUrl = `/api/prepaids/breakdown${buildQueryString({ entityId: selectedEntity })}`;
   const { data: breakdown = [] } = useQuery<PrepaidCategoryBreakdown[]>({
-    queryKey: ["/api/prepaids/breakdown", selectedEntity],
+    queryKey: [breakdownUrl],
   });
 
+  const trendUrl = `/api/prepaids/trend${buildQueryString({ entityId: selectedEntity })}`;
   const { data: trend = [] } = useQuery<AmortizationTrendPoint[]>({
-    queryKey: ["/api/prepaids/trend", selectedEntity],
+    queryKey: [trendUrl],
   });
 
+  const schedulesUrl = `/api/prepaids${buildQueryString({ entityId: selectedEntity, subcategory: subcategoryFilter })}`;
   const { data: schedules = [], isLoading } = useQuery<PrepaidSchedule[]>({
-    queryKey: ["/api/prepaids", selectedEntity, subcategoryFilter],
+    queryKey: [schedulesUrl],
   });
 
   const filteredSchedules = schedules.filter((s) => {
@@ -214,7 +225,7 @@ export default function PrepaidsDashboard() {
             <CardContent className="pt-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Wallet className="h-4 w-4" />
-                Remaining Balance
+                Balance Remaining
               </div>
               <div className="text-2xl font-bold">
                 {kpis ? formatCurrency(kpis.remainingBalance) : "-"}
