@@ -1,0 +1,302 @@
+# Non-Monetary Schedule Engine (Base Specification v1)
+
+## 0️⃣ Purpose
+
+Define a **deterministic, auditable, non-monetary scheduling engine** that:
+
+- allocates costs over time
+- operates in **reporting currency**
+- displays **local currency for context**
+- derives FX from amounts (never remeasures)
+- supports late onboarding
+- respects closed periods
+- applies changes **prospectively only**
+
+This engine is the **foundation** for:
+
+- Prepaid Expenses
+- Fixed Assets
+- (future) Deferred Charges
+- (future) Non-monetary Lease Components
+
+## 1️⃣ Non-Goals (explicit)
+
+This engine does **not** support:
+
+- FX remeasurement
+- fair value revaluation
+- retroactive restatement of closed periods
+- manual per-period amount editing
+- monetary balances (AR/AP, cash, loans)
+
+If FX must move period-to-period → **different engine**.
+
+## 2️⃣ Core Principles (non-negotiable)
+
+1. **Reporting currency is truth**
+   - All calculations and postings occur in reporting currency.
+2. **Local currency is context**
+   - Displayed for reconciliation and visibility only.
+3. **FX is derived, never edited**
+   - FX = reporting amount ÷ local amount
+   - Stored for audit, not user-controlled.
+4. **Time drives allocation**
+   - Schedules progress by period, not by FX or balance noise.
+5. **Recognition snapshot is immutable**
+   - Initial basis is never edited in place.
+6. **All changes are append-only events**
+   - No silent recalculation.
+7. **Closed periods are immutable**
+   - Adjustments flow forward only.
+8. **Schedule rebuild is deterministic**
+   - Same inputs → same output, every time.
+
+## 3️⃣ Engine Scope
+
+The engine produces:
+
+- a **time-based schedule** (monthly, v1)
+- per-period allocation amounts (reporting currency)
+- local currency equivalents (derived)
+- posting-ready outputs for **open periods only**
+
+The engine does **not** post automatically — it **prepares** postings.
+
+## 4️⃣ Core Objects
+
+### 4.1 Schedule Master (Recognition Snapshot)
+
+Each schedule has a single immutable master record.
+
+**Fields**
+
+- `schedule_id`
+- `schedule_type` (PREPAID, FIXED_ASSET, etc.)
+- `entity_id`
+- `local_currency`
+- `reporting_currency`
+- `start_date`
+- `end_date` (nullable for asset-based schedules)
+- `total_amount_local_initial`
+- `total_amount_reporting_initial`
+- `implied_fx_initial` (derived)
+- `recognition_period`
+- `created_at`, `created_by`
+
+Rules:
+
+- FX is derived and stored.
+- No edits after creation.
+
+### 4.2 Schedule Events (Append-Only)
+
+All changes occur via events.
+
+**Event fields**
+
+- `event_id`
+- `schedule_id`
+- `event_type`
+- `effective_period`
+- `event_payload` (JSON)
+- `created_at`, `created_by`
+- `reason` (optional)
+
+**Base event categories**
+
+- Amount-affecting
+- Time-affecting
+- Profile-affecting
+- Terminal (optional, depending on schedule type)
+
+Event precedence is defined by the **child spec**, but ordering rules are enforced by the engine.
+
+## 5️⃣ FX Derivation Rules (Global)
+
+### 5.1 Implied FX calculation
+
+At any period:
+
+```
+effective_fx(period) =
+  latest implied FX from:
+    - recognition snapshot
+    - any amount-affecting event effective ≤ period
+
+```
+
+### 5.2 Amount edits
+
+If an event supplies:
+
+- both local and reporting → FX is re-derived
+- only one → the other is derived using current effective FX
+
+FX is:
+
+- visible
+- auditable
+- never directly editable
+
+## 6️⃣ External History (Late Onboarding)
+
+### 6.1 System Responsibility Boundary
+
+Each schedule may define:
+
+- `system_posting_start_period`
+
+Periods before this are:
+
+- displayed
+- counted in progress
+- **not posted by the system**
+
+### 6.2 External period behavior
+
+External periods:
+
+- are read-only
+- cannot be adjusted
+- are excluded from posting logic
+
+The engine never pretends ownership it doesn’t have.
+
+## 7️⃣ Closed Period Rules
+
+### 7.1 Period Locking
+
+Each entity has period status:
+
+- OPEN
+- CLOSED
+
+For CLOSED periods:
+
+- schedule outputs are frozen
+- posted results are authoritative
+
+### 7.2 Adjustment landing logic
+
+If a change affects cumulative results:
+
+1. Compute expected cumulative as of last closed period
+2. Compare to actual posted cumulative
+3. Push delta into **first open period**
+4. Mark that period as **adjusted**
+
+No restatement. Ever.
+
+## 8️⃣ Schedule Calculation Model (Base)
+
+### 8.1 Period granularity
+
+- Monthly only (v1)
+
+### 8.2 Progress model
+
+- Progress is **time-based**
+- Currency does not affect progress
+
+### 8.3 Rounding
+
+- Rounding applied per period (2 decimals)
+- Final active period true-up allowed to eliminate drift
+
+## 9️⃣ Schedule States (per period)
+
+Each period line must be in exactly one state:
+
+- `EXTERNAL` – outside system responsibility
+- `SYSTEM_BASE` – system-generated, no adjustment
+- `SYSTEM_ADJUSTED` – forward delta applied
+- `CLOSED` – locked, immutable
+- `STOPPED` – terminal state (child-specific)
+
+State must be visually explicit.
+
+## 🔟 Posting Output Contract
+
+The engine outputs **posting candidates**, not journal commits.
+
+**Posting line fields**
+
+- `schedule_id`
+- `period`
+- `posting_type`
+- `amount_reporting`
+- `state` (DRAFT / POSTED)
+- `explanation`
+
+Only:
+
+- OPEN periods
+- SYSTEM_BASE or SYSTEM_ADJUSTED lines
+
+are eligible.
+
+## 1️⃣1️⃣ Rebuild Algorithm (Base)
+
+Given `schedule_id` and period range:
+
+1. Identify last CLOSED period snapshot
+2. Initialize state at that boundary
+3. Apply events in order:
+   - precedence defined by child spec
+   - stable sort by effective period, then creation time
+4. Generate forward schedule lines
+5. Apply adjustment deltas if needed
+6. Persist results for OPEN periods only
+
+Rebuild must be:
+
+- idempotent
+- side-effect free
+- deterministic
+
+## 1️⃣2️⃣ Guardrails (Global)
+
+### Always block
+
+- Direct edits to generated periods
+- FX field edits
+- Events effective before recognition (except onboarding boundary)
+- Changes that affect closed periods directly
+
+### Warn (not block by default)
+
+- Implied FX outside expected range
+- Large forward adjustments
+- Long gaps between recognition and onboarding
+
+## 1️⃣3️⃣ Inheritance Model
+
+| Engine Component | Base | Prepaid | Fixed Asset |
+| --- | --- | --- | --- |
+| Recognition snapshot | ✅ | ✅ | ✅ |
+| Append-only events | ✅ | ✅ | ✅ |
+| Derived FX | ✅ | ✅ | ✅ |
+| External history | ✅ | ✅ | ✅ |
+| Closed period logic | ✅ | ✅ | ✅ |
+| Terminal events | ❌ | ❌ | ✅ |
+| Salvage / NBV | ❌ | ❌ | ✅ |
+| Gain / loss | ❌ | ❌ | ✅ |
+
+Child specs:
+
+- **must not override base principles**
+- may only extend behavior
+
+## 1️⃣4️⃣ Why this engine works
+
+Because it:
+
+- models accounting reality, not UI convenience
+- makes bad data visible instead of hiding it
+- refuses to rewrite history
+- forces intent through events
+- treats time as the primary axis
+
+This is not a scheduling feature.
+
+It is **accounting behavior encoded in software**.
