@@ -13,6 +13,7 @@ import SchedulesList from "@/pages/schedules-list";
 import ScheduleDetail from "@/pages/schedule-detail";
 import CreateSchedule from "@/pages/create-schedule";
 import PrepaidCalculator from "@/pages/prepaid-calculator";
+import PrepaidsDashboard from "@/pages/prepaids-dashboard";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/schedules/new" component={CreateSchedule} />
       <Route path="/schedules/:id" component={ScheduleDetail} />
       <Route path="/prepaid-calculator" component={PrepaidCalculator} />
+      <Route path="/prepaids" component={PrepaidsDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

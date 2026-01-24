@@ -171,7 +171,8 @@ export class MemStorage implements IStorage {
     });
 
     // Rebuild all schedules to incorporate closed period statuses
-    for (const scheduleId of this.schedules.keys()) {
+    const scheduleIds = Array.from(this.schedules.keys());
+    for (const scheduleId of scheduleIds) {
       this.rebuildScheduleSync(scheduleId);
     }
 

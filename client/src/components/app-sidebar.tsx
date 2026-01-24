@@ -6,7 +6,13 @@ import {
   Settings,
   Building2,
   Clock,
-  Calculator
+  Calculator,
+  Wallet,
+  Shield,
+  Building,
+  Monitor,
+  Layers,
+  HardDrive
 } from "lucide-react";
 import {
   Sidebar,
@@ -42,6 +48,19 @@ const navigationItems = [
     title: "Entities",
     url: "/entities",
     icon: Building2,
+  },
+];
+
+const categoryItems = [
+  {
+    title: "Prepaids",
+    url: "/prepaids",
+    icon: Wallet,
+  },
+  {
+    title: "Fixed Assets",
+    url: "/fixed-assets",
+    icon: HardDrive,
   },
 ];
 
@@ -93,7 +112,33 @@ export function AppSidebar() {
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase()}`}
+                      data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Categories</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {categoryItems.map((item) => {
+                const isActive = location === item.url || 
+                  (item.url !== "/" && location.startsWith(item.url));
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive}
+                      data-testid={`nav-${item.title.toLowerCase().replace(' ', '-')}`}
                     >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />

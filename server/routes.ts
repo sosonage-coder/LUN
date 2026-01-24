@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, type PrepaidSubcategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -158,6 +158,96 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error closing period:", error);
       res.status(500).json({ error: "Failed to close period" });
+    }
+  });
+
+  // ======================
+  // Prepaid Dashboard Routes
+  // ======================
+
+  // Get prepaid dashboard KPIs
+  app.get("/api/prepaids/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getPrepaidDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching prepaid KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch prepaid KPIs" });
+    }
+  });
+
+  // Get prepaid category breakdown
+  app.get("/api/prepaids/breakdown", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const breakdown = await storage.getPrepaidCategoryBreakdown(entityId);
+      res.json(breakdown);
+    } catch (error) {
+      console.error("Error fetching prepaid breakdown:", error);
+      res.status(500).json({ error: "Failed to fetch prepaid breakdown" });
+    }
+  });
+
+  // Get amortization trend
+  app.get("/api/prepaids/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getAmortizationTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching amortization trend:", error);
+      res.status(500).json({ error: "Failed to fetch amortization trend" });
+    }
+  });
+
+  // Get all prepaid schedules
+  app.get("/api/prepaids", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const subcategory = req.query.subcategory as PrepaidSubcategory | undefined;
+      const schedules = await storage.getPrepaidSchedules(entityId, subcategory);
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching prepaid schedules:", error);
+      res.status(500).json({ error: "Failed to fetch prepaid schedules" });
+    }
+  });
+
+  // Get single prepaid schedule
+  app.get("/api/prepaids/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const schedule = await storage.getPrepaidSchedule(id);
+      
+      if (!schedule) {
+        return res.status(404).json({ error: "Prepaid schedule not found" });
+      }
+
+      res.json(schedule);
+    } catch (error) {
+      console.error("Error fetching prepaid schedule:", error);
+      res.status(500).json({ error: "Failed to fetch prepaid schedule" });
+    }
+  });
+
+  // Create new prepaid schedule
+  app.post("/api/prepaids", async (req, res) => {
+    try {
+      const validatedData = insertPrepaidScheduleSchema.parse(req.body);
+      const schedule = await storage.createPrepaidSchedule(validatedData);
+      res.status(201).json(schedule);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating prepaid schedule:", error);
+      res.status(500).json({ error: "Failed to create prepaid schedule" });
     }
   });
 
