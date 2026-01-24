@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,41 +15,50 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
   Plus, 
-  Clock, 
   User, 
   CheckCircle2, 
   AlertCircle,
-  ChevronRight,
-  FileText,
-  Paperclip,
-  Calendar
+  Calendar,
+  LayoutGrid,
+  CalendarDays,
+  Clock,
+  PlayCircle,
+  Send,
+  Eye,
+  Check
 } from "lucide-react";
 import type { CloseTask, CloseTasklist } from "@shared/schema";
 
 type TaskStatus = "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "REVIEWED" | "APPROVED" | "LOCKED";
+type ViewMode = "by-date" | "by-status";
 
-const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
-  { status: "NOT_STARTED", label: "Not Started", color: "bg-muted" },
-  { status: "IN_PROGRESS", label: "In Progress", color: "bg-blue-500/10" },
-  { status: "SUBMITTED", label: "Submitted", color: "bg-yellow-500/10" },
-  { status: "REVIEWED", label: "Reviewed", color: "bg-purple-500/10" },
-  { status: "APPROVED", label: "Approved", color: "bg-green-500/10" },
-];
+const statusInfo: Record<TaskStatus, { label: string; color: string; icon: typeof Clock; bgColor: string }> = {
+  NOT_STARTED: { label: "Not Started", color: "text-slate-500", icon: Clock, bgColor: "bg-slate-100 dark:bg-slate-800" },
+  IN_PROGRESS: { label: "In Progress", color: "text-blue-500", icon: PlayCircle, bgColor: "bg-blue-100 dark:bg-blue-900/30" },
+  SUBMITTED: { label: "Submitted", color: "text-amber-500", icon: Send, bgColor: "bg-amber-100 dark:bg-amber-900/30" },
+  REVIEWED: { label: "Reviewed", color: "text-purple-500", icon: Eye, bgColor: "bg-purple-100 dark:bg-purple-900/30" },
+  APPROVED: { label: "Approved", color: "text-green-500", icon: Check, bgColor: "bg-green-100 dark:bg-green-900/30" },
+  LOCKED: { label: "Locked", color: "text-gray-500", icon: Check, bgColor: "bg-gray-100 dark:bg-gray-900/30" },
+};
 
 const priorityColors: Record<string, string> = {
   CRITICAL: "bg-red-500 text-white",
   HIGH: "bg-orange-500 text-white",
   MEDIUM: "bg-yellow-500 text-black",
-  LOW: "bg-green-500 text-white",
+  LOW: "bg-slate-400 text-white",
 };
 
 interface TaskCardProps {
   task: CloseTask;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
   isUpdating: boolean;
+  viewMode: ViewMode;
 }
 
-function TaskCard({ task, onStatusChange, isUpdating }: TaskCardProps) {
+function TaskCard({ task, onStatusChange, isUpdating, viewMode }: TaskCardProps) {
+  const status = statusInfo[task.status as TaskStatus] || statusInfo.NOT_STARTED;
+  const StatusIcon = status.icon;
+
   const nextStatus: Record<TaskStatus, TaskStatus | null> = {
     NOT_STARTED: "IN_PROGRESS",
     IN_PROGRESS: "SUBMITTED",
@@ -62,45 +71,51 @@ function TaskCard({ task, onStatusChange, isUpdating }: TaskCardProps) {
   const next = nextStatus[task.status as TaskStatus];
 
   return (
-    <Card className="mb-2 hover-elevate cursor-pointer" data-testid={`task-card-${task.id}`}>
+    <Card className="mb-3 hover-elevate cursor-pointer border-l-4" style={{ borderLeftColor: task.priority === "CRITICAL" ? "#ef4444" : task.priority === "HIGH" ? "#f97316" : task.priority === "MEDIUM" ? "#eab308" : "#94a3b8" }} data-testid={`task-card-${task.id}`}>
       <CardContent className="p-3">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h4 className="font-medium text-sm leading-tight">{task.name}</h4>
+        {viewMode === "by-date" && (
+          <div className="flex items-center gap-1 mb-2">
+            <Badge variant="outline" className={`text-xs ${status.bgColor} ${status.color} border-0`}>
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {status.label}
+            </Badge>
+          </div>
+        )}
+
+        {viewMode === "by-status" && task.dueDate && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+            <Calendar className="h-3 w-3" />
+            <span>{formatDateLabel(task.dueDate)}</span>
+          </div>
+        )}
+
+        <h4 className="font-medium text-sm leading-tight mb-2">{task.name}</h4>
+        
+        {task.description && (
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
+        )}
+
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2">
+            {task.preparerName ? (
+              <div className="flex items-center gap-1 text-xs">
+                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-3 w-3 text-primary" />
+                </div>
+                <span className="text-muted-foreground">{task.preparerName}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-3 w-3" />
+                </div>
+                <span>Unassigned</span>
+              </div>
+            )}
+          </div>
           <Badge className={`text-xs shrink-0 ${priorityColors[task.priority]}`}>
             {task.priority}
           </Badge>
-        </div>
-        
-        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
-        
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-          {task.preparerName && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span>{task.preparerName}</span>
-            </div>
-          )}
-          {task.dueDate && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {task.evidenceCount > 0 && (
-            <Badge variant="outline" className="text-xs">
-              <Paperclip className="h-3 w-3 mr-1" />
-              {task.evidenceCount}
-            </Badge>
-          )}
-          {task.linkedSchedules && task.linkedSchedules.length > 0 && (
-            <Badge variant="outline" className="text-xs">
-              <FileText className="h-3 w-3 mr-1" />
-              {task.linkedSchedules.length}
-            </Badge>
-          )}
         </div>
 
         {next && task.status !== "LOCKED" && (
@@ -109,11 +124,14 @@ function TaskCard({ task, onStatusChange, isUpdating }: TaskCardProps) {
             className="w-full mt-3" 
             variant="outline"
             disabled={isUpdating}
-            onClick={() => onStatusChange(task.id, next)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onStatusChange(task.id, next);
+            }}
             data-testid={`button-advance-${task.id}`}
           >
-            <ChevronRight className="h-3 w-3 mr-1" />
-            Move to {statusColumns.find(c => c.status === next)?.label}
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Mark as {statusInfo[next]?.label}
           </Button>
         )}
       </CardContent>
@@ -121,14 +139,43 @@ function TaskCard({ task, onStatusChange, isUpdating }: TaskCardProps) {
   );
 }
 
+function formatDateLabel(dateStr: string): string {
+  if (!dateStr) return "No Date";
+  const date = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const diffDays = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays === -1) return "Yesterday";
+  
+  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function getCloseDayLabel(dateStr: string, periodEndDate: string | undefined): string {
+  if (!dateStr || !periodEndDate) return formatDateLabel(dateStr);
+  
+  const taskDate = new Date(dateStr + "T00:00:00");
+  const periodEnd = new Date(periodEndDate + "T00:00:00");
+  const diffDays = Math.ceil((taskDate.getTime() - periodEnd.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) return `Day ${diffDays}`;
+  return `Day +${diffDays}`;
+}
+
 export default function CloseControlKanbanPage() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const [viewMode, setViewMode] = useState<ViewMode>("by-date");
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({
     name: "",
     description: "",
     priority: "MEDIUM" as string,
+    dueDate: "",
+    preparerName: "",
   });
 
   const { data: tasklist, isLoading: tasklistLoading } = useQuery<CloseTasklist>({
@@ -156,7 +203,7 @@ export default function CloseControlKanbanPage() {
   });
 
   const addTaskMutation = useMutation({
-    mutationFn: async (taskData: { name: string; description: string; priority: string }) => {
+    mutationFn: async (taskData: typeof newTask) => {
       return apiRequest("POST", `/api/close-control/tasklists/${id}/tasks`, {
         ...taskData,
         tasklistId: id,
@@ -172,7 +219,7 @@ export default function CloseControlKanbanPage() {
       queryClient.invalidateQueries({ queryKey: [`/api/close-control/tasklists/${id}/tasks`] });
       queryClient.invalidateQueries({ queryKey: [`/api/close-control/tasklists/${id}`] });
       setAddTaskOpen(false);
-      setNewTask({ name: "", description: "", priority: "MEDIUM" });
+      setNewTask({ name: "", description: "", priority: "MEDIUM", dueDate: "", preparerName: "" });
       toast({ title: "Task added", description: "New task has been added to the tasklist." });
     },
     onError: () => {
@@ -191,6 +238,41 @@ export default function CloseControlKanbanPage() {
     }
     addTaskMutation.mutate(newTask);
   };
+
+  const dateColumns = useMemo(() => {
+    if (!tasks.length) return [];
+    
+    const uniqueDates = Array.from(new Set(tasks.map(t => t.dueDate).filter(Boolean))).sort();
+    const noDateTasks = tasks.filter(t => !t.dueDate);
+    
+    const columns = uniqueDates.map(date => ({
+      key: date,
+      label: formatDateLabel(date),
+      subLabel: getCloseDayLabel(date, tasklist?.period ? `${tasklist.period}-31` : undefined),
+      tasks: tasks.filter(t => t.dueDate === date),
+    }));
+    
+    if (noDateTasks.length > 0) {
+      columns.push({
+        key: "no-date",
+        label: "Unscheduled",
+        subLabel: "No due date",
+        tasks: noDateTasks,
+      });
+    }
+    
+    return columns;
+  }, [tasks, tasklist?.period]);
+
+  const statusColumns = useMemo(() => {
+    const statuses: TaskStatus[] = ["NOT_STARTED", "IN_PROGRESS", "SUBMITTED", "REVIEWED", "APPROVED"];
+    return statuses.map(status => ({
+      key: status,
+      label: statusInfo[status].label,
+      color: statusInfo[status].bgColor,
+      tasks: tasks.filter(t => t.status === status),
+    }));
+  }, [tasks]);
 
   const isLoading = tasklistLoading || tasksLoading;
 
@@ -219,13 +301,10 @@ export default function CloseControlKanbanPage() {
     );
   }
 
-  const tasksByStatus = statusColumns.reduce((acc, col) => {
-    acc[col.status] = tasks.filter(t => t.status === col.status);
-    return acc;
-  }, {} as Record<TaskStatus, CloseTask[]>);
-
   const completedCount = tasks.filter(t => t.status === "APPROVED" || t.status === "LOCKED").length;
   const progressPercent = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+  const columns = viewMode === "by-date" ? dateColumns : statusColumns;
 
   return (
     <div className="flex flex-col h-full" data-testid="kanban-page">
@@ -246,7 +325,30 @@ export default function CloseControlKanbanPage() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <span className="text-sm font-medium">{progressPercent}% Complete</span>
-            <span className="text-xs text-muted-foreground">({completedCount}/{tasks.length} tasks)</span>
+            <span className="text-xs text-muted-foreground">({completedCount}/{tasks.length})</span>
+          </div>
+
+          <div className="flex items-center border rounded-lg overflow-hidden">
+            <Button 
+              variant={viewMode === "by-date" ? "default" : "ghost"} 
+              size="sm"
+              className="rounded-none"
+              onClick={() => setViewMode("by-date")}
+              data-testid="button-view-by-date"
+            >
+              <CalendarDays className="h-4 w-4 mr-1" />
+              By Date
+            </Button>
+            <Button 
+              variant={viewMode === "by-status" ? "default" : "ghost"} 
+              size="sm"
+              className="rounded-none"
+              onClick={() => setViewMode("by-status")}
+              data-testid="button-view-by-status"
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              By Status
+            </Button>
           </div>
           
           <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
@@ -281,22 +383,44 @@ export default function CloseControlKanbanPage() {
                     data-testid="input-task-description"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Priority</Label>
+                    <Select 
+                      value={newTask.priority} 
+                      onValueChange={(v) => setNewTask({ ...newTask, priority: v })}
+                    >
+                      <SelectTrigger data-testid="select-priority">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CRITICAL">Critical</SelectItem>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="LOW">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="task-due-date">Due Date</Label>
+                    <Input 
+                      id="task-due-date"
+                      type="date"
+                      value={newTask.dueDate}
+                      onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                      data-testid="input-due-date"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label>Priority</Label>
-                  <Select 
-                    value={newTask.priority} 
-                    onValueChange={(v) => setNewTask({ ...newTask, priority: v })}
-                  >
-                    <SelectTrigger data-testid="select-priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CRITICAL">Critical</SelectItem>
-                      <SelectItem value="HIGH">High</SelectItem>
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
-                      <SelectItem value="LOW">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="task-preparer">Assigned To</Label>
+                  <Input 
+                    id="task-preparer"
+                    value={newTask.preparerName}
+                    onChange={(e) => setNewTask({ ...newTask, preparerName: e.target.value })}
+                    placeholder="Enter preparer name"
+                    data-testid="input-preparer"
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -316,30 +440,36 @@ export default function CloseControlKanbanPage() {
 
       <div className="flex-1 overflow-x-auto p-4">
         <div className="flex gap-4 min-w-max h-full">
-          {statusColumns.map((column) => (
+          {columns.map((column) => (
             <div 
-              key={column.status} 
-              className={`w-72 flex flex-col rounded-lg ${column.color}`}
-              data-testid={`column-${column.status}`}
+              key={column.key} 
+              className={`w-72 flex flex-col rounded-lg ${viewMode === "by-status" ? (column as any).color || "bg-muted" : "bg-muted"}`}
+              data-testid={`column-${column.key}`}
             >
-              <div className="p-3 border-b">
+              <div className="p-3 border-b bg-card/50 rounded-t-lg">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-sm">{column.label}</h3>
+                  <div>
+                    <h3 className="font-medium text-sm">{column.label}</h3>
+                    {viewMode === "by-date" && "subLabel" in column && (
+                      <p className="text-xs text-muted-foreground">{column.subLabel}</p>
+                    )}
+                  </div>
                   <Badge variant="secondary" className="text-xs">
-                    {tasksByStatus[column.status]?.length || 0}
+                    {column.tasks.length}
                   </Badge>
                 </div>
               </div>
               <div className="flex-1 p-2 overflow-y-auto">
-                {tasksByStatus[column.status]?.map((task) => (
+                {column.tasks.map((task) => (
                   <TaskCard 
                     key={task.id} 
                     task={task} 
                     onStatusChange={handleStatusChange}
                     isUpdating={updateTaskMutation.isPending}
+                    viewMode={viewMode}
                   />
                 ))}
-                {(!tasksByStatus[column.status] || tasksByStatus[column.status].length === 0) && (
+                {column.tasks.length === 0 && (
                   <div className="text-center text-muted-foreground text-sm py-8">
                     No tasks
                   </div>
@@ -347,6 +477,15 @@ export default function CloseControlKanbanPage() {
               </div>
             </div>
           ))}
+          
+          {columns.length === 0 && (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No tasks yet. Click "Add Task" to create one.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

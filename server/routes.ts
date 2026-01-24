@@ -1236,6 +1236,32 @@ export async function registerRoutes(
     }
   });
 
+  // All tasklists across all schedules
+  app.get("/api/close-control/tasklists", async (_req, res) => {
+    try {
+      const tasklists = [
+        { id: "TL-001", closeScheduleId: "CS-2026-01", name: "Cash Close", description: "Month-end close activities for cash and bank reconciliations", status: "COMPLETED" as const, totalTasks: 5, completedTasks: 5, dueDate: "2026-01-30", period: "2026-01" },
+        { id: "TL-002", closeScheduleId: "CS-2026-01", name: "Prepaids Close", description: "Prepaid expense review and amortization", status: "IN_PROGRESS" as const, totalTasks: 6, completedTasks: 3, dueDate: "2026-01-30", period: "2026-01" },
+        { id: "TL-003", closeScheduleId: "CS-2026-01", name: "Accruals Close", description: "Month-end accrual review and adjustments", status: "IN_PROGRESS" as const, totalTasks: 6, completedTasks: 3, dueDate: "2026-01-30", period: "2026-01" },
+      ];
+      res.json(tasklists);
+    } catch (error) {
+      console.error("Error fetching tasklists:", error);
+      res.status(500).json({ error: "Failed to fetch tasklists" });
+    }
+  });
+
+  // My Tasks - all tasks assigned to current user (for demo, return all tasks)
+  app.get("/api/close-control/my-tasks", async (req, res) => {
+    try {
+      const tasks = await storage.getAllCloseTasks();
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching my tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
   // Close Control Templates - List all templates
   app.get("/api/close-control/templates", async (req, res) => {
     try {

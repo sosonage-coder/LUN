@@ -175,6 +175,7 @@ export interface IStorage {
   getCloseTask(id: string): Promise<CloseTask | undefined>;
   createCloseTask(data: Partial<CloseTask> & { tasklistId: string; name: string }): Promise<CloseTask>;
   updateCloseTask(id: string, data: Partial<CloseTask>): Promise<CloseTask>;
+  getAllCloseTasks(): Promise<CloseTask[]>;
 }
 
 // Helper functions
@@ -4058,6 +4059,22 @@ export class MemStorage implements IStorage {
     const updated = { ...task, ...data };
     this.closeTasks.set(id, updated);
     return updated;
+  }
+
+  async getAllCloseTasks(): Promise<CloseTask[]> {
+    const tasks: CloseTask[] = [];
+    this.closeTasks.forEach((task) => {
+      tasks.push(task);
+    });
+    return tasks.sort((a, b) => {
+      // Sort by due date first, then by priority
+      if (a.dueDate !== b.dueDate) {
+        return (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
+      }
+      const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+      return (priorityOrder[a.priority as keyof typeof priorityOrder] || 2) - 
+             (priorityOrder[b.priority as keyof typeof priorityOrder] || 2);
+    });
   }
 
   private seedCloseTasks() {

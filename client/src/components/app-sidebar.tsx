@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Banknote,
   Shield,
-  ListChecks
+  ListChecks,
+  ClipboardCheck
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,11 @@ const navigationItems = [
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "My Tasks",
+    url: "/my-tasks",
+    icon: ClipboardCheck,
   },
   {
     title: "Schedules",
