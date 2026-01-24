@@ -17,6 +17,7 @@ import PrepaidsDashboard from "@/pages/prepaids-dashboard";
 import FixedAssetsDashboard from "@/pages/fixed-assets-dashboard";
 import AccrualsDashboard from "@/pages/accruals-dashboard";
 import RevenueDashboard from "@/pages/revenue-dashboard";
+import InvestmentIncomeDashboard from "@/pages/investment-income-dashboard";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/fixed-assets" component={FixedAssetsDashboard} />
       <Route path="/accruals" component={AccrualsDashboard} />
       <Route path="/revenue" component={RevenueDashboard} />
+      <Route path="/investment-income" component={InvestmentIncomeDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

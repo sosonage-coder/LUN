@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -603,6 +603,133 @@ export async function registerRoutes(
       }
       console.error("Error creating revenue schedule:", error);
       res.status(500).json({ error: "Failed to create revenue schedule" });
+    }
+  });
+
+  // ======================
+  // Investment Income Earned Dashboard Routes
+  // ======================
+
+  // Get investment income dashboard KPIs
+  app.get("/api/investment-income/kpis", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const period = req.query.period as string | undefined;
+      const kpis = await storage.getInvestmentIncomeDashboardKPIs(entityId, period);
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching investment income KPIs:", error);
+      res.status(500).json({ error: "Failed to fetch investment income KPIs" });
+    }
+  });
+
+  // Get investment income category summaries
+  app.get("/api/investment-income/categories", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const summaries = await storage.getInvestmentIncomeCategorySummaries(entityId);
+      res.json(summaries);
+    } catch (error) {
+      console.error("Error fetching investment income category summaries:", error);
+      res.status(500).json({ error: "Failed to fetch investment income category summaries" });
+    }
+  });
+
+  // Get investment income trend
+  app.get("/api/investment-income/trend", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const trend = await storage.getInvestmentIncomeTrend(entityId, periods);
+      res.json(trend);
+    } catch (error) {
+      console.error("Error fetching investment income trend:", error);
+      res.status(500).json({ error: "Failed to fetch investment income trend" });
+    }
+  });
+
+  // Get yield mix breakdown
+  app.get("/api/investment-income/mix", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const mix = await storage.getYieldMixBreakdown(entityId);
+      res.json(mix);
+    } catch (error) {
+      console.error("Error fetching yield mix:", error);
+      res.status(500).json({ error: "Failed to fetch yield mix" });
+    }
+  });
+
+  // Get accrued vs received
+  app.get("/api/investment-income/accrued-received", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const periods = req.query.periods ? parseInt(req.query.periods as string) : 6;
+      const data = await storage.getAccruedVsReceived(entityId, periods);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching accrued vs received:", error);
+      res.status(500).json({ error: "Failed to fetch accrued vs received" });
+    }
+  });
+
+  // Get risk panels
+  app.get("/api/investment-income/risks", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const panels = await storage.getInvestmentIncomeRiskPanels(entityId);
+      res.json(panels);
+    } catch (error) {
+      console.error("Error fetching investment income risk panels:", error);
+      res.status(500).json({ error: "Failed to fetch investment income risk panels" });
+    }
+  });
+
+  // Get all investment income schedules (for drilldown)
+  app.get("/api/investment-income", async (req, res) => {
+    try {
+      const entityId = req.query.entityId as string | undefined;
+      const category = req.query.category as InvestmentCategory | undefined;
+      const investments = await storage.getInvestmentIncomeSchedules(entityId, category);
+      res.json(investments);
+    } catch (error) {
+      console.error("Error fetching investment income schedules:", error);
+      res.status(500).json({ error: "Failed to fetch investment income schedules" });
+    }
+  });
+
+  // Get single investment income schedule
+  app.get("/api/investment-income/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const investment = await storage.getInvestmentIncomeSchedule(id);
+      
+      if (!investment) {
+        return res.status(404).json({ error: "Investment income schedule not found" });
+      }
+
+      res.json(investment);
+    } catch (error) {
+      console.error("Error fetching investment income schedule:", error);
+      res.status(500).json({ error: "Failed to fetch investment income schedule" });
+    }
+  });
+
+  // Create new investment income schedule
+  app.post("/api/investment-income", async (req, res) => {
+    try {
+      const validatedData = insertInvestmentIncomeScheduleSchema.parse(req.body);
+      const investment = await storage.createInvestmentIncomeSchedule(validatedData);
+      res.status(201).json(investment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: error.errors 
+        });
+      }
+      console.error("Error creating investment income schedule:", error);
+      res.status(500).json({ error: "Failed to create investment income schedule" });
     }
   });
 

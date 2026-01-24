@@ -14,7 +14,8 @@ import {
   Layers,
   HardDrive,
   Landmark,
-  Receipt
+  Receipt,
+  TrendingUp
 } from "lucide-react";
 import {
   Sidebar,
@@ -73,6 +74,11 @@ const categoryItems = [
     title: "Revenue & Contracts",
     url: "/revenue",
     icon: Receipt,
+  },
+  {
+    title: "Investment Income",
+    url: "/investment-income",
+    icon: TrendingUp,
   },
 ];
 

@@ -39,7 +39,16 @@ import type {
   DeferredRevenueRollforward,
   RevenueMixBreakdown,
   RevenueRiskPanel,
-  RevenueCategory
+  RevenueCategory,
+  InvestmentIncomeSchedule,
+  InsertInvestmentIncomeSchedule,
+  InvestmentIncomeDashboardKPIs,
+  InvestmentIncomeCategorySummary,
+  InvestmentIncomeTrendPoint,
+  YieldMixBreakdown,
+  AccruedVsReceivedPoint,
+  InvestmentIncomeRiskPanel,
+  InvestmentCategory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -105,6 +114,17 @@ export interface IStorage {
   getDeferredRevenueRollforward(entityId?: string, periods?: number): Promise<DeferredRevenueRollforward[]>;
   getRevenueMixBreakdown(entityId?: string): Promise<RevenueMixBreakdown[]>;
   getRevenueRiskPanels(entityId?: string): Promise<RevenueRiskPanel[]>;
+  
+  // Investment Income Earned Dashboard
+  getInvestmentIncomeSchedules(entityId?: string, category?: InvestmentCategory): Promise<InvestmentIncomeSchedule[]>;
+  getInvestmentIncomeSchedule(id: string): Promise<InvestmentIncomeSchedule | undefined>;
+  createInvestmentIncomeSchedule(data: InsertInvestmentIncomeSchedule): Promise<InvestmentIncomeSchedule>;
+  getInvestmentIncomeDashboardKPIs(entityId?: string, period?: string): Promise<InvestmentIncomeDashboardKPIs>;
+  getInvestmentIncomeCategorySummaries(entityId?: string): Promise<InvestmentIncomeCategorySummary[]>;
+  getInvestmentIncomeTrend(entityId?: string, periods?: number): Promise<InvestmentIncomeTrendPoint[]>;
+  getYieldMixBreakdown(entityId?: string): Promise<YieldMixBreakdown[]>;
+  getAccruedVsReceived(entityId?: string, periods?: number): Promise<AccruedVsReceivedPoint[]>;
+  getInvestmentIncomeRiskPanels(entityId?: string): Promise<InvestmentIncomeRiskPanel[]>;
 }
 
 // Helper functions
@@ -145,6 +165,7 @@ export class MemStorage implements IStorage {
   private fixedAssets: Map<string, FixedAsset>;
   private accrualSchedules: Map<string, AccrualSchedule>;
   private revenueSchedules: Map<string, RevenueSchedule>;
+  private investmentIncomeSchedules: Map<string, InvestmentIncomeSchedule>;
 
   constructor() {
     this.schedules = new Map();
@@ -156,6 +177,7 @@ export class MemStorage implements IStorage {
     this.fixedAssets = new Map();
     this.accrualSchedules = new Map();
     this.revenueSchedules = new Map();
+    this.investmentIncomeSchedules = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -249,6 +271,9 @@ export class MemStorage implements IStorage {
     
     // Seed revenue schedules for Category Dashboard
     this.seedRevenueSchedules();
+    
+    // Seed investment income schedules for Category Dashboard
+    this.seedInvestmentIncomeSchedules();
   }
 
   private seedPrepaidSchedules() {
@@ -2424,6 +2449,608 @@ export class MemStorage implements IStorage {
       panels.push({
         type: "NOT_REVIEWED",
         title: "Contracts not reviewed this period",
+        categories: notReviewedCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    return panels.sort((a, b) => {
+      const severityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    });
+  }
+
+  // ========================
+  // Investment Income Earned Methods
+  // ========================
+
+  private seedInvestmentIncomeSchedules() {
+    const now = new Date().toISOString();
+    const sampleInvestments: InvestmentIncomeSchedule[] = [
+      {
+        id: randomUUID(),
+        instrumentName: "US Treasury Bond 5Y",
+        issuerName: "US Treasury",
+        category: "FIXED_INCOME",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "FIXED_RATE",
+        acquisitionDate: "2023-01-15",
+        maturityDate: "2028-01-15",
+        principalAmount: 5000000,
+        yieldRate: 4.25,
+        incomeEarnedToDate: 425000,
+        incomeEarnedPeriod: 17708,
+        accruedIncomeBalance: 35417,
+        cashReceivedPeriod: 17708,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2025-01",
+        isAssumptionBased: false,
+        accruedAgingDays: 30,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Treasury Controller",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Corporate Bond - Apple Inc",
+        issuerName: "Apple Inc",
+        category: "FIXED_INCOME",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "FIXED_RATE",
+        acquisitionDate: "2023-06-01",
+        maturityDate: "2030-06-01",
+        principalAmount: 2000000,
+        yieldRate: 5.50,
+        incomeEarnedToDate: 183333,
+        incomeEarnedPeriod: 9167,
+        accruedIncomeBalance: 18333,
+        cashReceivedPeriod: 9167,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2025-01",
+        isAssumptionBased: false,
+        accruedAgingDays: 45,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Treasury Controller",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Money Market Fund",
+        issuerName: "Vanguard",
+        category: "INTEREST_BEARING",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "VARIABLE_RATE",
+        acquisitionDate: "2024-01-01",
+        maturityDate: null,
+        principalAmount: 10000000,
+        yieldRate: 5.15,
+        incomeEarnedToDate: 642500,
+        incomeEarnedPeriod: 42917,
+        accruedIncomeBalance: 0,
+        cashReceivedPeriod: 42917,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2025-01",
+        isAssumptionBased: false,
+        accruedAgingDays: 0,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Treasury Analyst",
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "High Yield Savings",
+        issuerName: "JPMorgan Chase",
+        category: "INTEREST_BEARING",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "VARIABLE_RATE",
+        acquisitionDate: "2024-03-01",
+        maturityDate: null,
+        principalAmount: 3000000,
+        yieldRate: 4.85,
+        incomeEarnedToDate: 145500,
+        incomeEarnedPeriod: 12125,
+        accruedIncomeBalance: 0,
+        cashReceivedPeriod: 12125,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2024-12",
+        isAssumptionBased: false,
+        accruedAgingDays: 0,
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Microsoft Corp - Common Stock",
+        issuerName: "Microsoft Corporation",
+        category: "DIVIDENDS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "DIVIDEND_DECLARED",
+        acquisitionDate: "2022-05-01",
+        maturityDate: null,
+        principalAmount: 1500000,
+        yieldRate: 0.72,
+        incomeEarnedToDate: 32400,
+        incomeEarnedPeriod: 2700,
+        accruedIncomeBalance: 5400,
+        cashReceivedPeriod: 2700,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2025-01",
+        isAssumptionBased: false,
+        accruedAgingDays: 60,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Investment Manager",
+        owner: "Investments",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Johnson & Johnson - Common Stock",
+        issuerName: "Johnson & Johnson",
+        category: "DIVIDENDS",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "DIVIDEND_DECLARED",
+        acquisitionDate: "2022-08-15",
+        maturityDate: null,
+        principalAmount: 800000,
+        yieldRate: 2.95,
+        incomeEarnedToDate: 70800,
+        incomeEarnedPeriod: 1967,
+        accruedIncomeBalance: 3933,
+        cashReceivedPeriod: 1967,
+        currency: "USD",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2025-01",
+        isAssumptionBased: false,
+        accruedAgingDays: 45,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "Investment Manager",
+        owner: "Investments",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Private Equity Fund III",
+        issuerName: "Blackstone",
+        category: "EQUITY_METHOD",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "ESTIMATED",
+        acquisitionDate: "2021-03-01",
+        maturityDate: "2031-03-01",
+        principalAmount: 5000000,
+        yieldRate: 12.0,
+        incomeEarnedToDate: 2400000,
+        incomeEarnedPeriod: 50000,
+        accruedIncomeBalance: 150000,
+        cashReceivedPeriod: 0,
+        currency: "USD",
+        hasRateData: false,
+        lastRateUpdatePeriod: null,
+        isAssumptionBased: true,
+        accruedAgingDays: 180,
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Private Investments",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Real Estate Fund LP",
+        issuerName: "KKR Real Estate",
+        category: "EQUITY_METHOD",
+        entityId: "SUB-US",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "ESTIMATED",
+        acquisitionDate: "2022-01-15",
+        maturityDate: "2032-01-15",
+        principalAmount: 3000000,
+        yieldRate: 8.5,
+        incomeEarnedToDate: 765000,
+        incomeEarnedPeriod: 21250,
+        accruedIncomeBalance: 63750,
+        cashReceivedPeriod: 0,
+        currency: "USD",
+        hasRateData: false,
+        lastRateUpdatePeriod: null,
+        isAssumptionBased: true,
+        accruedAgingDays: 120,
+        evidence: "ATTACHED",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Private Investments",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Term Deposit - 12M",
+        issuerName: "Bank of America",
+        category: "INTEREST_BEARING",
+        entityId: "SUB-EU",
+        lifecycleState: "DORMANT",
+        yieldBasis: "FIXED_RATE",
+        acquisitionDate: "2024-02-01",
+        maturityDate: "2025-02-01",
+        principalAmount: 1000000,
+        yieldRate: 4.0,
+        incomeEarnedToDate: 40000,
+        incomeEarnedPeriod: 0,
+        accruedIncomeBalance: 3333,
+        cashReceivedPeriod: 0,
+        currency: "EUR",
+        hasRateData: true,
+        lastRateUpdatePeriod: "2024-06",
+        isAssumptionBased: false,
+        accruedAgingDays: 90,
+        evidence: "ATTACHED",
+        reviewStatus: "REVIEWED",
+        lastReviewedAt: now,
+        lastReviewedBy: "EU Treasury",
+        owner: "EU Treasury",
+        createdAt: now,
+      },
+      {
+        id: randomUUID(),
+        instrumentName: "Convertible Notes - TechStartup",
+        issuerName: "TechStartup Inc",
+        category: "OTHER",
+        entityId: "CORP-001",
+        lifecycleState: "ACTIVE",
+        yieldBasis: "ESTIMATED",
+        acquisitionDate: "2023-09-01",
+        maturityDate: "2026-09-01",
+        principalAmount: 500000,
+        yieldRate: 8.0,
+        incomeEarnedToDate: 66667,
+        incomeEarnedPeriod: 3333,
+        accruedIncomeBalance: 10000,
+        cashReceivedPeriod: 0,
+        currency: "USD",
+        hasRateData: false,
+        lastRateUpdatePeriod: null,
+        isAssumptionBased: true,
+        accruedAgingDays: 270,
+        evidence: "MISSING",
+        reviewStatus: "NOT_REVIEWED",
+        lastReviewedAt: null,
+        lastReviewedBy: null,
+        owner: "Venture Investments",
+        createdAt: now,
+      },
+    ];
+
+    for (const investment of sampleInvestments) {
+      this.investmentIncomeSchedules.set(investment.id, investment);
+    }
+  }
+
+  async getInvestmentIncomeSchedules(entityId?: string, category?: InvestmentCategory): Promise<InvestmentIncomeSchedule[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE" || i.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+    
+    if (category) {
+      investments = investments.filter(i => i.category === category);
+    }
+
+    return investments.sort((a, b) => b.incomeEarnedPeriod - a.incomeEarnedPeriod);
+  }
+
+  async getInvestmentIncomeSchedule(id: string): Promise<InvestmentIncomeSchedule | undefined> {
+    return this.investmentIncomeSchedules.get(id);
+  }
+
+  async createInvestmentIncomeSchedule(data: InsertInvestmentIncomeSchedule): Promise<InvestmentIncomeSchedule> {
+    const now = new Date().toISOString();
+    const investment: InvestmentIncomeSchedule = {
+      id: randomUUID(),
+      instrumentName: data.instrumentName,
+      issuerName: data.issuerName,
+      category: data.category,
+      entityId: data.entityId,
+      lifecycleState: "ACTIVE",
+      yieldBasis: data.yieldBasis,
+      acquisitionDate: data.acquisitionDate,
+      maturityDate: data.maturityDate || null,
+      principalAmount: data.principalAmount,
+      yieldRate: data.yieldRate,
+      incomeEarnedToDate: 0,
+      incomeEarnedPeriod: 0,
+      accruedIncomeBalance: 0,
+      cashReceivedPeriod: 0,
+      currency: data.currency,
+      hasRateData: false,
+      lastRateUpdatePeriod: null,
+      isAssumptionBased: data.yieldBasis === "ESTIMATED",
+      accruedAgingDays: 0,
+      evidence: "MISSING",
+      reviewStatus: "NOT_REVIEWED",
+      lastReviewedAt: null,
+      lastReviewedBy: null,
+      owner: data.owner,
+      createdAt: now,
+    };
+
+    this.investmentIncomeSchedules.set(investment.id, investment);
+    return investment;
+  }
+
+  async getInvestmentIncomeDashboardKPIs(entityId?: string, period?: string): Promise<InvestmentIncomeDashboardKPIs> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE" || i.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const activeInvestments = investments.filter(i => i.lifecycleState === "ACTIVE");
+    const dormantInvestments = investments.filter(i => i.lifecycleState === "DORMANT");
+
+    const incomeEarnedPeriod = activeInvestments.reduce((sum, i) => sum + i.incomeEarnedPeriod, 0);
+    const accruedIncomeBalance = investments.reduce((sum, i) => sum + i.accruedIncomeBalance, 0);
+    const cashReceivedPeriod = activeInvestments.reduce((sum, i) => sum + i.cashReceivedPeriod, 0);
+    const highRiskInstruments = investments.filter(i => 
+      !i.hasRateData || i.isAssumptionBased || i.accruedAgingDays > 90
+    ).length;
+
+    return {
+      incomeEarnedPeriod,
+      accruedIncomeBalance,
+      cashReceivedPeriod,
+      activeInvestments: activeInvestments.length,
+      dormantInvestments: dormantInvestments.length,
+      highRiskInstruments,
+    };
+  }
+
+  async getInvestmentIncomeCategorySummaries(entityId?: string): Promise<InvestmentIncomeCategorySummary[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE" || i.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const summaries: Record<InvestmentCategory, InvestmentIncomeCategorySummary> = {
+      INTEREST_BEARING: { category: "INTEREST_BEARING", activeCount: 0, incomeEarned: 0, accruedBalance: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      DIVIDENDS: { category: "DIVIDENDS", activeCount: 0, incomeEarned: 0, accruedBalance: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      FIXED_INCOME: { category: "FIXED_INCOME", activeCount: 0, incomeEarned: 0, accruedBalance: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      EQUITY_METHOD: { category: "EQUITY_METHOD", activeCount: 0, incomeEarned: 0, accruedBalance: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+      OTHER: { category: "OTHER", activeCount: 0, incomeEarned: 0, accruedBalance: 0, riskLevel: "LOW", reviewStatus: "REVIEWED" },
+    };
+
+    for (const investment of investments) {
+      const cat = investment.category;
+      if (investment.lifecycleState === "ACTIVE") {
+        summaries[cat].activeCount++;
+      }
+      summaries[cat].incomeEarned += investment.incomeEarnedPeriod;
+      summaries[cat].accruedBalance += investment.accruedIncomeBalance;
+      
+      if (!investment.hasRateData || investment.isAssumptionBased || investment.accruedAgingDays > 90) {
+        summaries[cat].riskLevel = "HIGH";
+      } else if (investment.accruedAgingDays > 45 && summaries[cat].riskLevel !== "HIGH") {
+        summaries[cat].riskLevel = "MEDIUM";
+      }
+      
+      if (investment.reviewStatus === "NOT_REVIEWED") {
+        summaries[cat].reviewStatus = "NOT_REVIEWED";
+      }
+    }
+
+    return Object.values(summaries)
+      .filter(s => s.activeCount > 0 || s.incomeEarned > 0)
+      .sort((a, b) => b.incomeEarned - a.incomeEarned);
+  }
+
+  async getInvestmentIncomeTrend(entityId?: string, periods: number = 6): Promise<InvestmentIncomeTrendPoint[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const currentEarned = investments.reduce((sum, i) => sum + i.incomeEarnedPeriod, 0);
+    const currentReceived = investments.reduce((sum, i) => sum + i.cashReceivedPeriod, 0);
+    const result: InvestmentIncomeTrendPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const incomeEarned = i === 0 ? currentEarned : currentEarned * (0.92 + Math.random() * 0.16);
+      const cashReceived = i === 0 ? currentReceived : currentReceived * (0.85 + Math.random() * 0.3);
+      result.push({ 
+        period, 
+        incomeEarned: Math.round(incomeEarned), 
+        cashReceived: Math.round(cashReceived) 
+      });
+    }
+
+    return result;
+  }
+
+  async getYieldMixBreakdown(entityId?: string): Promise<YieldMixBreakdown[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const totals: Record<InvestmentCategory, number> = {
+      INTEREST_BEARING: 0,
+      DIVIDENDS: 0,
+      FIXED_INCOME: 0,
+      EQUITY_METHOD: 0,
+      OTHER: 0,
+    };
+
+    for (const investment of investments) {
+      totals[investment.category] += investment.incomeEarnedPeriod;
+    }
+
+    const grandTotal = Object.values(totals).reduce((sum, v) => sum + v, 0);
+
+    return Object.entries(totals)
+      .filter(([_, amount]) => amount > 0)
+      .map(([category, amount]) => ({
+        category: category as InvestmentCategory,
+        amount,
+        percentage: grandTotal > 0 ? (amount / grandTotal) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }
+
+  async getAccruedVsReceived(entityId?: string, periods: number = 6): Promise<AccruedVsReceivedPoint[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE" || i.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const currentAccrued = investments.reduce((sum, i) => sum + i.accruedIncomeBalance, 0);
+    const currentReceived = investments.reduce((sum, i) => sum + i.cashReceivedPeriod, 0);
+    const result: AccruedVsReceivedPoint[] = [];
+    
+    const today = new Date();
+    for (let i = periods - 1; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const accrued = i === 0 ? currentAccrued : currentAccrued * (0.8 + Math.random() * 0.4);
+      const received = i === 0 ? currentReceived : currentReceived * (0.75 + Math.random() * 0.5);
+      result.push({ 
+        period, 
+        accrued: Math.round(accrued), 
+        received: Math.round(received) 
+      });
+    }
+
+    return result;
+  }
+
+  async getInvestmentIncomeRiskPanels(entityId?: string): Promise<InvestmentIncomeRiskPanel[]> {
+    let investments = Array.from(this.investmentIncomeSchedules.values())
+      .filter(i => i.lifecycleState === "ACTIVE" || i.lifecycleState === "DORMANT");
+    
+    if (entityId) {
+      investments = investments.filter(i => i.entityId === entityId);
+    }
+
+    const panels: InvestmentIncomeRiskPanel[] = [];
+
+    const missingRate: Record<InvestmentCategory, number> = { INTEREST_BEARING: 0, DIVIDENDS: 0, FIXED_INCOME: 0, EQUITY_METHOD: 0, OTHER: 0 };
+    const rateNotUpdated: Record<InvestmentCategory, number> = { INTEREST_BEARING: 0, DIVIDENDS: 0, FIXED_INCOME: 0, EQUITY_METHOD: 0, OTHER: 0 };
+    const assumptionBased: Record<InvestmentCategory, number> = { INTEREST_BEARING: 0, DIVIDENDS: 0, FIXED_INCOME: 0, EQUITY_METHOD: 0, OTHER: 0 };
+    const accruedOutstanding: Record<InvestmentCategory, number> = { INTEREST_BEARING: 0, DIVIDENDS: 0, FIXED_INCOME: 0, EQUITY_METHOD: 0, OTHER: 0 };
+    const notReviewed: Record<InvestmentCategory, number> = { INTEREST_BEARING: 0, DIVIDENDS: 0, FIXED_INCOME: 0, EQUITY_METHOD: 0, OTHER: 0 };
+
+    const currentPeriod = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+
+    for (const investment of investments) {
+      if (!investment.hasRateData) {
+        missingRate[investment.category]++;
+      }
+      if (investment.lastRateUpdatePeriod && investment.lastRateUpdatePeriod < currentPeriod) {
+        rateNotUpdated[investment.category]++;
+      }
+      if (investment.isAssumptionBased) {
+        assumptionBased[investment.category]++;
+      }
+      if (investment.accruedAgingDays > 90) {
+        accruedOutstanding[investment.category]++;
+      }
+      if (investment.reviewStatus === "NOT_REVIEWED") {
+        notReviewed[investment.category]++;
+      }
+    }
+
+    const buildCategories = (data: Record<InvestmentCategory, number>) => {
+      return Object.entries(data)
+        .filter(([_, count]) => count > 0)
+        .map(([category, count]) => ({ category: category as InvestmentCategory, count }));
+    };
+
+    const missingRateCategories = buildCategories(missingRate);
+    if (missingRateCategories.length > 0) {
+      panels.push({
+        type: "MISSING_RATE",
+        title: "Schedules missing rate or yield data",
+        categories: missingRateCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const rateNotUpdatedCategories = buildCategories(rateNotUpdated);
+    if (rateNotUpdatedCategories.length > 0) {
+      panels.push({
+        type: "RATE_NOT_UPDATED",
+        title: "Rate changes not updated this period",
+        categories: rateNotUpdatedCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const assumptionBasedCategories = buildCategories(assumptionBased);
+    if (assumptionBasedCategories.length > 0) {
+      panels.push({
+        type: "ASSUMPTION_BASED",
+        title: "Assumption-based income (manual estimates)",
+        categories: assumptionBasedCategories,
+        severity: "HIGH",
+      });
+    }
+
+    const accruedOutstandingCategories = buildCategories(accruedOutstanding);
+    if (accruedOutstandingCategories.length > 0) {
+      panels.push({
+        type: "ACCRUED_OUTSTANDING",
+        title: "Accrued income outstanding beyond threshold",
+        categories: accruedOutstandingCategories,
+        severity: "MEDIUM",
+      });
+    }
+
+    const notReviewedCategories = buildCategories(notReviewed);
+    if (notReviewedCategories.length > 0) {
+      panels.push({
+        type: "NOT_REVIEWED",
+        title: "Schedules not reviewed this period",
         categories: notReviewedCategories,
         severity: "MEDIUM",
       });

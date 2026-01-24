@@ -451,6 +451,109 @@ export const insertRevenueScheduleSchema = z.object({
 
 export type InsertRevenueSchedule = z.infer<typeof insertRevenueScheduleSchema>;
 
+// ===================
+// Investment Income Earned Types
+// ===================
+
+export type InvestmentCategory = 
+  | "INTEREST_BEARING"
+  | "DIVIDENDS"
+  | "FIXED_INCOME"
+  | "EQUITY_METHOD"
+  | "OTHER";
+
+export type InvestmentLifecycleState = "ACTIVE" | "DORMANT" | "MATURED" | "ARCHIVED";
+
+export type YieldBasis = "FIXED_RATE" | "VARIABLE_RATE" | "DIVIDEND_DECLARED" | "ESTIMATED";
+
+export interface InvestmentIncomeSchedule {
+  id: string;
+  instrumentName: string;
+  issuerName: string;
+  category: InvestmentCategory;
+  entityId: string;
+  lifecycleState: InvestmentLifecycleState;
+  yieldBasis: YieldBasis;
+  acquisitionDate: string;
+  maturityDate: string | null;
+  principalAmount: number;
+  yieldRate: number; // as percentage (e.g., 5.25 for 5.25%)
+  incomeEarnedToDate: number;
+  incomeEarnedPeriod: number;
+  accruedIncomeBalance: number;
+  cashReceivedPeriod: number;
+  currency: string;
+  hasRateData: boolean;
+  lastRateUpdatePeriod: string | null;
+  isAssumptionBased: boolean;
+  accruedAgingDays: number; // days outstanding
+  evidence: EvidenceStatus;
+  reviewStatus: ReviewStatus;
+  lastReviewedAt: string | null;
+  lastReviewedBy: string | null;
+  owner: string;
+  createdAt: string;
+}
+
+export interface InvestmentIncomeDashboardKPIs {
+  incomeEarnedPeriod: number;
+  accruedIncomeBalance: number;
+  cashReceivedPeriod: number;
+  activeInvestments: number;
+  dormantInvestments: number;
+  highRiskInstruments: number;
+}
+
+export interface InvestmentIncomeCategorySummary {
+  category: InvestmentCategory;
+  activeCount: number;
+  incomeEarned: number;
+  accruedBalance: number;
+  riskLevel: RiskLevel;
+  reviewStatus: ReviewStatus;
+}
+
+export interface InvestmentIncomeTrendPoint {
+  period: string;
+  incomeEarned: number;
+  cashReceived: number;
+}
+
+export interface YieldMixBreakdown {
+  category: InvestmentCategory;
+  amount: number;
+  percentage: number;
+}
+
+export interface AccruedVsReceivedPoint {
+  period: string;
+  accrued: number;
+  received: number;
+}
+
+export interface InvestmentIncomeRiskPanel {
+  type: "MISSING_RATE" | "RATE_NOT_UPDATED" | "ASSUMPTION_BASED" | "ACCRUED_OUTSTANDING" | "EXPECTED_MISSING" | "NOT_REVIEWED";
+  title: string;
+  categories: { category: InvestmentCategory; count: number }[];
+  severity: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export const insertInvestmentIncomeScheduleSchema = z.object({
+  instrumentName: z.string().min(1, "Instrument name is required"),
+  issuerName: z.string().min(1, "Issuer name is required"),
+  category: z.enum(["INTEREST_BEARING", "DIVIDENDS", "FIXED_INCOME", "EQUITY_METHOD", "OTHER"]),
+  entityId: z.string().min(1, "Entity is required"),
+  yieldBasis: z.enum(["FIXED_RATE", "VARIABLE_RATE", "DIVIDEND_DECLARED", "ESTIMATED"]),
+  acquisitionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+  maturityDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format").nullable().optional(),
+  principalAmount: z.number().min(0, "Principal cannot be negative"),
+  yieldRate: z.number().min(0, "Yield rate cannot be negative"),
+  currency: z.string().length(3, "Currency must be 3 characters"),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertInvestmentIncomeSchedule = z.infer<typeof insertInvestmentIncomeScheduleSchema>;
+
 // Keep existing User types for compatibility
 export interface User {
   id: string;

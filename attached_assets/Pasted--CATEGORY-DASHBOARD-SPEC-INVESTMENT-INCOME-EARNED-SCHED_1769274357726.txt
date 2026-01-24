@@ -1,0 +1,316 @@
+📈 CATEGORY DASHBOARD SPEC — INVESTMENT INCOME EARNED (SCHEDULER)
+
+Product: Scheduler
+Category: Investment Income Earned
+Audience: Preparer, Reviewer, Controller, Audit
+Purpose: Provide a period-aware view of income earned on investments (interest, dividends, yield), separating earning from cash receipt, with drill-down to instrument-level schedules and evidence.
+
+🔒 Design Rule (Non-Negotiable)
+
+The dashboard surfaces current-period income earned and risk by investment category — never transaction-level cash movements or full historical listings.
+History and instrument detail are accessed only through deliberate drilldown.
+
+1️⃣ Scope & Philosophy
+What this dashboard IS
+
+A yield and income recognition control surface
+
+A time-based earning overview independent of cash
+
+A risk detection screen for missing accruals, rate changes, and valuation assumptions
+
+What this dashboard is NOT
+
+❌ A trading system
+
+❌ A portfolio valuation or mark-to-market engine
+
+❌ A cash management or treasury tool
+
+❌ A forecasting or performance analytics platform
+
+This dashboard answers:
+
+“How much income have our investments earned this period — and can we explain the timing and assumptions?”
+
+2️⃣ Investment Income Lifecycle Model (Foundation)
+
+Every investment income schedule exists in one state only:
+
+State	Meaning	Dashboard Visibility
+Active	Instrument currently earning income	✅ Included
+Dormant	Temporarily not earning (paused / suspended)	⚠ Included (separate count)
+Matured	Fully earned, no further income expected	❌ Excluded
+Archived	Historical reference only	❌ Excluded
+Hard Rule
+
+Only Active and Dormant investment income schedules appear on the dashboard.
+
+Matured instruments never clutter the surface.
+
+3️⃣ Entry Points & Navigation
+URL
+/scheduler/investment-income
+
+Navigation context
+
+Top Nav: Scheduler (active)
+
+Left Sidebar: Categories
+
+Prepaids
+
+Fixed Assets
+
+Accruals
+
+Revenue & Contracts
+
+Investment Income (active)
+
+Interest-Bearing Investments
+
+Dividends
+
+Fixed Income Securities
+
+Equity Method / Funds
+
+Other
+
+Main Area: Investment Income Dashboard (Aggregated)
+
+4️⃣ Time Window Enforcement
+Default Time Horizon
+
+Primary view: Current period
+
+Trends: Rolling 6–12 periods (hard cap)
+
+Prohibited by Design
+
+❌ Listing individual transactions
+
+❌ Displaying full investment history by default
+
+❌ Mixing cash receipts with earned income
+
+Cash belongs in Treasury or Reconciliations — not here.
+
+5️⃣ Page Layout (Earnings-First, Not Cash-First)
+┌──────────────────────────────────────────┐
+│ Header (Title + Period + Entity)         │
+├──────────────────────────────────────────┤
+│ KPI Summary Tiles (Income Earned)        │
+├──────────────────────────────────────────┤
+│ Income Earned & Yield Trends             │
+├──────────────────────────────────────────┤
+│ Risk & Assumption Panels                 │
+├──────────────────────────────────────────┤
+│ Investment Category Summary Table        │
+└──────────────────────────────────────────┘
+
+6️⃣ Header Section
+Elements
+
+Title: Investment Income Earned
+
+Context Bar:
+
+Entity selector
+
+Period selector
+
+Measurement basis (Accrued / Earned)
+
+Status badge (Open / Locked)
+
+Actions
+
+➕ New Investment Income Schedule
+
+📄 New Investment Template
+
+⬇ Export Income Summary
+
+7️⃣ KPI Summary Tiles (Earned, Not Received)
+
+Purpose: Summarize economic income earned in the period.
+
+Tile	Definition
+Income Earned (Period)	Total income earned this period
+Accrued Income Balance	Income earned but not yet received
+Cash Received (Optional)	Cash receipts linked to income
+Active Investments	# of earning instruments
+Dormant Investments	Temporarily inactive
+High-Risk Instruments	Rate-based or assumption-heavy
+Behavior
+
+Tiles filter categories, not instruments
+
+No tile expands to transaction listings
+
+8️⃣ Charts & Visuals (Aggregated & Stable)
+Chart 1: Income Earned Trend
+
+Line or stacked bar
+
+Rolling 6–12 periods
+
+Grouped by investment category
+
+Drilldown: category → Category Dashboard
+
+Chart 2: Yield Mix by Category
+
+Donut / stacked bar
+
+Interest vs dividends vs funds
+
+Chart 3: Accrued vs Received (Optional)
+
+Bar comparison
+
+Highlights timing differences
+
+Flags long-outstanding accruals
+
+9️⃣ Risk & Assumption Panels
+
+Purpose: Surface recognition and valuation risk.
+
+Panels
+
+⚠ Income schedules missing rate or yield data
+
+🔄 Rate changes not updated this period
+
+🧠 Assumption-based income (manual estimates)
+
+⏱ Accrued income outstanding beyond threshold
+
+📭 Expected income schedules not present
+
+Each panel shows:
+
+Category
+
+Count of affected instruments
+
+Severity
+
+“View Category” link
+
+🔽 10️⃣ Investment Category Summary Table
+Rows = Investment Categories, not instruments
+Column	Description
+Category	Interest / Dividends / Funds
+Active Schedules	Count
+Income Earned	Period amount
+Accrued Balance	Ending accrued income
+Risk Level	Low / Medium / High
+Status	Reviewed / Not Reviewed
+Behavior
+
+Clicking a row navigates to:
+
+/scheduler/investment-income/interest
+
+11️⃣ Drilldown Path (Progressive Disclosure)
+Level 1 → Investment Income Dashboard
+/scheduler/investment-income
+
+Level 2 → Category Dashboard
+/scheduler/investment-income/interest
+
+
+Active instruments only
+
+Current period focus
+
+Level 3 → Investment Income Workspace
+/scheduler/investment-income/interest/investment/321
+
+🔍 Individual Investment Income Workspace (Linked, Not Embedded)
+
+Tabs
+
+Overview
+
+Income Calculation
+
+Rate / Yield Assumptions
+
+Accrued vs Received
+
+Evidence
+
+Audit Trail
+
+Maturity / Closure
+
+🔐 12️⃣ Controls & Permissions
+Role behavior
+Role	Access
+Preparer	Create/edit schedules
+Reviewer	Review + comment
+Controller	Approve + lock period
+Auditor	Read-only + evidence
+Accounting controls
+
+Period locking freezes earned income
+
+Rate/yield changes logged and prospective
+
+Accrual aging thresholds enforced
+
+Cash linkage optional and non-authoritative
+
+13️⃣ Empty & Edge States
+No active investments
+
+Message: “No active investment income for this period”
+
+CTA: “Create investment income schedule” or “View archived investments”
+
+Matured instruments
+
+Automatically excluded from dashboard
+
+Accessible via search/history
+
+14️⃣ Technical Guardrails (Anti-Bloat)
+
+Dashboard queries aggregated income only
+
+Hard limits:
+
+Max trend window: 12 periods
+
+Max rows: categories only
+
+Instrument-level data loaded on demand
+
+🚫 Transactions, trades, and valuations are forbidden on this screen
+
+15️⃣ Why Investment Income Needs Its Own Schedule (Truth)
+
+Investment income fails when:
+
+Earned vs received is blurred
+
+Rates change silently
+
+Accruals linger without scrutiny
+
+This dashboard:
+
+Separates economics from cash
+
+Makes assumptions visible
+
+Keeps income defensible and auditable
+
+16️⃣ One-Sentence Explanation (Use Everywhere)
+
+“The Investment Income Earned dashboard provides a period-aware view of income earned on investments, separating yield recognition from cash receipt, with drilldowns to instrument-level schedules and evidence.”
