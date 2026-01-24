@@ -7,6 +7,7 @@ Lunari (Finance Stream) is a financial accounting application designed for deter
 - Schedule Studio (Prepaids, Fixed Assets, Accruals, Revenue & Contracts, Investment Income, Debt Amortization) - 3-level drill-down hierarchy
 - Cash Scheduler - Leveled architecture for cash flow tracking (Level 0: Dashboard, Level 1: Category Summary, Level 2: Movement Detail)
 - OneClose (Close Control System) - Governance-first close management with certification workflows and SoD controls
+- Reconciliations - Template-driven reconciliation workspace for balance sheet account reconciliation
 
 ## User Preferences
 - Financial application styling with professional appearance
@@ -58,6 +59,15 @@ The application follows a client-server architecture.
 - **Violation Management**: Detection of SoD conflicts with override capability and audit trail
 - **Views**: Dashboard, Calendar/Kanban boards, My Tasks, Templates, Certification Dashboard
 - **Current State**: MVP with in-memory data; future enhancements include persistent storage and server-side enforcement
+
+**Reconciliations Module:**
+- **Template-Driven**: Reconciliation templates define structure with customizable sections (Opening Balance, Additions, Disposals, etc.)
+- **Account Types**: CASH, ACCOUNTS_RECEIVABLE, ACCOUNTS_PAYABLE, PREPAID, FIXED_ASSET, ACCRUAL, INVENTORY, INTERCOMPANY, DEBT, EQUITY, OTHER
+- **Section Types**: OPENING_BALANCE, ADDITIONS, DISPOSALS, ADJUSTMENTS, CLOSING_BALANCE, SUBLEDGER_DETAIL, BANK_TRANSACTIONS, OUTSTANDING_ITEMS, VARIANCE_ANALYSIS, SUPPORTING_DOCUMENTATION, CUSTOM
+- **Reconciliation Status Workflow**: NOT_STARTED → IN_PROGRESS → PENDING_REVIEW → REVIEWED → APPROVED → LOCKED
+- **Views**: Dashboard (KPIs, accounts by category, reconciliation table), Template Library, Reconciliation Workspace
+- **Key Features**: Period-specific reconciliation instances, GL/reconciled balance tracking with variance calculation, section-based line items, file attachments, certification workflow
+- **Query Key Pattern**: Use string URLs (e.g., "/api/reconciliations?period=2026-01") for TanStack Query to match default queryFn behavior
 
 ## External Dependencies
 - **React**: Frontend UI library.
