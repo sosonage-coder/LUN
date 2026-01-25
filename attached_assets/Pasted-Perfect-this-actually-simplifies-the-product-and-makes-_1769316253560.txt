@@ -1,0 +1,327 @@
+Perfect — this actually **simplifies the product and makes it stronger**.
+You’re right: **Progress Board duplicated the Dashboard**.
+
+Below is the **cleaned, final spec** with:
+
+* ❌ Progress Board **removed**
+* ✅ **Task List** = where status is updated
+* ✅ **Calendar** = planning (when)
+* ✅ **Dashboard** = management progress
+* ✅ **My Tasks** = personal execution
+* ✅ **Control Checklist** = coverage assurance
+
+No redundancy. One source of truth.
+
+---
+
+# ✅ CLOSE TASK & CONTROL APP — FINAL, SIMPLIFIED SPEC
+
+---
+
+## 🎯 PRODUCT PURPOSE (LOCKED)
+
+A simple close tool that ensures:
+
+* Tasks are clearly assigned
+* Status is easy to update
+* Close timing is visible
+* Controls are covered
+* Management sees progress instantly
+
+---
+
+# 🧭 CORE PAGES (TOP NAV)
+
+```
+📅 Calendar
+📋 Task List
+🧑 My Tasks
+✅ Control Checklist
+📊 Dashboard
+⚙️ Setup
+```
+
+---
+
+# 1️⃣ CALENDAR PAGE — *WHEN work happens*
+
+**Purpose:** Planning & sequencing
+**View type:** Horizontal timeline
+**Audience:** Everyone (especially managers)
+
+### What shows here
+
+* Tasks plotted by due date
+* Monthly & quarterly views
+* Multiple tasks on the same day
+* Color-coded by status:
+
+  * Grey = Not Started
+  * Blue = In Process
+  * Green = Completed
+  * Red = Overdue
+
+### What does NOT happen here
+
+* No status changes
+* No workflow movement
+
+---
+
+### 📐 Visual — Calendar View (Horizontal)
+
+```
+JAN CLOSE TIMELINE  → → →
+
+Day 1        Day 2                Day 3                 Day 4               Day 5
+------------------------------------------------------------------------------------
+Cash Recon  Prepaid Build         Accrual Build          Revenue Cutoff       Mgmt Review
+            FA Review             Prepaid Review         Accrual Review       Close Sign-off
+            Tax Payable Review
+```
+
+✔ Shows workload & sequencing
+✖ Not for execution
+
+---
+
+# 2️⃣ TASK LIST — *Single execution surface*
+
+**Purpose:** Do the work & update status
+**Audience:** Everyone
+
+This is the **only place** where task status changes.
+
+### What each task shows
+
+* Task name
+* Close process (Prepaids, Accruals, etc.)
+* Assigned user
+* Due date
+* Status:
+
+  * Not Started
+  * In Process
+  * Completed
+* Optional comment
+
+### What users can do
+
+* Update task status
+* Add comments
+* View task details
+
+### What managers can do
+
+* Reassign tasks
+* Adjust due dates
+* Filter by process or user
+
+---
+
+### 📐 Visual — Task List
+
+```
+TASK LIST — JAN CLOSE
+
+Task Name                     Process      Assigned   Due   Status
+-----------------------------------------------------------------------
+Cash Reconciliation Review    Cash         Alex       D1    ✔ Completed
+Prepaid Build                 Prepaids     Sam        D2    ▶ In Process
+Accrual Build                 Accruals     Nina       D3    ▢ Not Started
+Revenue Cutoff Review         Revenue      Alex       D4    ▢ Not Started
+```
+
+✔ Clear
+✔ Simple
+✔ No duplicate workflow views
+
+---
+
+# 3️⃣ MY TASKS PAGE — *Personal focus*
+
+**Purpose:** Individual accountability
+**Audience:** Individual contributors
+
+### What users see
+
+* Only tasks assigned to them
+* Grouped by status
+* Sorted by due date
+
+### What users can do
+
+* Update status
+* Add comments
+
+---
+
+### 📐 Visual — My Tasks
+
+```
+MY TASKS — JAN CLOSE
+
+🟠 In Process
+- Prepaid Build (Day 2)
+
+🔴 Not Started
+- Revenue Cutoff Review (Day 4)
+
+🟢 Completed
+- Cash Recon Review (Day 1)
+```
+
+✔ No noise
+✔ No hunting
+
+---
+
+# 4️⃣ CONTROL CHECKLIST — *Ensure nothing is missed*
+
+**Purpose:** Control coverage
+**Audience:** Controller / Manager
+
+This answers one question:
+
+> “Do we have a task covering every required control?”
+
+### Structure (Trial Balance–Driven)
+
+Controls grouped by **account class**, not by person.
+
+### What each control shows
+
+* Control required? ✅
+* Task linked? ✅ / ❌
+* Task completed? ✅ / ❌
+
+---
+
+### 📐 Visual — Control Checklist
+
+```
+CONTROL CHECKLIST — JAN CLOSE
+
+ASSETS
+☑ Cash reconciled
+☑ Prepaids reviewed
+☑ Fixed assets reviewed
+
+LIABILITIES
+☑ Accruals reviewed
+☐ Payroll liabilities reviewed ⚠️
+
+P&L
+☑ Revenue cutoff reviewed
+☑ Expense variance review
+```
+
+✔ Coverage clarity
+✔ Independent of task execution view
+
+---
+
+# 5️⃣ DASHBOARD — *Management view*
+
+**Purpose:** Close progress at a glance
+**Audience:** Management
+
+### What it shows
+
+* Overall % complete
+* Task count by status
+* Progress by close process
+* Overdue tasks
+
+---
+
+### 📐 Visual — Dashboard
+
+```
+JAN CLOSE STATUS
+
+Overall Progress: 72% ███████░░
+
+Tasks:
+✔ Completed: 18
+▶ In Process: 6
+▢ Not Started: 4
+⚠ Overdue: 2
+
+By Process:
+Cash        ✅
+Prepaids    🟠
+Accruals    🔴
+Revenue     🟠
+```
+
+✔ One-glance answer to “Where are we?”
+
+---
+
+# 6️⃣ SETUP PAGE — *Fast configuration*
+
+**Purpose:** Generate structure quickly
+
+### Setup steps
+
+1. Select close type:
+
+   * Monthly or Quarterly
+2. Select applicable processes:
+
+   * Cash, Prepaids, Accruals, Revenue, etc.
+3. System auto-generates:
+
+   * Control-based task list
+   * Default assignments
+   * Default due days
+
+---
+
+# 🔍 FINAL CHECK — NOTHING EXTRA, NOTHING MISSING
+
+### Included ✅
+
+* Horizontal calendar
+* Task list with status updates
+* Personal task page
+* Control checklist
+* Management dashboard
+* Pre-populated control tasks
+
+### Excluded ❌
+
+* No Progress Board
+* No Kanban
+* No reconciliation engine
+* No schedule calculations
+* No ERP overlap
+
+---
+
+## 🧠 FINAL MENTAL MODEL (VERY CLEAN)
+
+```
+Calendar        → WHEN work happens
+Task List       → DO the work
+My Tasks        → WHAT I do
+Control List    → WHAT must exist
+Dashboard       → WHERE we are
+```
+
+---
+
+## ONE-LINE PRODUCT DEFINITION (FINAL)
+
+**A close task and control tool with a calendar for planning, a task list for execution, and a dashboard to ensure nothing is missed.**
+
+---
+
+If you want next, I can:
+
+* Define the **exact default task templates by TB class**
+* Write a **Replit build spec**
+* Or reduce this to an **absolute MVP (5–7 screens only)**
+
+This version is tight and buildable.
