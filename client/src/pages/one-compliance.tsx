@@ -1445,6 +1445,62 @@ export default function OneCompliancePage() {
                   <ChangesPanel changes={changes} />
                 </CardContent>
               </Card>
+
+              {/* Authority & Delegation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCheck className="h-5 w-5" />
+                    Authority & Delegation Register
+                  </CardTitle>
+                  <CardDescription>Authorized signatories and signing limits</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SignatoriesPanel signatories={signatories} />
+                </CardContent>
+              </Card>
+
+              {/* Policies */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Policies & Procedures
+                  </CardTitle>
+                  <CardDescription>Corporate policies and acknowledgement tracking</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PoliciesPanel policies={policies} />
+                </CardContent>
+              </Card>
+
+              {/* Risk Register */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Risk Register
+                  </CardTitle>
+                  <CardDescription>Compliance and operational risks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RisksPanel risks={risks} />
+                </CardContent>
+              </Card>
+
+              {/* Advisors */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Professional Advisors
+                  </CardTitle>
+                  <CardDescription>External advisors and service providers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AdvisorsPanel advisors={advisors} />
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Startup Equity Tab */}
