@@ -1,0 +1,161 @@
+Absolutely — this is a **foundational framing**, and you’re right to lead with it.
+Below is a **clean, controller-grade INTRODUCTION section** you can place **before** the cash spec and **before** the broader template library, so reviewers, engineers, and future users all share the same mental model.
+
+No extra scope. No accounting lecture. Just enough to anchor the templates correctly.
+
+---
+
+# 🧭 FOUNDATIONAL CONCEPT — MONETARY VS NON-MONETARY ACCOUNTS
+
+*(Context for Balance Sheet Reconciliation Templates)*
+
+---
+
+## Purpose of This Distinction
+
+When designing **balance sheet reconciliation templates**, it is essential to distinguish between **monetary** and **non-monetary** accounts.
+
+This distinction determines:
+
+* Whether balances are **revalued each period**
+* How **FX impacts** are treated
+* What a reconciliation must **explain vs ignore**
+* Which template structure is appropriate for an account
+
+Without this separation, reconciliation templates either:
+
+* Overcomplicate non-monetary accounts, or
+* Under-explain FX impacts for monetary accounts
+
+---
+
+## Monetary Accounts
+
+### Definition
+
+**Monetary accounts** are balance sheet accounts whose carrying value is **revalued at each reporting date** when denominated in a currency different from the reporting currency.
+
+### Key Characteristics
+
+* Subject to **period-end FX revaluation**
+* FX differences impact **P&L or OCI**, depending on policy
+* Balance changes may occur **without new transactions**
+* Reconciliation must explicitly explain **FX movements**
+
+### Common Examples
+
+* Cash and bank accounts
+* Accounts receivable
+* Accounts payable
+* Loans and other monetary liabilities
+
+### Reconciliation Implication
+
+For monetary accounts, a balance sheet reconciliation **must**:
+
+* Separate **operational reconciling items** from **FX revaluation**
+* Clearly show the **FX impact for the period**
+* Avoid mixing FX with timing or error-based reconciling items
+
+This is why **cash reconciliations require explicit FX sections**.
+
+---
+
+## Non-Monetary Accounts
+
+### Definition
+
+**Non-monetary accounts** are balance sheet accounts whose carrying value **does not revalue** due to exchange rate changes, even if the underlying transaction occurred in a foreign currency.
+
+### Key Characteristics
+
+* Measured at **historical cost** or other non-remeasured bases
+* FX rate is **fixed at transaction date**
+* No recurring FX revaluation impact
+* Balance changes are driven by **activity, not currency movement**
+
+### Common Examples
+
+* Prepaid expenses
+* Fixed assets / right-of-use assets
+* Inventory
+* Intangible assets
+
+### Reconciliation Implication
+
+For non-monetary accounts, a balance sheet reconciliation **should not**:
+
+* Include FX revaluation sections
+* Attempt to explain FX-driven balance changes
+
+Instead, reconciliations focus on:
+
+* Rollforward logic
+* Additions, amortization/depreciation, disposals
+* Classification and completeness
+
+---
+
+## Why This Matters for Templates
+
+Balance sheet reconciliation templates are **not interchangeable** across account types.
+
+* **Monetary account templates** must:
+
+  * Explicitly surface FX revaluation
+  * Explain currency-driven movements
+
+* **Non-monetary account templates** must:
+
+  * Exclude FX logic
+  * Focus on transactional rollforwards and aging
+
+Templates should therefore be designed and selected based on:
+
+* Account classification (monetary vs non-monetary)
+* Measurement basis
+* Expected sources of movement
+
+---
+
+## How This Applies to the Cash Reconciliation Spec
+
+Cash is a **monetary account**.
+
+Therefore, the cash balance sheet reconciliation template:
+
+* Requires currency selection
+* Requires FX rate visibility
+* Requires a distinct FX revaluation section
+* Must isolate FX from operational reconciling items
+
+This logic does **not** automatically carry over to:
+
+* Prepaids
+* Fixed assets
+* Other non-monetary balances
+
+Those accounts will use **different reconciliation templates**, even though they coexist on the same balance sheet.
+
+---
+
+## Guiding Principle (Use This Line Everywhere)
+
+> **Balance sheet reconciliations must reflect how the account is measured — not just what the account is called.**
+
+---
+
+This introduction now gives **full context** for:
+
+* Why cash templates look the way they do
+* Why prepaids and fixed assets will look different
+* Why FX is present in some reconciliations and absent in others
+
+If you want next, we can:
+
+* Map **monetary vs non-monetary → default template types**
+* Draft the **Prepaids reconciliation template intro**
+* Draft the **Fixed Assets reconciliation template intro**
+* Or create a **template selection decision tree**
+
+Just tell me where to go next.

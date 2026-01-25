@@ -1,0 +1,313 @@
+🧱 CASH RECONCILIATION TEMPLATES — PRODUCT SPEC (V1)
+0️⃣ Purpose & Scope
+Purpose
+
+Cash reconciliation templates define the standardized structure used to reconcile monetary cash accounts on the balance sheet.
+
+They ensure:
+
+Consistent treatment of FX revaluation
+
+Clear separation of operational reconciling items
+
+Audit-readable explanations of balance movements
+
+Reusability across entities, periods, and bank accounts
+
+Templates define structure and required sections, not data.
+
+Scope (V1)
+
+This spec covers:
+
+Template types
+
+Required sections
+
+Data expectations
+
+FX treatment rules
+
+It does not cover:
+
+Bank feeds
+
+Auto-matching
+
+Posting logic
+
+Reporting currency frameworks
+
+1️⃣ Template Classification
+
+Cash templates apply only to monetary accounts.
+
+Eligibility Rules
+
+A cash template may be used when:
+
+The account represents cash or cash equivalents
+
+The balance is subject to period-end FX revaluation
+
+The account is reconciled against external bank balances
+
+Templates are account-agnostic, but account-appropriate.
+
+2️⃣ Template Variants (V1)
+
+Cash templates differ only by:
+
+Number of bank accounts
+
+Currency alignment
+
+V1 Cash Template Set
+
+Single Bank Account — Same Currency
+
+Multiple Bank Accounts — Same Currency
+
+Multiple Bank Accounts — Different Currencies
+
+These three variants cover the majority of real-world cash structures.
+
+3️⃣ Common Structure (Applies to All Cash Templates)
+
+All cash templates share the same core sections, regardless of variant.
+
+A. Template Metadata (System-Defined)
+
+Each template includes:
+
+Template name
+
+Account classification: Monetary
+
+FX applicable: Yes
+
+Version
+
+Template type: System
+
+Eligible account types: Cash / Cash equivalents
+
+B. Entity & Period Context
+
+Each reconciliation instantiated from the template must specify:
+
+Entity
+
+Period
+
+Reporting currency (for reconciliation display)
+
+C. Bank Account Section
+
+Required fields:
+
+Bank account identifier
+
+Currency (selected from company currency list)
+
+Period-end bank balance
+
+Behavior:
+
+Currency selection is mandatory
+
+FX rate auto-populates based on selected currency
+
+FX rate is visible and editable
+
+D. FX Revaluation Section (Mandatory)
+
+Purpose:
+Explain currency-driven balance movements separate from operational activity.
+
+Requirements:
+
+Dedicated FX revaluation section
+
+FX impact shown as a standalone component
+
+FX never embedded within reconciling items
+
+FX section may include:
+
+Auto-calculated FX difference
+
+Manual FX adjustment (if required)
+
+E. Reconciling Items Section (Mandatory)
+
+Reconciling items must be split into two fixed sub-sections:
+
+1. Items in Bank, Not in GL
+
+Examples:
+
+Deposits in transit
+
+Bank fees
+
+Interest
+
+Timing differences
+
+2. Items in GL, Not in Bank
+
+Examples:
+
+Outstanding cheques
+
+Pending payments
+
+Recording errors
+
+Each reconciling item:
+
+Appears as a separate line
+
+Supports attachments
+
+Supports tagging
+
+Has an open / cleared status
+
+F. Summary & Tie-Out Section
+
+Each template must display a visible reconciliation equation:
+
+Total Bank Balance(s)
+± Reconciling Items
+± FX Revaluation
+= Trial Balance Cash
+
+
+The net difference must be zero to certify.
+
+4️⃣ Template-Specific Rules
+1️⃣ Single Bank Account — Same Currency
+
+Use case
+
+One bank account
+
+Bank currency = trial balance currency
+
+Characteristics
+
+FX revaluation section still present
+
+FX impact expected to be zero in most periods
+
+Simplest cash structure
+
+2️⃣ Multiple Bank Accounts — Same Currency
+
+Use case
+
+Multiple bank accounts
+
+All accounts share the same currency
+
+One or more GL cash accounts
+
+Characteristics
+
+Bank balances rolled up
+
+Single FX context
+
+Reconciling items may reference individual bank accounts
+
+3️⃣ Multiple Bank Accounts — Different Currencies
+
+Use case
+
+Multinational cash structures
+
+Bank accounts in different currencies
+
+Single reporting currency
+
+Characteristics
+
+Currency selected per bank account
+
+FX rate applied per currency
+
+FX revaluation aggregated into a single FX section
+
+Operational reconciling items remain currency-agnostic
+
+5️⃣ Tagging & Classification (Template-Enabled)
+
+Each cash template must support tagging for:
+
+Reconciling item type (timing, fee, interest, error)
+
+Nature (expected / unexpected)
+
+Custom tags (optional)
+
+Tags are used for:
+
+Filtering
+
+Summary views
+
+Reviewer efficiency
+
+6️⃣ Bulk Upload Support (Template Requirement)
+
+Cash templates must support:
+
+Bulk upload of reconciling items
+
+Template-defined required fields
+
+Upload preview before commit
+
+Full editability post-upload
+
+Bulk upload is line-based, not transaction-feed based.
+
+7️⃣ Evidence & Certification Behavior
+
+Templates enforce:
+
+Evidence attachment before certification
+
+Line-level evidence support
+
+Evidence lock on certification
+
+Reconciliation lifecycle:
+
+Draft → Prepared → Reviewed → Certified → Locked
+
+8️⃣ Explicit Template Non-Goals (V1)
+
+Cash templates do not include:
+
+Bank feeds
+
+Auto-matching
+
+Auto-clearing
+
+Journal posting
+
+Reporting currency frameworks
+
+These are intentionally excluded.
+
+9️⃣ Design Principle (Use This Everywhere)
+
+Cash reconciliation templates explain currency-driven and operational differences — they do not automate cash accounting.
+
+🔒 One-Line Definition
+
+“Cash reconciliation templates provide a standardized, FX-aware structure for reconciling monetary cash accounts across entities and currencies, with clear separation of operational reconciling items and FX revaluation.”
