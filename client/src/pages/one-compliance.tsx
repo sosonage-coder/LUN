@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useRoute, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1062,9 +1062,62 @@ function OrgChart({ entities }: { entities: Entity[] }) {
   );
 }
 
+const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi"];
+
+const sectionToTab: Record<string, string> = {
+  "dashboard": "overview",
+  "entities": "entities",
+  "obligations": "obligations",
+  "governance": "governance",
+  "authority": "authority",
+  "risks": "risks",
+  "policies": "policies",
+  "advisors": "advisors",
+  "audit": "audit",
+  "insights": "insights",
+  "roi": "roi",
+};
+
+const tabToSection: Record<string, string> = {
+  "overview": "dashboard",
+  "entities": "entities",
+  "obligations": "obligations",
+  "governance": "governance",
+  "authority": "authority",
+  "risks": "risks",
+  "policies": "policies",
+  "advisors": "advisors",
+  "audit": "audit",
+  "insights": "insights",
+  "roi": "roi",
+};
+
 export default function OneCompliancePage() {
-  const [selectedTab, setSelectedTab] = useState("overview");
+  const [, params] = useRoute("/compliance/:section");
+  const [, setLocation] = useLocation();
+  
+  const sectionFromUrl = params?.section || "";
+  const initialTab = sectionToTab[sectionFromUrl] || "overview";
+  
+  const [selectedTab, setSelectedTab] = useState(initialTab);
   const [selectedEntity, setSelectedEntity] = useState<string>("");
+
+  useEffect(() => {
+    const newTab = sectionToTab[sectionFromUrl] || "overview";
+    if (newTab !== selectedTab) {
+      setSelectedTab(newTab);
+    }
+  }, [sectionFromUrl]);
+
+  const handleTabChange = (tab: string) => {
+    setSelectedTab(tab);
+    const section = tabToSection[tab] || "dashboard";
+    if (section === "dashboard") {
+      setLocation("/compliance");
+    } else {
+      setLocation(`/compliance/${section}`);
+    }
+  };
 
   const metrics = getComplianceMetrics();
   const entities = getEntities();
@@ -1116,7 +1169,7 @@ export default function OneCompliancePage() {
             </div>
           </div>
 
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <Tabs value={selectedTab} onValueChange={handleTabChange}>
             <TabsList className="w-full justify-start overflow-x-auto" data-testid="main-tabs">
               <TabsTrigger value="overview" data-testid="tab-overview">
                 <LayoutDashboard className="h-4 w-4 mr-2" />
@@ -1169,7 +1222,7 @@ export default function OneCompliancePage() {
 
       <ScrollArea className="flex-1">
         <div className="container py-6">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <Tabs value={selectedTab} onValueChange={handleTabChange}>
             <TabsContent value="overview" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
