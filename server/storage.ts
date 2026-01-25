@@ -5112,16 +5112,18 @@ export class MemStorage implements IStorage {
     const templates: ReconciliationTemplate[] = [
       {
         templateId: "RTPL-CASH-SINGLE",
-        name: "Cash - Single Bank Account",
-        description: "Standard bank reconciliation for single currency, single bank account",
+        name: "Cash - Single Bank Account (Same Currency)",
+        description: "Standard bank reconciliation for single currency, single bank account. For monetary accounts with FX revaluation.",
         accountTypes: ["CASH"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
+        templateVariant: "SINGLE_BANK_SAME_CCY",
         sections: [
-          { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "GL balance at period start", sortOrder: 1, isRequired: true, fields: [] },
-          { sectionId: "S2", sectionType: "BANK_TRANSACTIONS", name: "Bank Statement Balance", description: "Ending balance per bank statement", sortOrder: 2, isRequired: true, fields: [] },
-          { sectionId: "S3", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Deposits", description: "Deposits in transit not yet on bank statement", sortOrder: 3, isRequired: true, fields: [] },
-          { sectionId: "S4", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Checks", description: "Checks issued but not yet cleared", sortOrder: 4, isRequired: true, fields: [] },
-          { sectionId: "S5", sectionType: "ADJUSTMENTS", name: "Adjustments", description: "Bank fees, errors, and other adjustments", sortOrder: 5, isRequired: false, fields: [] },
-          { sectionId: "S6", sectionType: "CLOSING_BALANCE", name: "Reconciled Balance", description: "Calculated reconciled balance", sortOrder: 6, isRequired: true, fields: [] },
+          { sectionId: "S1", sectionType: "BANK_TRANSACTIONS", name: "Bank Account", description: "Bank account details, currency, and period-end balance", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "BANK_NOT_IN_GL", name: "Items in Bank, Not in GL", description: "Deposits in transit, bank fees, interest, timing differences", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "GL_NOT_IN_BANK", name: "Items in GL, Not in Bank", description: "Outstanding cheques, pending payments, recording errors", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "FX_REVALUATION", name: "FX Revaluation", description: "Currency-driven balance movements from period-end revaluation", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Summary & Tie-Out", description: "Bank Balance ± Reconciling Items ± FX = GL Balance", sortOrder: 5, isRequired: true, fields: [] },
         ],
         isSystemTemplate: true,
         isActive: true,
@@ -5130,15 +5132,40 @@ export class MemStorage implements IStorage {
         updatedAt: now,
       },
       {
-        templateId: "RTPL-CASH-MULTI",
-        name: "Cash - Multiple Banks",
-        description: "Bank reconciliation consolidating multiple bank accounts",
+        templateId: "RTPL-CASH-MULTI-SAME",
+        name: "Cash - Multiple Banks (Same Currency)",
+        description: "Bank reconciliation for multiple bank accounts in the same currency with consolidated FX revaluation.",
         accountTypes: ["CASH"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
+        templateVariant: "MULTI_BANK_SAME_CCY",
         sections: [
-          { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Bank Account Summary", description: "List of all bank accounts and balances", sortOrder: 1, isRequired: true, fields: [] },
-          { sectionId: "S2", sectionType: "OUTSTANDING_ITEMS", name: "Outstanding Items", description: "All outstanding deposits and checks by bank", sortOrder: 2, isRequired: true, fields: [] },
-          { sectionId: "S3", sectionType: "VARIANCE_ANALYSIS", name: "Variance Analysis", description: "Explain variances between GL and bank", sortOrder: 3, isRequired: true, fields: [] },
-          { sectionId: "S4", sectionType: "CLOSING_BALANCE", name: "Consolidated Balance", description: "Total reconciled cash balance", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Bank Account Summary", description: "List of all bank accounts with individual balances", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "BANK_NOT_IN_GL", name: "Items in Bank, Not in GL", description: "Deposits in transit, bank fees by account", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "GL_NOT_IN_BANK", name: "Items in GL, Not in Bank", description: "Outstanding cheques, pending payments by account", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "FX_REVALUATION", name: "FX Revaluation", description: "Aggregated FX revaluation impact", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Summary & Tie-Out", description: "Total Bank Balance ± Reconciling Items ± FX = GL Balance", sortOrder: 5, isRequired: true, fields: [] },
+        ],
+        isSystemTemplate: true,
+        isActive: true,
+        createdAt: now,
+        createdBy: "System",
+        updatedAt: now,
+      },
+      {
+        templateId: "RTPL-CASH-MULTI-DIFF",
+        name: "Cash - Multiple Banks (Different Currencies)",
+        description: "Bank reconciliation for multinational cash structures with multiple currencies and per-account FX rates.",
+        accountTypes: ["CASH"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
+        templateVariant: "MULTI_BANK_DIFF_CCY",
+        sections: [
+          { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Bank Account Summary", description: "Bank accounts with currency, FX rate, and local/reporting balances", sortOrder: 1, isRequired: true, fields: [] },
+          { sectionId: "S2", sectionType: "BANK_NOT_IN_GL", name: "Items in Bank, Not in GL", description: "Deposits in transit, fees by bank account (currency-agnostic)", sortOrder: 2, isRequired: true, fields: [] },
+          { sectionId: "S3", sectionType: "GL_NOT_IN_BANK", name: "Items in GL, Not in Bank", description: "Outstanding cheques, pending payments (currency-agnostic)", sortOrder: 3, isRequired: true, fields: [] },
+          { sectionId: "S4", sectionType: "FX_REVALUATION", name: "FX Revaluation", description: "Aggregated FX revaluation from all currency conversions", sortOrder: 4, isRequired: true, fields: [] },
+          { sectionId: "S5", sectionType: "CLOSING_BALANCE", name: "Summary & Tie-Out", description: "Total Bank Balances (in reporting ccy) ± Items ± FX = GL Balance", sortOrder: 5, isRequired: true, fields: [] },
         ],
         isSystemTemplate: true,
         isActive: true,
@@ -5151,6 +5178,8 @@ export class MemStorage implements IStorage {
         name: "Prepaid Expenses",
         description: "Prepaid expense schedule reconciliation with amortization rollforward",
         accountTypes: ["PREPAID"],
+        monetaryType: "NON_MONETARY",
+        fxApplicable: false,
         sections: [
           { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "Beginning prepaid balance", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "ADDITIONS", name: "Additions", description: "New prepaid items added during period", sortOrder: 2, isRequired: true, fields: [] },
@@ -5169,6 +5198,8 @@ export class MemStorage implements IStorage {
         name: "Fixed Assets",
         description: "Fixed asset rollforward with additions, disposals, and depreciation",
         accountTypes: ["FIXED_ASSET"],
+        monetaryType: "NON_MONETARY",
+        fxApplicable: false,
         sections: [
           { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening NBV", description: "Net book value at period start", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "ADDITIONS", name: "Additions", description: "Capital expenditures and acquisitions", sortOrder: 2, isRequired: true, fields: [] },
@@ -5188,6 +5219,8 @@ export class MemStorage implements IStorage {
         name: "Accrued Expenses",
         description: "Accrual rollforward with additions and releases",
         accountTypes: ["ACCRUAL"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
         sections: [
           { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "Accrued expenses at period start", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "ADDITIONS", name: "New Accruals", description: "Accruals recorded during period", sortOrder: 2, isRequired: true, fields: [] },
@@ -5206,6 +5239,8 @@ export class MemStorage implements IStorage {
         name: "Accounts Receivable",
         description: "AR reconciliation with aging and allowance analysis",
         accountTypes: ["ACCOUNTS_RECEIVABLE"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
         sections: [
           { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "AR balance at period start", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "ADDITIONS", name: "Sales/Billings", description: "New receivables from sales", sortOrder: 2, isRequired: true, fields: [] },
@@ -5225,6 +5260,8 @@ export class MemStorage implements IStorage {
         name: "Accounts Payable",
         description: "AP reconciliation with vendor analysis",
         accountTypes: ["ACCOUNTS_PAYABLE"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
         sections: [
           { sectionId: "S1", sectionType: "OPENING_BALANCE", name: "Opening Balance", description: "AP balance at period start", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "ADDITIONS", name: "Invoices Received", description: "New payables from vendor invoices", sortOrder: 2, isRequired: true, fields: [] },
@@ -5243,6 +5280,8 @@ export class MemStorage implements IStorage {
         name: "Intercompany",
         description: "Intercompany balance reconciliation with counterparty confirmation",
         accountTypes: ["INTERCOMPANY"],
+        monetaryType: "MONETARY",
+        fxApplicable: true,
         sections: [
           { sectionId: "S1", sectionType: "SUBLEDGER_DETAIL", name: "Counterparty Balances", description: "Balance by intercompany counterparty", sortOrder: 1, isRequired: true, fields: [] },
           { sectionId: "S2", sectionType: "VARIANCE_ANALYSIS", name: "Reconciliation Differences", description: "Differences vs counterparty records", sortOrder: 2, isRequired: true, fields: [] },
@@ -5281,6 +5320,37 @@ export class MemStorage implements IStorage {
       this.reconciliationAccounts.set(acct.accountId, acct);
     }
 
+    // Helper function to create default line item with new required fields
+    const makeLineItem = (
+      itemId: string,
+      description: string,
+      amount: number,
+      opts?: {
+        reference?: string | null;
+        date?: string | null;
+        notes?: string | null;
+        itemType?: ReconciliationLineItem["itemType"];
+        itemNature?: ReconciliationLineItem["itemNature"];
+        itemStatus?: ReconciliationLineItem["itemStatus"];
+        bankAccountId?: string | null;
+      }
+    ): ReconciliationLineItem => ({
+      itemId,
+      description,
+      amount,
+      reference: opts?.reference ?? null,
+      date: opts?.date ?? null,
+      notes: opts?.notes ?? null,
+      attachmentIds: [],
+      itemType: opts?.itemType ?? null,
+      itemNature: opts?.itemNature ?? null,
+      itemStatus: opts?.itemStatus ?? "OPEN",
+      customTags: [],
+      bankAccountId: opts?.bankAccountId ?? null,
+      createdAt: now,
+      createdBy: "System",
+    });
+
     // Seed sample reconciliations for current period
     const reconciliations: Reconciliation[] = [
       {
@@ -5293,13 +5363,18 @@ export class MemStorage implements IStorage {
         reconciledBalance: 1250000,
         variance: 0,
         sections: [
-          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning balance per GL", reference: null, date: "2025-12-31", amount: 1180000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1180000 },
-          { sectionId: "S2", templateSectionId: "S2", name: "Bank Statement Balance", sectionType: "BANK_TRANSACTIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "Bank statement ending balance", reference: "Stmt #12345", date: "2026-01-31", amount: 1285000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1285000 },
-          { sectionId: "S3", templateSectionId: "S3", name: "Outstanding Deposits", sectionType: "OUTSTANDING_ITEMS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Deposit in transit", reference: "DEP-001", date: "2026-01-30", amount: 25000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 25000 },
-          { sectionId: "S4", templateSectionId: "S4", name: "Outstanding Checks", sectionType: "OUTSTANDING_ITEMS", sortOrder: 4, isComplete: true, items: [{ itemId: "I4", description: "Check #4521", reference: "CHK-4521", date: "2026-01-28", amount: -35000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }, { itemId: "I5", description: "Check #4522", reference: "CHK-4522", date: "2026-01-29", amount: -25000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -60000 },
-          { sectionId: "S5", templateSectionId: "S5", name: "Adjustments", sectionType: "ADJUSTMENTS", sortOrder: 5, isComplete: true, items: [], subtotal: 0 },
-          { sectionId: "S6", templateSectionId: "S6", name: "Reconciled Balance", sectionType: "CLOSING_BALANCE", sortOrder: 6, isComplete: true, items: [{ itemId: "I6", description: "Reconciled balance (Bank + Deposits - Checks)", reference: null, date: null, amount: 1250000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 1250000 },
+          { sectionId: "S1", templateSectionId: "S1", name: "Bank Account", sectionType: "BANK_TRANSACTIONS", sortOrder: 1, isComplete: true, items: [makeLineItem("I1", "First National Bank - Operating", 1285000, { reference: "Stmt #12345", date: "2026-01-31" })], subtotal: 1285000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "Items in Bank, Not in GL", sectionType: "BANK_NOT_IN_GL", sortOrder: 2, isComplete: true, items: [makeLineItem("I2", "Deposit in transit", 25000, { reference: "DEP-001", date: "2026-01-30", itemType: "DEPOSIT", itemNature: "EXPECTED" })], subtotal: 25000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Items in GL, Not in Bank", sectionType: "GL_NOT_IN_BANK", sortOrder: 3, isComplete: true, items: [makeLineItem("I3", "Check #4521", -35000, { reference: "CHK-4521", date: "2026-01-28", itemType: "CHEQUE", itemNature: "EXPECTED" }), makeLineItem("I4", "Check #4522", -25000, { reference: "CHK-4522", date: "2026-01-29", itemType: "CHEQUE", itemNature: "EXPECTED" })], subtotal: -60000 },
+          { sectionId: "S4", templateSectionId: "S4", name: "FX Revaluation", sectionType: "FX_REVALUATION", sortOrder: 4, isComplete: true, items: [], subtotal: 0 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Summary & Tie-Out", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [makeLineItem("I5", "Reconciled balance", 1250000)], subtotal: 1250000 },
         ],
+        reportingCurrency: "USD",
+        bankAccounts: [{ bankAccountId: "BA-001", bankName: "First National Bank", accountNumber: "****1234", currency: "USD", periodEndBalance: 1285000, fxRate: 1.0, fxRateSource: "SYSTEM", balanceInReportingCurrency: 1285000 }],
+        totalBankBalance: 1285000,
+        fxRevaluationAmount: 0,
+        fxRevaluationManualAdj: 0,
+        reconciliationEquation: { bankBalance: 1285000, reconciliingItems: -35000, fxRevaluation: 0, glBalance: 1250000, difference: 0 },
         preparedBy: "John Preparer",
         preparedAt: "2026-01-28T14:00:00Z",
         reviewedBy: "Jane Controller",
@@ -5321,13 +5396,19 @@ export class MemStorage implements IStorage {
         reconciledBalance: 875000,
         variance: 0,
         sections: [
-          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning AR balance", reference: null, date: "2025-12-31", amount: 820000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 820000 },
-          { sectionId: "S2", templateSectionId: "S2", name: "Sales/Billings", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "January sales", reference: null, date: null, amount: 450000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 450000 },
-          { sectionId: "S3", templateSectionId: "S3", name: "Collections", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Cash receipts", reference: null, date: null, amount: -395000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -395000 },
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [makeLineItem("I1", "Beginning AR balance", 820000, { date: "2025-12-31" })], subtotal: 820000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "Sales/Billings", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [makeLineItem("I2", "January sales", 450000)], subtotal: 450000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Collections", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [makeLineItem("I3", "Cash receipts", -395000)], subtotal: -395000 },
           { sectionId: "S4", templateSectionId: "S4", name: "Bad Debt", sectionType: "ADJUSTMENTS", sortOrder: 4, isComplete: false, items: [], subtotal: 0 },
           { sectionId: "S5", templateSectionId: "S5", name: "Aging Schedule", sectionType: "SUBLEDGER_DETAIL", sortOrder: 5, isComplete: true, items: [], subtotal: 0 },
-          { sectionId: "S6", templateSectionId: "S6", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 6, isComplete: true, items: [{ itemId: "I4", description: "Ending AR balance", reference: null, date: null, amount: 875000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 875000 },
+          { sectionId: "S6", templateSectionId: "S6", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 6, isComplete: true, items: [makeLineItem("I4", "Ending AR balance", 875000)], subtotal: 875000 },
         ],
+        reportingCurrency: "USD",
+        bankAccounts: [],
+        totalBankBalance: 0,
+        fxRevaluationAmount: 0,
+        fxRevaluationManualAdj: 0,
+        reconciliationEquation: null,
         preparedBy: "Sarah Analyst",
         preparedAt: "2026-01-28T16:00:00Z",
         reviewedBy: null,
@@ -5349,12 +5430,18 @@ export class MemStorage implements IStorage {
         reconciledBalance: 118000,
         variance: 7000,
         sections: [
-          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning prepaid balance", reference: null, date: "2025-12-31", amount: 130000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 130000 },
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [makeLineItem("I1", "Beginning prepaid balance", 130000, { date: "2025-12-31" })], subtotal: 130000 },
           { sectionId: "S2", templateSectionId: "S2", name: "Additions", sectionType: "ADDITIONS", sortOrder: 2, isComplete: false, items: [], subtotal: 0 },
-          { sectionId: "S3", templateSectionId: "S3", name: "Amortization", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I2", description: "January amortization", reference: "JE-1234", date: "2026-01-31", amount: -12000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -12000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Amortization", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [makeLineItem("I2", "January amortization", -12000, { reference: "JE-1234", date: "2026-01-31" })], subtotal: -12000 },
           { sectionId: "S4", templateSectionId: "S4", name: "Schedule Detail", sectionType: "SUBLEDGER_DETAIL", sortOrder: 4, isComplete: false, items: [], subtotal: 0 },
-          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [{ itemId: "I3", description: "Calculated ending balance", reference: null, date: null, amount: 118000, notes: "Variance needs investigation", attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 118000 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [makeLineItem("I3", "Calculated ending balance", 118000, { notes: "Variance needs investigation" })], subtotal: 118000 },
         ],
+        reportingCurrency: "USD",
+        bankAccounts: [],
+        totalBankBalance: 0,
+        fxRevaluationAmount: 0,
+        fxRevaluationManualAdj: 0,
+        reconciliationEquation: null,
         preparedBy: "John Preparer",
         preparedAt: null,
         reviewedBy: null,
@@ -5376,6 +5463,12 @@ export class MemStorage implements IStorage {
         reconciledBalance: 0,
         variance: 340000,
         sections: [],
+        reportingCurrency: "USD",
+        bankAccounts: [],
+        totalBankBalance: 0,
+        fxRevaluationAmount: 0,
+        fxRevaluationManualAdj: 0,
+        reconciliationEquation: null,
         preparedBy: null,
         preparedAt: null,
         reviewedBy: null,
@@ -5397,12 +5490,18 @@ export class MemStorage implements IStorage {
         reconciledBalance: 185000,
         variance: 0,
         sections: [
-          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [{ itemId: "I1", description: "Beginning accrual balance", reference: null, date: "2025-12-31", amount: 165000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 165000 },
-          { sectionId: "S2", templateSectionId: "S2", name: "New Accruals", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [{ itemId: "I2", description: "January accruals", reference: null, date: null, amount: 95000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 95000 },
-          { sectionId: "S3", templateSectionId: "S3", name: "Releases/Payments", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [{ itemId: "I3", description: "Payments and reversals", reference: null, date: null, amount: -75000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: -75000 },
+          { sectionId: "S1", templateSectionId: "S1", name: "Opening Balance", sectionType: "OPENING_BALANCE", sortOrder: 1, isComplete: true, items: [makeLineItem("I1", "Beginning accrual balance", 165000, { date: "2025-12-31" })], subtotal: 165000 },
+          { sectionId: "S2", templateSectionId: "S2", name: "New Accruals", sectionType: "ADDITIONS", sortOrder: 2, isComplete: true, items: [makeLineItem("I2", "January accruals", 95000)], subtotal: 95000 },
+          { sectionId: "S3", templateSectionId: "S3", name: "Releases/Payments", sectionType: "ADJUSTMENTS", sortOrder: 3, isComplete: true, items: [makeLineItem("I3", "Payments and reversals", -75000)], subtotal: -75000 },
           { sectionId: "S4", templateSectionId: "S4", name: "Aging Analysis", sectionType: "VARIANCE_ANALYSIS", sortOrder: 4, isComplete: true, items: [], subtotal: 0 },
-          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [{ itemId: "I4", description: "Ending accrual balance", reference: null, date: null, amount: 185000, notes: null, attachmentIds: [], createdAt: now, createdBy: "System" }], subtotal: 185000 },
+          { sectionId: "S5", templateSectionId: "S5", name: "Closing Balance", sectionType: "CLOSING_BALANCE", sortOrder: 5, isComplete: true, items: [makeLineItem("I4", "Ending accrual balance", 185000)], subtotal: 185000 },
         ],
+        reportingCurrency: "USD",
+        bankAccounts: [],
+        totalBankBalance: 0,
+        fxRevaluationAmount: 0,
+        fxRevaluationManualAdj: 0,
+        reconciliationEquation: null,
         preparedBy: "Sarah Analyst",
         preparedAt: "2026-01-27T15:00:00Z",
         reviewedBy: "Jane Controller",
@@ -5437,6 +5536,9 @@ export class MemStorage implements IStorage {
       name: data.name,
       description: data.description,
       accountTypes: data.accountTypes,
+      monetaryType: data.monetaryType || "NON_MONETARY",
+      fxApplicable: data.fxApplicable || false,
+      templateVariant: data.templateVariant,
       sections: data.sections.map((s, idx) => ({
         sectionId: `S${idx + 1}`,
         sectionType: s.sectionType,
@@ -5518,6 +5620,7 @@ export class MemStorage implements IStorage {
   async createReconciliation(data: InsertReconciliation): Promise<Reconciliation> {
     const now = new Date().toISOString();
     const template = await this.getReconciliationTemplate(data.templateId);
+    const account = await this.getReconciliationAccount(data.accountId);
     
     const reconciliation: Reconciliation = {
       reconciliationId: `REC-${randomUUID().slice(0, 8).toUpperCase()}`,
@@ -5538,6 +5641,12 @@ export class MemStorage implements IStorage {
         items: [],
         subtotal: 0,
       })) : [],
+      reportingCurrency: account?.currency || "USD",
+      bankAccounts: [],
+      totalBankBalance: 0,
+      fxRevaluationAmount: 0,
+      fxRevaluationManualAdj: 0,
+      reconciliationEquation: null,
       preparedBy: null,
       preparedAt: null,
       reviewedBy: null,
@@ -5642,6 +5751,11 @@ export class MemStorage implements IStorage {
       amount: data.amount,
       notes: data.notes || null,
       attachmentIds: [],
+      itemType: null,
+      itemNature: null,
+      itemStatus: "OPEN",
+      customTags: [],
+      bankAccountId: null,
       createdAt: now,
       createdBy: "Current User",
     };

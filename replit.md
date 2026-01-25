@@ -63,13 +63,23 @@ The application follows a client-server architecture.
 **Reconciliations Module:**
 - **Template-Driven**: Reconciliation templates define structure with customizable sections (Opening Balance, Additions, Disposals, etc.)
 - **Account Types**: CASH, ACCOUNTS_RECEIVABLE, ACCOUNTS_PAYABLE, PREPAID, FIXED_ASSET, ACCRUAL, INVENTORY, INTERCOMPANY, DEBT, EQUITY, OTHER
-- **Section Types**: OPENING_BALANCE, ADDITIONS, DISPOSALS, ADJUSTMENTS, CLOSING_BALANCE, SUBLEDGER_DETAIL, BANK_TRANSACTIONS, OUTSTANDING_ITEMS, VARIANCE_ANALYSIS, SUPPORTING_DOCUMENTATION, CUSTOM
+- **Section Types**: OPENING_BALANCE, ADDITIONS, DISPOSALS, ADJUSTMENTS, CLOSING_BALANCE, SUBLEDGER_DETAIL, BANK_TRANSACTIONS, OUTSTANDING_ITEMS, VARIANCE_ANALYSIS, SUPPORTING_DOCUMENTATION, FX_REVALUATION, BANK_NOT_IN_GL, GL_NOT_IN_BANK, CUSTOM
 - **Reconciliation Status Workflow**: NOT_STARTED → IN_PROGRESS → PENDING_REVIEW → REVIEWED → APPROVED → LOCKED
 - **Views**: Dashboard (KPIs, accounts by category, reconciliation table), Template Library, Reconciliation Workspace
 - **Key Features**: Period-specific reconciliation instances, GL/reconciled balance tracking with variance calculation, section-based line items, file attachments, certification workflow
 - **Navigation Flow**: Sidebar account categories → Dashboard (filtered view) → Click "Open" button → Workspace (uses reconciliationId, not accountId)
 - **Template Selection**: Workspace has "Change Template" button that opens dialog with template dropdown, preview, and apply functionality. Applying template resets status to NOT_STARTED and rebuilds sections
 - **Query Key Pattern**: Use string URLs (e.g., "/api/reconciliations?period=2026-01") for TanStack Query to match default queryFn behavior
+
+**Cash Reconciliation Templates:**
+- **Template Variants**: SINGLE_BANK_SAME_CCY (single bank account, same currency), MULTI_BANK_SAME_CCY (multiple banks, same currency), MULTI_BANK_DIFF_CCY (multiple banks, different currencies with FX)
+- **Monetary Type Classification**: Templates classified as MONETARY (Cash, AR, AP, Accruals, Intercompany) or NON_MONETARY (Prepaids, Fixed Assets)
+- **FX Revaluation Support**: Monetary accounts support FX revaluation with system-calculated amounts and optional manual adjustments
+- **Split Reconciling Items**: Two separate sections - "Items in Bank, Not in GL" (deposits in transit, bank fees) and "Items in GL, Not in Bank" (outstanding checks)
+- **Reconciliation Equation**: Bank Balance ± Reconciling Items ± FX Revaluation = GL Balance (difference must equal zero to certify)
+- **Bank Account Tracking**: ReconciliationBankAccount interface with bankAccountId, bankName, accountNumber, currency, periodEndBalance, fxRate, fxRateSource, balanceInReportingCurrency
+- **Line Item Tagging**: Items tagged with itemType (CHEQUE, DEPOSIT, TRANSFER, WIRE, FEE, INTEREST, FX_ADJUSTMENT, OTHER), itemNature (EXPECTED, UNEXPECTED, DISPUTED, RESOLVED), itemStatus (OPEN, MATCHED, CLEARED, WRITTEN_OFF), customTags, bankAccountId
+- **FX Rate Sources**: SYSTEM (auto-calculated) or MANUAL (user override)
 
 ## External Dependencies
 - **React**: Frontend UI library.

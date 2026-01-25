@@ -1293,7 +1293,26 @@ export type ReconciliationSectionType =
   | "OUTSTANDING_ITEMS"
   | "VARIANCE_ANALYSIS"
   | "SUPPORTING_DOCUMENTATION"
-  | "CUSTOM";
+  | "CUSTOM"
+  // Cash-specific section types
+  | "FX_REVALUATION"      // FX revaluation impact section
+  | "BANK_NOT_IN_GL"      // Items in Bank, Not in GL (deposits in transit, fees)
+  | "GL_NOT_IN_BANK";     // Items in GL, Not in Bank (outstanding cheques)
+
+// Monetary classification for accounts
+export type MonetaryType = "MONETARY" | "NON_MONETARY";
+
+// Bank Account for cash reconciliations
+export interface ReconciliationBankAccount {
+  bankAccountId: string;
+  bankName: string;
+  accountNumber: string;
+  currency: string;
+  periodEndBalance: number;
+  fxRate: number;          // Exchange rate to reporting currency
+  fxRateSource: "SYSTEM" | "MANUAL";
+  balanceInReportingCurrency: number;
+}
 
 // Reconciliation Status
 export type ReconciliationStatus = 
@@ -1304,12 +1323,24 @@ export type ReconciliationStatus =
   | "APPROVED"
   | "LOCKED";
 
+// Reconciliation Equation - for cash reconciliation tie-out validation
+export interface ReconciliationEquation {
+  bankBalance: number;         // Total bank statement balance(s)
+  reconciliingItems: number;   // Sum of items in BANK_NOT_IN_GL + GL_NOT_IN_BANK sections
+  fxRevaluation: number;       // FX revaluation impact
+  glBalance: number;           // GL balance per books
+  difference: number;          // Must be zero to certify
+}
+
 // Reconciliation Template - defines the structure
 export interface ReconciliationTemplate {
   templateId: string;
   name: string;
   description: string;
   accountTypes: ReconciliationAccountType[]; // eligible account types
+  monetaryType: MonetaryType;      // monetary vs non-monetary classification
+  fxApplicable: boolean;           // whether FX revaluation applies
+  templateVariant?: string;        // e.g., "SINGLE_BANK_SAME_CCY", "MULTI_BANK_SAME_CCY", "MULTI_BANK_DIFF_CCY"
   sections: ReconciliationTemplateSection[];
   isSystemTemplate: boolean; // built-in vs custom
   isActive: boolean;
@@ -1373,6 +1404,14 @@ export interface Reconciliation {
   reconciledBalance: number;
   variance: number;
   sections: ReconciliationSectionInstance[];
+  // FX-related fields for monetary accounts
+  reportingCurrency: string;
+  bankAccounts: ReconciliationBankAccount[];
+  totalBankBalance: number;           // Sum of all bank balances in reporting currency
+  fxRevaluationAmount: number;        // Period FX revaluation impact
+  fxRevaluationManualAdj: number;     // Manual FX adjustment if needed
+  reconciliationEquation: ReconciliationEquation | null;
+  // Workflow fields
   preparedBy: string | null;
   preparedAt: string | null;
   reviewedBy: string | null;
@@ -1397,6 +1436,20 @@ export interface ReconciliationSectionInstance {
   subtotal: number;
 }
 
+// Reconciling Item Types for tagging
+export type ReconcilingItemType = 
+  | "TIMING"       // Timing difference
+  | "FEE"          // Bank fee
+  | "INTEREST"     // Interest income/expense
+  | "ERROR"        // Recording error
+  | "DEPOSIT"      // Deposit in transit
+  | "CHEQUE"       // Outstanding cheque
+  | "PAYMENT"      // Pending payment
+  | "OTHER";       // Other
+
+export type ReconcilingItemNature = "EXPECTED" | "UNEXPECTED";
+export type ReconcilingItemStatus = "OPEN" | "CLEARED";
+
 // Line Item within a section
 export interface ReconciliationLineItem {
   itemId: string;
@@ -1406,6 +1459,13 @@ export interface ReconciliationLineItem {
   amount: number;
   notes: string | null;
   attachmentIds: string[];
+  // Tagging for reconciling items
+  itemType: ReconcilingItemType | null;
+  itemNature: ReconcilingItemNature | null;
+  itemStatus: ReconcilingItemStatus;
+  customTags: string[];
+  // Bank account reference (for multi-bank reconciliations)
+  bankAccountId: string | null;
   createdAt: string;
   createdBy: string;
 }
@@ -1451,11 +1511,14 @@ export const insertReconciliationTemplateSchema = z.object({
     "CASH", "ACCOUNTS_RECEIVABLE", "ACCOUNTS_PAYABLE", "PREPAID",
     "FIXED_ASSET", "ACCRUAL", "INVENTORY", "INTERCOMPANY", "DEBT", "EQUITY", "OTHER"
   ])).min(1, "At least one account type is required"),
+  monetaryType: z.enum(["MONETARY", "NON_MONETARY"]).default("NON_MONETARY"),
+  fxApplicable: z.boolean().default(false),
+  templateVariant: z.string().optional(),
   sections: z.array(z.object({
     sectionType: z.enum([
       "OPENING_BALANCE", "ADDITIONS", "DISPOSALS", "ADJUSTMENTS", "CLOSING_BALANCE",
       "SUBLEDGER_DETAIL", "BANK_TRANSACTIONS", "OUTSTANDING_ITEMS", "VARIANCE_ANALYSIS",
-      "SUPPORTING_DOCUMENTATION", "CUSTOM"
+      "SUPPORTING_DOCUMENTATION", "CUSTOM", "FX_REVALUATION", "BANK_NOT_IN_GL", "GL_NOT_IN_BANK"
     ]),
     name: z.string().min(1),
     description: z.string(),
