@@ -25,6 +25,7 @@ import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { Accrual12MonthGrid } from "@/components/accrual-12month-grid";
+import { PrepaidScheduleGrid } from "@/components/prepaid-schedule-grid";
 import {
   Dialog,
   DialogContent,
@@ -366,6 +367,10 @@ export default function ReconciliationWorkspacePage() {
                 <div className="text-sm text-muted-foreground">
                   See the 12-Month Rollforward grid below for accrual line details.
                 </div>
+              ) : template?.templateVariant === "PREPAID_SCHEDULE_ANCHORED" ? (
+                <div className="text-sm text-muted-foreground">
+                  See the Prepaid Schedules grid below for schedule-linked prepaid items.
+                </div>
               ) : reconciliation.sections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No sections populated yet. Start by adding items to each section.</p>
@@ -474,6 +479,13 @@ export default function ReconciliationWorkspacePage() {
             <Accrual12MonthGrid 
               sections={reconciliation.sections}
               period={reconciliation.period}
+              glBalance={reconciliation.glBalance}
+            />
+          )}
+          
+          {template?.templateVariant === "PREPAID_SCHEDULE_ANCHORED" && (
+            <PrepaidScheduleGrid 
+              sections={reconciliation.sections}
               glBalance={reconciliation.glBalance}
             />
           )}

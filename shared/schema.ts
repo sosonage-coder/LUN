@@ -1477,6 +1477,25 @@ export interface AccrualLineDetail {
   accrualType: "RECURRING" | "ONE_OFF"; // Recurring vs one-off accrual
 }
 
+// Prepaid line detail for schedule-anchored template
+export interface PrepaidLineDetail {
+  scheduleId: string | null;          // Link to ScheduleMaster in Schedule Studio
+  vendorSupplier: string | null;      // Traceability
+  expenseAccount: string | null;      // P&L expense account
+  prepaidAccount: string | null;      // Balance sheet prepaid account
+  startDate: string | null;           // Amortization start (YYYY-MM)
+  endDate: string | null;             // Amortization end (YYYY-MM)
+  totalTermMonths: number;            // Total schedule duration
+  monthsAmortized: number;            // Completed amortization periods
+  monthsRemaining: number;            // Remaining periods
+  totalPrepaidAmount: number;         // Original prepaid amount
+  amountAmortizedToDate: number;      // Cumulative expense recognized
+  amountRemaining: number;            // Ending prepaid balance (from schedule)
+  isApproved: boolean;                // Schedule approval status
+  approvedAt: string | null;          // When schedule was approved
+  approvedBy: string | null;          // Who approved the schedule
+}
+
 // Line Item within a section
 export interface ReconciliationLineItem {
   itemId: string;
@@ -1495,6 +1514,8 @@ export interface ReconciliationLineItem {
   bankAccountId: string | null;
   // Accrual-specific fields (for 12-month rollforward template)
   accrualDetail: AccrualLineDetail | null;
+  // Prepaid-specific fields (for schedule-anchored template)
+  prepaidDetail: PrepaidLineDetail | null;
   createdAt: string;
   createdBy: string;
 }
