@@ -1,0 +1,195 @@
+Here’s a **clean, audit-ready list of the sections that make up a complete set of audited financial statements**.
+This is **standards-agnostic** (works for IFRS / US GAAP with minor naming differences).
+
+---
+
+## 📘 SECTIONS OF AN AUDITED FINANCIAL STATEMENT PACKAGE
+
+### 1️⃣ Independent Auditor’s Report
+
+*(Always first in an audited set)*
+
+* Opinion
+* Basis for Opinion
+* Key Audit Matters (if applicable)
+* Other Information
+* Management’s Responsibility
+* Auditor’s Responsibility
+* Report on Other Legal & Regulatory Requirements (jurisdictional)
+
+---
+
+### 2️⃣ Statement of Financial Position
+
+*(Balance Sheet)*
+
+**Typical Sections**
+
+* Assets
+
+  * Current Assets
+  * Non-Current Assets
+* Liabilities
+
+  * Current Liabilities
+  * Non-Current Liabilities
+* Equity
+
+> Presented **comparative to prior year**
+
+---
+
+### 3️⃣ Statement of Profit or Loss
+
+*(Income Statement)*
+
+* Revenue
+* Cost of Sales
+* Gross Profit
+* Operating Expenses
+* Operating Income
+* Finance Income / Expense
+* Income Tax Expense
+* Net Profit / Loss
+
+> Comparative period required
+
+---
+
+### 4️⃣ Statement of Comprehensive Income
+
+*(If presented separately)*
+
+* Net Profit / Loss
+* Other Comprehensive Income:
+
+  * Items that may be reclassified
+  * Items that will not be reclassified
+* Total Comprehensive Income
+
+---
+
+### 5️⃣ Statement of Changes in Equity
+
+* Opening balance
+* Profit / Loss
+* OCI movements
+* Dividends
+* Share issuances / buybacks
+* Other equity movements
+* Closing balance
+
+> Comparative period required
+
+---
+
+### 6️⃣ Statement of Cash Flows
+
+* Operating Activities
+* Investing Activities
+* Financing Activities
+* Net increase / decrease in cash
+* Opening & closing cash balance
+
+> Indirect or direct method (policy disclosed)
+
+---
+
+### 7️⃣ Notes to the Financial Statements
+
+*(This is usually the largest section)*
+
+#### 7.1 Basis of Preparation
+
+* Reporting framework (IFRS / US GAAP)
+* Measurement basis
+* Functional & presentation currency
+* Going concern
+
+#### 7.2 Significant Accounting Policies
+
+* Revenue recognition
+* Leases
+* Financial instruments
+* Share-based payments
+* Income taxes
+* Foreign currency
+* Estimates & judgments
+
+#### 7.3 Critical Accounting Judgments & Estimates
+
+* Key assumptions
+* Estimation uncertainty
+
+#### 7.4 Detailed Line-Item Notes
+
+*(Mapped to FS line items)*
+
+Examples:
+
+* Revenue
+* Cost of sales
+* Expenses
+* Property, plant & equipment
+* Intangible assets
+* Leases
+* Trade receivables (aging)
+* Accruals & provisions
+* Borrowings
+* Equity
+* Taxes
+
+---
+
+### 8️⃣ Other Disclosures (As Required)
+
+* Related party transactions
+* Commitments & contingencies
+* Financial risk management
+* Subsequent events
+* Segment information
+* Capital management
+* Government grants
+* Earnings per share (if applicable)
+
+---
+
+### 9️⃣ Comparative & Transition Disclosures (If Applicable)
+
+* Prior-period restatements
+* First-time adoption disclosures
+* Changes in accounting policies
+
+---
+
+### 🔟 Management Representations / Additional Reports
+
+*(Sometimes appended, jurisdiction-dependent)*
+
+* Directors’ report
+* Management discussion & analysis (MD&A)
+* Corporate governance statement
+
+---
+
+## 🔑 Key Audit Reality (Important for Your Product)
+
+An **audited financial statement** is not:
+
+* Just the Balance Sheet + P&L
+* Just numbers
+
+It is a **structured narrative system**:
+
+* Numbers → Notes → Judgments → Evidence
+
+Your disclosure tool is sitting exactly at the **center of this ecosystem**.
+
+If you want next, I can:
+
+* Map each section to **your disclosure engine**
+* Identify which sections are **structured vs narrative**
+* Flag which ones require **working papers**
+* Create a **print-ordering & dependency map**
+
+Just say the word.

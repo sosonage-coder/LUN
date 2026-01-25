@@ -1,0 +1,288 @@
+Good. This is the **hard part** and you’re asking it the right way.
+
+Below is the **exact UX flow** for when a **split is required** — written so a **product designer, accountant, and Replit engineer** all understand the same thing.
+
+No theory. No hand-waving.
+
+---
+
+# 🧩 UX FLOW — WHEN A SPLIT IS REQUIRED
+
+This flow triggers **only** when:
+
+> A single GL balance feeds a financial statement line, but the **note requires a different breakdown** that does **not exist in the trial balance**.
+
+Example:
+
+* GL Accruals = $2,000,000
+* Note requires: Payroll / Legal / Professional Fees / Other
+
+---
+
+## 0️⃣ Where the User Encounters the Problem (Trigger)
+
+### Location
+
+**Notes → Line Item Note → Table View**
+
+### Visual Cue
+
+* Total matches FS
+* Sub-rows are empty or missing
+
+```
+Accrued Liabilities
+────────────────────────
+Payroll                 —
+Legal                   —
+Professional Fees       —
+Other                   —
+────────────────────────
+Total Accruals      2,000,000 ✔
+```
+
+⚠️ System flag appears:
+
+> “This note requires a breakdown not available from GL.”
+
+CTA buttons:
+
+* **[Create Split Working Paper]**
+* [Learn why]
+
+---
+
+## 1️⃣ User Clicks “Create Split Working Paper”
+
+This **does not modify the trial balance**.
+
+### What Opens
+
+➡️ **Split Workspace (Modal or Full Page)**
+
+---
+
+## 2️⃣ Split Workspace — Layout (Critical)
+
+### Header (Locked)
+
+```
+SOURCE
+Financial Statement Line: Accrued Liabilities
+GL Accounts Included:
+• 2100 – Accrued Expenses
+• 2105 – Payroll Accrual
+Total Source Balance: 2,000,000
+```
+
+🔒 These amounts are **read-only**
+
+---
+
+### Main Body — Split Table
+
+This table behaves like **Excel, but with rules**.
+
+```
+┌───────────────────────┬───────────────┬───────────────┐
+│ Split Category        │ Source Type   │ Amount        │
+├───────────────────────┼───────────────┼───────────────┤
+│ Payroll               │ GL-linked     │ 1,200,000     │
+│ Legal                 │ Manual        │   300,000     │
+│ Professional Fees     │ Manual        │   400,000     │
+│ Other                 │ Manual        │   100,000     │
+├───────────────────────┼───────────────┼───────────────┤
+│ TOTAL                 │               │ 2,000,000 ✔   │
+└───────────────────────┴───────────────┴───────────────┘
+```
+
+---
+
+### Column Behavior
+
+| Column         | Behavior                     |
+| -------------- | ---------------------------- |
+| Split Category | Editable text                |
+| Source Type    | Dropdown: GL-linked / Manual |
+| Amount         | Numeric, enforced            |
+
+---
+
+## 3️⃣ GL-Linked Rows (Optional Automation)
+
+If user selects **GL-linked**:
+
+* System shows selectable GL accounts
+* Amount auto-populates
+* Locked after selection
+
+```
+Payroll → Linked to:
+☑ 2105 – Payroll Accrual (1,200,000)
+```
+
+This is how users get **maximum automation** *if they prepared the TB properly*.
+
+---
+
+## 4️⃣ Manual Rows (Explicit Responsibility)
+
+Manual rows require:
+
+* Amount input
+* Mandatory explanation
+* Optional support attachment
+
+When cursor leaves amount field:
+
+⚠️ Validation appears if totals don’t match.
+
+---
+
+## 5️⃣ Real-Time Validation (Non-Negotiable)
+
+At all times:
+
+* Sum of splits must equal source balance
+* No save allowed if mismatch
+* No negative numbers unless allowed by note type
+
+Error state:
+
+> ❌ Split total is short by 50,000
+
+---
+
+## 6️⃣ Save & Lock Behavior
+
+User clicks **[Save Split]**
+
+System creates:
+
+* A **Split Working Paper Object**
+* Version 1.0
+* Linked to:
+
+  * Note
+  * FS line
+  * GL accounts
+
+Split status:
+
+* Draft → Reviewed → Locked
+
+Once locked:
+
+* Amounts cannot change
+* Narrative still editable
+
+---
+
+## 7️⃣ How the Note Updates (Instant Feedback)
+
+User returns to the note.
+
+Table now renders:
+
+```
+Accrued Liabilities
+────────────────────────
+Payroll             1,200,000
+Legal                 300,000
+Professional Fees     400,000
+Other                 100,000
+────────────────────────
+Total               2,000,000 ✔
+```
+
+🔗 Each row shows a **link icon**:
+
+* Hover: “View Split Working Paper”
+
+---
+
+## 8️⃣ Visual Cross-References (Key UX Win)
+
+From the note:
+
+* Click row → opens split
+* Click total → FS line highlight
+* Hover icon shows:
+
+  * Source GL
+  * Last updated
+  * Owner
+
+From the split:
+
+* Breadcrumbs:
+
+  ```
+  FS → Accrued Liabilities → Note → Split
+  ```
+
+---
+
+## 9️⃣ Reviewer UX
+
+Reviewer sees:
+
+* Source balance
+* Breakdown
+* Explanation
+* Attachments
+
+Buttons:
+
+* Approve
+* Request Change (comment required)
+
+No editing numbers.
+
+---
+
+## 🔟 Audit UX (Read-Only)
+
+Auditor can:
+
+* See split logic
+* Trace to GL
+* Download support
+* Confirm totals
+
+Cannot:
+
+* Edit
+* Override
+* Create splits
+
+---
+
+## 🧠 Why This UX Works
+
+* No silent allocations
+* No hidden proportions
+* No magical automation
+* Explicit accountability
+* Matches how senior accountants actually work
+
+---
+
+## Optional Rule (Strongly Recommended)
+
+> If users want **zero manual splits**, they must **split the GL upstream**.
+
+Your product **supports truth**, it doesn’t invent it.
+
+---
+
+## Next Logical Step
+
+I can next:
+
+1. Define **data model for Split Working Papers**
+2. Show **aging-style split UX**
+3. Map **which note types allow splits**
+4. Design **print & disclosure rendering logic**
+
+If this were my product, I’d do **#2 (aging UX)** next.

@@ -1,0 +1,399 @@
+Perfect question. This is where your product stops being “a tool” and becomes **the reporting spine**.
+
+Below is a **clear, implementation-ready mapping** of **each audited FS section → how it lives inside your Disclosure Engine**, including **data source, automation level, controls, and UX surface**.
+
+I’ll keep this **Replit-ready**, not academic.
+
+---
+
+# 🔗 Mapping Audited FS Sections to the Disclosure Engine
+
+Think in **4 layers** inside the engine:
+
+1. **Source Layer** – where truth comes from
+2. **Disclosure Object** – what the section *is* in the system
+3. **Automation Level** – auto / semi / manual
+4. **Controls & UX** – how it’s governed and reviewed
+
+---
+
+## 1️⃣ Independent Auditor’s Report
+
+### Disclosure Object
+
+**Narrative Document Block (Locked Structure)**
+
+### Data Source
+
+* External (Auditor-provided)
+* Uploaded or pasted text
+
+### Automation Level
+
+❌ Manual (by design)
+
+### Controls
+
+* Versioning
+* Lock after final approval
+* Signature capture
+
+### UX
+
+* Rich text editor
+* No numeric links
+* Positioned first in final output
+* Status: Draft → Reviewed → Final
+
+> 🔒 Numbers are not allowed here. This avoids scope creep.
+
+---
+
+## 2️⃣ Statement of Financial Position (Balance Sheet)
+
+### Disclosure Object
+
+**Primary Financial Statement Object**
+
+### Data Source
+
+* Trial Balance
+* FS line mapping table
+
+### Automation Level
+
+✅ Fully automated
+
+### Engine Behavior
+
+* Line items roll up from GL
+* Prior-year auto-populated
+* Always reconciles to TB
+
+### UX
+
+* Read-only table
+* Expandable line items (for drill-down)
+* Hover → “View supporting notes”
+
+---
+
+## 3️⃣ Statement of Profit or Loss
+
+### Disclosure Object
+
+**Primary Financial Statement Object**
+
+### Data Source
+
+* Trial Balance
+* Mapping rules
+
+### Automation Level
+
+✅ Fully automated
+
+### Engine Behavior
+
+* Period and comparative
+* Reclasses flow automatically
+* Totals enforced
+
+### UX
+
+* Locked table
+* Inline variance indicators (optional)
+* Click-through to notes
+
+---
+
+## 4️⃣ Statement of Comprehensive Income
+
+### Disclosure Object
+
+**Secondary Statement Object (Optional)**
+
+### Data Source
+
+* TB + OCI-tagged accounts
+
+### Automation Level
+
+✅ Automated (with optional manual OCI inputs)
+
+### UX
+
+* Conditional visibility
+* Only appears if OCI exists
+
+---
+
+## 5️⃣ Statement of Changes in Equity
+
+### Disclosure Object
+
+**Structured Rollforward Table**
+
+### Data Source
+
+* Equity GL accounts
+* Manual equity events (dividends, issuances)
+
+### Automation Level
+
+🟡 Hybrid
+
+### Engine Behavior
+
+* Opening balances auto
+* Movements tracked as events
+* Closing balances enforced
+
+### UX
+
+* Excel-like table
+* Add/remove columns (share capital, retained earnings, reserves)
+* Footnote-linked
+
+---
+
+## 6️⃣ Statement of Cash Flows
+
+### Disclosure Object
+
+**Derived Statement Object**
+
+### Data Source
+
+* TB
+* Cash flow mapping logic
+* Optional working papers
+
+### Automation Level
+
+🟡 Semi-automated
+
+### Engine Behavior
+
+* Indirect method default
+* Reconciles cash balances
+* Flags unexplained movements
+
+### UX
+
+* Locked output
+* Expand → see calculation logic
+* Link to working paper schedules
+
+---
+
+## 7️⃣ Notes to the Financial Statements (Core Engine)
+
+This is **the heart of your product**.
+
+---
+
+### 7.1 Basis of Preparation
+
+### Disclosure Object
+
+**Narrative + Metadata Block**
+
+### Data Source
+
+* Company profile
+* Framework selection
+
+### Automation Level
+
+🟡 Semi-automated
+
+### UX
+
+* Pre-filled templates
+* Editable text
+* Locked structure
+
+---
+
+### 7.2 Significant Accounting Policies
+
+### Disclosure Object
+
+**Policy Library + Note Instance**
+
+### Data Source
+
+* Policy registry
+* Standard framework
+
+### Automation Level
+
+🟡 Semi-automated
+
+### Engine Behavior
+
+* Policies tagged to notes
+* Reused across periods
+* Version controlled
+
+### UX
+
+* Select policy → auto-insert
+* Edit narrative only
+* Policy change tracking
+
+---
+
+### 7.3 Critical Judgments & Estimates
+
+### Disclosure Object
+
+**Narrative Disclosure with Triggers**
+
+### Data Source
+
+* Linked notes
+* Manual inputs
+
+### Automation Level
+
+❌ Manual narrative, auto-linked
+
+### UX
+
+* Cross-referenced to affected notes
+* Review-required flag
+
+---
+
+### 7.4 Line-Item Notes (Most Important)
+
+Each note is a **Disclosure Container**:
+
+### Structure
+
+* Header
+* One or more tables
+* One or more schedules
+* Narrative explanation
+
+### Data Sources
+
+* GL
+* Working papers
+* Manual splits (where GL is insufficient)
+
+### Automation Levels
+
+| Component     | Automation |
+| ------------- | ---------- |
+| Totals        | Auto       |
+| GL-based rows | Auto       |
+| Split rows    | Manual     |
+| Aging buckets | Rule-based |
+| Narrative     | Manual     |
+
+### UX
+
+* Excel-like table
+* Add/remove rows & columns
+* Text blocks allowed as headers
+* Locked totals
+* Visual link icons to:
+
+  * GL
+  * Working paper
+  * Other notes
+
+---
+
+## 8️⃣ Other Disclosures
+
+### Examples
+
+* Related parties
+* Commitments
+* Subsequent events
+* Risk disclosures
+
+### Disclosure Object
+
+**Narrative + Structured Tables**
+
+### Automation Level
+
+❌ Mostly manual
+
+### UX
+
+* Templates available
+* Reviewer assignment
+* Required acknowledgment
+
+---
+
+## 9️⃣ Comparative & Transition Disclosures
+
+### Disclosure Object
+
+**Version-Aware Disclosure**
+
+### Engine Behavior
+
+* Automatically shows prior-period data
+* Highlights restatements
+* Forces reconciliation explanation
+
+### UX
+
+* “Compare to prior year” toggle
+* Change log visible
+
+---
+
+## 🔟 Management Reports (MD&A)
+
+### Disclosure Object
+
+**Narrative Layer Linked to Movements**
+
+### Data Source
+
+* Variance engine
+* Note deltas
+
+### Automation Level
+
+🟡 Assisted, not automated
+
+### UX
+
+* Suggested talking points
+* Editable narrative
+* No number overrides allowed
+
+---
+
+# 🧠 Why This Mapping Works
+
+* **Financial statements are locked**
+* **Notes are flexible but governed**
+* **Working papers explain, not replace**
+* **Splits are explicit and visible**
+* **Nothing breaks silently**
+
+This is exactly how real finance teams think.
+
+---
+
+## Next (Highly Recommended)
+
+I can next:
+
+1. Draw the **exact UX flow when a split is required**
+2. Define the **data model for disclosure tables**
+3. Specify **print-order & pagination logic**
+4. Create **Replit component hierarchy**
+
+If I were you, I’d do **#1 next**.
