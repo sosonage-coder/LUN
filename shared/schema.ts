@@ -2016,8 +2016,9 @@ export interface GLAccount {
 export interface TBColumn {
   columnId: string;
   columnLabel: string;
-  columnType: "OPENING" | "MOVEMENT" | "ADJUSTMENT" | "CLOSING" | "USER";
+  columnType: "OPENING" | "MOVEMENT" | "ADJUSTMENT" | "CLOSING" | "NET_MOVEMENT" | "USER";
   isLocked: boolean;
+  isVisible: boolean; // for show/hide individual adjustment columns
   orderIndex: number;
 }
 
@@ -2028,18 +2029,28 @@ export interface TBLine {
   accountCode: string;
   accountName: string;
   fsCategory: FSCategory | null;
+  footnoteIds: string[]; // footnotes this account is tagged to for disclosure splits
   normalBalance: "DEBIT" | "CREDIT";
   openingDebit: number;
   openingCredit: number;
-  amounts: Record<string, { debit: number; credit: number }>; // columnId -> debit/credit
+  amounts: Record<string, number>; // columnId -> net amount (DR positive, CR negative)
   closingDebit: number;
   closingCredit: number;
   orderIndex: number;
 }
 
+// Footnote reference for Trial Balance
+export interface TBFootnote {
+  footnoteId: string;
+  footnoteCode: string; // e.g., "Note 1", "Note 2"
+  footnoteTitle: string;
+  disclosureId: string | null; // link to NetTool disclosure
+}
+
 // Trial Balance Workspace
 export interface TBWorkspace {
   workspaceId: string;
+  footnotes: TBFootnote[];
   periodId: string;
   periodLabel: string;
   priorPeriodId: string;

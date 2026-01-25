@@ -62,8 +62,10 @@ import {
   sampleTBWorkspace,
   sampleGLAccounts,
   fsCategoryLabels,
+  sampleTBFootnotes,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote } from "@shared/schema";
+import { EyeOff } from "lucide-react";
 
 export default function NetToolPage() {
   const [, params] = useRoute("/nettool/:section");
@@ -80,13 +82,15 @@ export default function NetToolPage() {
   // Trial Balance state
   const [tbLines, setTbLines] = useState<TBLine[]>(sampleTBWorkspace.lines);
   const [tbColumns, setTbColumns] = useState<TBColumn[]>(sampleTBWorkspace.columns);
+  const [tbFootnotes] = useState<TBFootnote[]>(sampleTBWorkspace.footnotes);
   const [showAddColumnDialog, setShowAddColumnDialog] = useState(false);
   const [showAddRowDialog, setShowAddRowDialog] = useState(false);
   const [newColumnLabel, setNewColumnLabel] = useState("");
   const [newRowAccountCode, setNewRowAccountCode] = useState("");
   const [newRowAccountName, setNewRowAccountName] = useState("");
-  const [editingCell, setEditingCell] = useState<{ lineId: string; columnId: string; type: "debit" | "credit" } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ lineId: string; columnId: string } | null>(null);
   const [editingFsCategory, setEditingFsCategory] = useState<string | null>(null);
+  const [editingFootnotes, setEditingFootnotes] = useState<string | null>(null);
   
   const kpis = calculateDashboardKPIs(sampleNotes, sampleSchedules, sampleNarratives, sampleReviews);
   const activePeriod = samplePeriods.find(p => p.state !== "FINAL") || samplePeriods[0];
@@ -1500,18 +1504,25 @@ export default function NetToolPage() {
     const newColumn: TBColumn = {
       columnId: `col-user-${Date.now()}`,
       columnLabel: newColumnLabel,
-      columnType: "USER",
+      columnType: "ADJUSTMENT",
       isLocked: false,
+      isVisible: true,
       orderIndex: tbColumns.length,
     };
     
-    // Add column to columns list
-    setTbColumns([...tbColumns.filter(c => c.columnType !== "CLOSING"), newColumn, ...tbColumns.filter(c => c.columnType === "CLOSING")]);
+    // Insert before NET_MOVEMENT and CLOSING columns
+    const beforeNetMove = tbColumns.filter(c => c.columnType !== "NET_MOVEMENT" && c.columnType !== "CLOSING");
+    const netMoveCol = tbColumns.find(c => c.columnType === "NET_MOVEMENT");
+    const closingCol = tbColumns.find(c => c.columnType === "CLOSING");
+    const reorderedColumns = [...beforeNetMove, newColumn];
+    if (netMoveCol) reorderedColumns.push(netMoveCol);
+    if (closingCol) reorderedColumns.push(closingCol);
+    setTbColumns(reorderedColumns);
     
-    // Add empty amounts for this column to all lines
+    // Add empty amounts for this column to all lines (net amount = 0)
     setTbLines(tbLines.map(line => ({
       ...line,
-      amounts: { ...line.amounts, [newColumn.columnId]: { debit: 0, credit: 0 } }
+      amounts: { ...line.amounts, [newColumn.columnId]: 0 }
     })));
     
     setNewColumnLabel("");
@@ -1520,17 +1531,20 @@ export default function NetToolPage() {
 
   const handleAddRow = () => {
     if (!newRowAccountCode.trim() || !newRowAccountName.trim()) return;
+    const movementCols = tbColumns.filter(c => 
+      c.columnType === "MOVEMENT" || c.columnType === "ADJUSTMENT" || c.columnType === "USER"
+    );
     const newLine: TBLine = {
       lineId: `tb-${Date.now()}`,
       accountId: `gl-${Date.now()}`,
       accountCode: newRowAccountCode,
       accountName: newRowAccountName,
       fsCategory: null,
+      footnoteIds: [],
       normalBalance: "DEBIT",
       openingDebit: 0,
       openingCredit: 0,
-      amounts: tbColumns.filter(c => c.columnType !== "OPENING" && c.columnType !== "CLOSING")
-        .reduce((acc, col) => ({ ...acc, [col.columnId]: { debit: 0, credit: 0 } }), {}),
+      amounts: movementCols.reduce((acc, col) => ({ ...acc, [col.columnId]: 0 }), {}),
       closingDebit: 0,
       closingCredit: 0,
       orderIndex: tbLines.length + 1,
@@ -1542,32 +1556,37 @@ export default function NetToolPage() {
     setShowAddRowDialog(false);
   };
 
-  const handleCellUpdate = (lineId: string, columnId: string, type: "debit" | "credit", value: number) => {
+  // Update cell with net amount (DR positive, CR negative)
+  const handleCellUpdate = (lineId: string, columnId: string, value: number) => {
     setTbLines(tbLines.map(line => {
       if (line.lineId !== lineId) return line;
       
-      const updatedAmounts = { ...line.amounts };
-      if (columnId === "col-opening") {
-        // Update opening balance
-        if (type === "debit") {
-          return { ...line, openingDebit: value, closingDebit: line.closingDebit + (value - line.openingDebit) };
-        } else {
-          return { ...line, openingCredit: value, closingCredit: line.closingCredit + (value - line.openingCredit) };
-        }
+      const updatedAmounts = { ...line.amounts, [columnId]: value };
+      
+      // Recalculate closing balance based on net movements
+      // Net movement = sum of all movement columns
+      const netMovement = Object.entries(updatedAmounts)
+        .filter(([colId]) => {
+          const col = tbColumns.find(c => c.columnId === colId);
+          return col && (col.columnType === "MOVEMENT" || col.columnType === "ADJUSTMENT" || col.columnType === "USER");
+        })
+        .reduce((sum, [, amt]) => sum + (amt as number), 0);
+      
+      // Opening + Net Movement = Closing
+      // For debit normal: positive movement increases debit
+      // For credit normal: negative movement increases credit
+      let closingDebit = line.openingDebit;
+      let closingCredit = line.openingCredit;
+      
+      if (line.normalBalance === "DEBIT") {
+        closingDebit = Math.max(0, line.openingDebit + netMovement);
+        closingCredit = Math.max(0, line.openingCredit - netMovement);
       } else {
-        // Update movement column
-        updatedAmounts[columnId] = { ...updatedAmounts[columnId], [type]: value };
-        
-        // Recalculate closing balance
-        let closingDebit = line.openingDebit;
-        let closingCredit = line.openingCredit;
-        Object.values(updatedAmounts).forEach(amt => {
-          closingDebit += amt.debit;
-          closingCredit += amt.credit;
-        });
-        
-        return { ...line, amounts: updatedAmounts, closingDebit, closingCredit };
+        closingCredit = Math.max(0, line.openingCredit - netMovement);
+        closingDebit = Math.max(0, line.openingDebit + netMovement);
       }
+      
+      return { ...line, amounts: updatedAmounts, closingDebit, closingCredit };
     }));
     setEditingCell(null);
   };
@@ -1577,6 +1596,29 @@ export default function NetToolPage() {
       line.lineId === lineId ? { ...line, fsCategory: category } : line
     ));
     setEditingFsCategory(null);
+  };
+
+  const handleFootnoteUpdate = (lineId: string, footnoteIds: string[]) => {
+    setTbLines(tbLines.map(line => 
+      line.lineId === lineId ? { ...line, footnoteIds } : line
+    ));
+    setEditingFootnotes(null);
+  };
+
+  const toggleColumnVisibility = (columnId: string) => {
+    setTbColumns(tbColumns.map(col => 
+      col.columnId === columnId ? { ...col, isVisible: !col.isVisible } : col
+    ));
+  };
+
+  // Calculate net movement for a line (sum of all adjustment/movement columns)
+  const calculateNetMovement = (line: TBLine): number => {
+    return Object.entries(line.amounts)
+      .filter(([colId]) => {
+        const col = tbColumns.find(c => c.columnId === colId);
+        return col && (col.columnType === "MOVEMENT" || col.columnType === "ADJUSTMENT" || col.columnType === "USER");
+      })
+      .reduce((sum, [, amt]) => sum + (amt as number), 0);
   };
 
   const getFsCategoryColor = (category: FSCategory | null): string => {
@@ -1606,7 +1648,20 @@ export default function NetToolPage() {
   const renderTrialBalance = () => {
     const totals = calculateTBTotals();
     const isBalanced = Math.abs(totals.totalClosingDebit - totals.totalClosingCredit) < 0.01;
-    const userColumns = tbColumns.filter(c => c.columnType !== "OPENING" && c.columnType !== "CLOSING");
+    
+    // Get adjustment columns (MOVEMENT, ADJUSTMENT, USER) - these show net amounts
+    const adjustmentColumns = tbColumns.filter(c => 
+      c.columnType === "MOVEMENT" || c.columnType === "ADJUSTMENT" || c.columnType === "USER"
+    );
+    const visibleAdjColumns = adjustmentColumns.filter(c => c.isVisible);
+    const hasNetMoveCol = tbColumns.some(c => c.columnType === "NET_MOVEMENT");
+
+    // Format net amount (positive = DR, negative = CR)
+    const formatNetAmount = (amount: number): string => {
+      if (amount === 0) return "-";
+      const formatted = formatCurrency(Math.abs(amount));
+      return amount < 0 ? `(${formatted})` : formatted;
+    };
 
     return (
       <div className="space-y-6">
@@ -1636,12 +1691,31 @@ export default function NetToolPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <CardTitle className="text-lg">Trial Balance Workspace</CardTitle>
-                <CardDescription>Manage GL accounts, add columns for adjustments, and tag accounts for FS auto-population</CardDescription>
+                <CardDescription>Manage GL accounts, add adjustments, and tag for FS/Footnotes</CardDescription>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Column visibility toggles */}
+                {adjustmentColumns.length > 0 && (
+                  <div className="flex items-center gap-1 border rounded-md p-1">
+                    <span className="text-xs text-muted-foreground px-1">Show:</span>
+                    {adjustmentColumns.map(col => (
+                      <Button
+                        key={col.columnId}
+                        variant={col.isVisible ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-6 text-xs px-2"
+                        onClick={() => toggleColumnVisibility(col.columnId)}
+                        data-testid={`toggle-col-${col.columnId}`}
+                      >
+                        {col.isVisible ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
+                        {col.columnLabel}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <Button variant="outline" size="sm" onClick={() => setShowAddColumnDialog(true)} data-testid="button-add-column">
                   <Plus className="w-4 h-4 mr-1" />
                   Add Column
@@ -1658,24 +1732,35 @@ export default function NetToolPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-24 sticky left-0 bg-muted/50 z-10">Code</TableHead>
-                    <TableHead className="min-w-[200px] sticky left-24 bg-muted/50 z-10">Account Name</TableHead>
-                    <TableHead className="w-40">FS Category</TableHead>
-                    <TableHead className="text-center w-32" colSpan={2}>
+                    <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
+                    <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
+                    <TableHead className="w-32">FS Category</TableHead>
+                    <TableHead className="w-32">Footnotes</TableHead>
+                    <TableHead className="text-center w-28" colSpan={2}>
                       <div className="flex flex-col items-center">
                         <span className="text-xs text-muted-foreground">Opening Balance</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
                       </div>
                     </TableHead>
-                    {userColumns.map(col => (
-                      <TableHead key={col.columnId} className="text-center w-32" colSpan={2}>
+                    {/* Visible adjustment columns - single net column each */}
+                    {visibleAdjColumns.map(col => (
+                      <TableHead key={col.columnId} className="text-center w-24">
                         <div className="flex flex-col items-center">
                           <span className="text-xs">{col.columnLabel}</span>
-                          {col.isLocked && <Lock className="w-3 h-3 mt-1 text-muted-foreground" />}
+                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
                         </div>
                       </TableHead>
                     ))}
-                    <TableHead className="text-center w-32" colSpan={2}>
+                    {/* Net Movement column */}
+                    {hasNetMoveCol && (
+                      <TableHead className="text-center w-24 bg-accent/30">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-semibold">Net Move</span>
+                          <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                        </div>
+                      </TableHead>
+                    )}
+                    <TableHead className="text-center w-28" colSpan={2}>
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">Closing Balance</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
@@ -1684,132 +1769,162 @@ export default function NetToolPage() {
                   </TableRow>
                   <TableRow className="bg-muted/30">
                     <TableHead className="sticky left-0 bg-muted/30 z-10"></TableHead>
-                    <TableHead className="sticky left-24 bg-muted/30 z-10"></TableHead>
+                    <TableHead className="sticky left-20 bg-muted/30 z-10"></TableHead>
+                    <TableHead></TableHead>
                     <TableHead></TableHead>
                     <TableHead className="text-right text-xs">Debit</TableHead>
                     <TableHead className="text-right text-xs">Credit</TableHead>
-                    {userColumns.map(col => (
-                      <>
-                        <TableHead key={`${col.columnId}-dr`} className="text-right text-xs">Debit</TableHead>
-                        <TableHead key={`${col.columnId}-cr`} className="text-right text-xs">Credit</TableHead>
-                      </>
+                    {visibleAdjColumns.map(col => (
+                      <TableHead key={`${col.columnId}-net`} className="text-right text-xs">Net</TableHead>
                     ))}
+                    {hasNetMoveCol && <TableHead className="text-right text-xs bg-accent/30">Net</TableHead>}
                     <TableHead className="text-right text-xs font-semibold">Debit</TableHead>
                     <TableHead className="text-right text-xs font-semibold">Credit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tbLines.map(line => (
-                    <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-tb-${line.accountCode}`}>
-                      <TableCell className="font-mono text-sm sticky left-0 bg-background z-10">{line.accountCode}</TableCell>
-                      <TableCell className="sticky left-24 bg-background z-10">{line.accountName}</TableCell>
-                      <TableCell>
-                        {editingFsCategory === line.lineId ? (
-                          <Select
-                            value={line.fsCategory || ""}
-                            onValueChange={(value) => handleFsCategoryUpdate(line.lineId, value as FSCategory || null)}
-                          >
-                            <SelectTrigger className="h-7 text-xs" data-testid={`select-fs-category-${line.accountCode}`}>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              {Object.entries(fsCategoryLabels).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs cursor-pointer ${getFsCategoryColor(line.fsCategory)}`}
-                            onClick={() => setEditingFsCategory(line.lineId)}
-                            data-testid={`badge-fs-category-${line.accountCode}`}
-                          >
-                            {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "Not Tagged"}
-                          </Badge>
+                  {tbLines.map(line => {
+                    const netMovement = calculateNetMovement(line);
+                    const lineFootnotes = tbFootnotes.filter(fn => line.footnoteIds.includes(fn.footnoteId));
+                    
+                    return (
+                      <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-tb-${line.accountCode}`}>
+                        <TableCell className="font-mono text-sm sticky left-0 bg-background z-10">{line.accountCode}</TableCell>
+                        <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
+                        {/* FS Category */}
+                        <TableCell>
+                          {editingFsCategory === line.lineId ? (
+                            <Select
+                              value={line.fsCategory || ""}
+                              onValueChange={(value) => handleFsCategoryUpdate(line.lineId, value === "none" ? null : value as FSCategory)}
+                            >
+                              <SelectTrigger className="h-7 text-xs" data-testid={`select-fs-category-${line.accountCode}`}>
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {Object.entries(fsCategoryLabels).map(([key, label]) => (
+                                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs cursor-pointer ${getFsCategoryColor(line.fsCategory)}`}
+                              onClick={() => setEditingFsCategory(line.lineId)}
+                              data-testid={`badge-fs-category-${line.accountCode}`}
+                            >
+                              {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "Tag"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        {/* Footnotes */}
+                        <TableCell>
+                          {editingFootnotes === line.lineId ? (
+                            <Select
+                              value={line.footnoteIds[0] || ""}
+                              onValueChange={(value) => handleFootnoteUpdate(line.lineId, value ? [value] : [])}
+                            >
+                              <SelectTrigger className="h-7 text-xs" data-testid={`select-footnote-${line.accountCode}`}>
+                                <SelectValue placeholder="Add note" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {tbFootnotes.map((fn) => (
+                                  <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div 
+                              className="flex flex-wrap gap-1 cursor-pointer"
+                              onClick={() => setEditingFootnotes(line.lineId)}
+                              data-testid={`footnotes-${line.accountCode}`}
+                            >
+                              {lineFootnotes.length > 0 ? (
+                                lineFootnotes.map(fn => (
+                                  <Badge key={fn.footnoteId} variant="outline" className="text-[10px] px-1">
+                                    {fn.footnoteCode}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground px-1">
+                                  + Note
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                        {/* Opening Balance - Locked */}
+                        <TableCell className="text-right font-mono text-sm bg-muted/20">
+                          {line.openingDebit > 0 ? formatCurrency(line.openingDebit) : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm bg-muted/20">
+                          {line.openingCredit > 0 ? formatCurrency(line.openingCredit) : "-"}
+                        </TableCell>
+                        {/* Adjustment Columns - Net Amount (editable) */}
+                        {visibleAdjColumns.map(col => {
+                          const amount = (line.amounts[col.columnId] as number) || 0;
+                          return (
+                            <TableCell key={col.columnId} className="text-right font-mono text-sm">
+                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId ? (
+                                <Input
+                                  type="number"
+                                  className="h-6 w-20 text-right text-xs"
+                                  defaultValue={amount}
+                                  autoFocus
+                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, parseFloat(e.target.value) || 0)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, parseFloat((e.target as HTMLInputElement).value) || 0)}
+                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}`}
+                                />
+                              ) : (
+                                <span 
+                                  className={`cursor-pointer hover:bg-muted rounded px-1 ${amount < 0 ? "text-red-600 dark:text-red-400" : ""}`}
+                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId })}
+                                >
+                                  {formatNetAmount(amount)}
+                                </span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        {/* Net Movement - Calculated */}
+                        {hasNetMoveCol && (
+                          <TableCell className={`text-right font-mono text-sm bg-accent/30 font-semibold ${netMovement < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                            {formatNetAmount(netMovement)}
+                          </TableCell>
                         )}
-                      </TableCell>
-                      {/* Opening Balance - Locked */}
-                      <TableCell className="text-right font-mono text-sm bg-muted/20">
-                        {line.openingDebit > 0 ? formatCurrency(line.openingDebit) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm bg-muted/20">
-                        {line.openingCredit > 0 ? formatCurrency(line.openingCredit) : "-"}
-                      </TableCell>
-                      {/* User Columns - Editable */}
-                      {userColumns.map(col => {
-                        const amounts = line.amounts[col.columnId] || { debit: 0, credit: 0 };
-                        return (
-                          <>
-                            <TableCell key={`${col.columnId}-dr`} className="text-right font-mono text-sm">
-                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId && editingCell?.type === "debit" ? (
-                                <Input
-                                  type="number"
-                                  className="h-6 w-20 text-right text-xs"
-                                  defaultValue={amounts.debit}
-                                  autoFocus
-                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, "debit", parseFloat(e.target.value) || 0)}
-                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, "debit", parseFloat((e.target as HTMLInputElement).value) || 0)}
-                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}-dr`}
-                                />
-                              ) : (
-                                <span 
-                                  className="cursor-pointer hover:bg-muted rounded px-1"
-                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId, type: "debit" })}
-                                >
-                                  {amounts.debit > 0 ? formatCurrency(amounts.debit) : "-"}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell key={`${col.columnId}-cr`} className="text-right font-mono text-sm">
-                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId && editingCell?.type === "credit" ? (
-                                <Input
-                                  type="number"
-                                  className="h-6 w-20 text-right text-xs"
-                                  defaultValue={amounts.credit}
-                                  autoFocus
-                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, "credit", parseFloat(e.target.value) || 0)}
-                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, "credit", parseFloat((e.target as HTMLInputElement).value) || 0)}
-                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}-cr`}
-                                />
-                              ) : (
-                                <span 
-                                  className="cursor-pointer hover:bg-muted rounded px-1"
-                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId, type: "credit" })}
-                                >
-                                  {amounts.credit > 0 ? formatCurrency(amounts.credit) : "-"}
-                                </span>
-                              )}
-                            </TableCell>
-                          </>
-                        );
-                      })}
-                      {/* Closing Balance - Calculated */}
-                      <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
-                        {line.closingDebit > 0 ? formatCurrency(line.closingDebit) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
-                        {line.closingCredit > 0 ? formatCurrency(line.closingCredit) : "-"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        {/* Closing Balance - Calculated */}
+                        <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
+                          {line.closingDebit > 0 ? formatCurrency(line.closingDebit) : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
+                          {line.closingCredit > 0 ? formatCurrency(line.closingCredit) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
                     <TableCell></TableCell>
+                    <TableCell></TableCell>
                     <TableCell className="text-right font-mono" data-testid="text-tb-opening-debit-total">{formatCurrency(totals.totalOpeningDebit)}</TableCell>
                     <TableCell className="text-right font-mono" data-testid="text-tb-opening-credit-total">{formatCurrency(totals.totalOpeningCredit)}</TableCell>
-                    {userColumns.map(col => {
-                      const colDebitTotal = tbLines.reduce((sum, line) => sum + (line.amounts[col.columnId]?.debit || 0), 0);
-                      const colCreditTotal = tbLines.reduce((sum, line) => sum + (line.amounts[col.columnId]?.credit || 0), 0);
+                    {visibleAdjColumns.map(col => {
+                      const colTotal = tbLines.reduce((sum, line) => sum + ((line.amounts[col.columnId] as number) || 0), 0);
                       return (
-                        <>
-                          <TableCell key={`${col.columnId}-dr-total`} className="text-right font-mono">{formatCurrency(colDebitTotal)}</TableCell>
-                          <TableCell key={`${col.columnId}-cr-total`} className="text-right font-mono">{formatCurrency(colCreditTotal)}</TableCell>
-                        </>
+                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                          {formatNetAmount(colTotal)}
+                        </TableCell>
                       );
                     })}
+                    {hasNetMoveCol && (
+                      <TableCell className="text-right font-mono bg-accent/30">
+                        {formatNetAmount(tbLines.reduce((sum, line) => sum + calculateNetMovement(line), 0))}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-debit-total">{formatCurrency(totals.totalClosingDebit)}</TableCell>
                     <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-credit-total">{formatCurrency(totals.totalClosingCredit)}</TableCell>
                   </TableRow>
@@ -1853,14 +1968,14 @@ export default function NetToolPage() {
         <Dialog open={showAddColumnDialog} onOpenChange={setShowAddColumnDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Column</DialogTitle>
-              <DialogDescription>Add a new adjustment or movement column to the trial balance</DialogDescription>
+              <DialogTitle>Add Adjustment Column</DialogTitle>
+              <DialogDescription>Add a new adjustment column (net amount: DR positive, CR negative)</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
                 <label className="text-sm font-medium">Column Label</label>
                 <Input 
-                  placeholder="e.g., IFRS Adjustments" 
+                  placeholder="e.g., Tax Adjustments" 
                   value={newColumnLabel}
                   onChange={(e) => setNewColumnLabel(e.target.value)}
                   data-testid="input-new-column-label"
