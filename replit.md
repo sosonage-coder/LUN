@@ -59,6 +59,31 @@ The application uses a client-server architecture.
         - Cash Flow Statement: Indirect method with reconciliation check.
     - All financial statement values are system-calculated with locked editing.
     - Statement lines link to disclosure notes for navigation and traceability.
+    - **Trial Balance Workspace**:
+        - Single-column net amount format (DR positive, CR negative in parentheses).
+        - FS Category tagging with dropdown selectors for account classification.
+        - Footnote tagging with multi-select capability.
+        - Column visibility toggles for adjustment columns.
+        - Cross-reference hover trails showing source chain (GL → Split → WP → Note) with colored node indicators.
+    - **Split Declaration Panel**: Right drawer opened by clicking account codes, showing:
+        - TB balance and breakdown with assigned/unassigned tracking.
+        - Component list with source types (DECLARED, GL_BACKED, CALCULATED).
+        - Incomplete balance warnings when unassigned amounts exist.
+    - **Working Papers Module**:
+        - List view showing all working papers with type, status, and linked items.
+        - Grid detail view with spreadsheet-style functionality.
+        - Supports multiple types: Rollforward, Aging, Linear, Custom.
+        - Features: frozen headers, locked columns, formula columns with "fx" badge.
+        - Row types: DATA, HEADER, SUBTOTAL, TOTAL with differentiated styling.
+        - Text blocks for notes and annotations.
+        - Breadcrumb navigation between list and detail views.
+    - **Print/Export Engine**:
+        - Generate Financial Statements dialog with format selection (PDF, Excel, Word).
+        - Statement selection toggles for Balance Sheet, Income Statement, Equity, Cash Flow.
+        - Additional content options: Notes, Schedules, Working Papers.
+        - Period lock option to prevent changes after export.
+        - DRAFT watermark option.
+        - Progress indicator during document generation.
 - **One Compliance (Entity Governance & Compliance System)**:
     - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
     - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.
