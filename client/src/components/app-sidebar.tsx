@@ -632,6 +632,7 @@ export function AppSidebar() {
     { title: "Income Statement", url: "/nettool/fs/income-statement", icon: TrendingUp },
     { title: "Changes in Equity", url: "/nettool/fs/equity-statement", icon: Users },
     { title: "Cash Flow Statement", url: "/nettool/fs/cash-flow", icon: ArrowDownUp },
+    { title: "Trial Balance", url: "/nettool/fs/trial-balance", icon: Calculator },
   ];
 
   const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs"));
