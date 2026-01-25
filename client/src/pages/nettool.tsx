@@ -63,8 +63,11 @@ import {
   sampleGLAccounts,
   fsCategoryLabels,
   sampleTBFootnotes,
+  sampleSplitDeclarations,
+  sampleWorkingPapers,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn } from "@shared/schema";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EyeOff } from "lucide-react";
 
 export default function NetToolPage() {
@@ -91,6 +94,28 @@ export default function NetToolPage() {
   const [editingCell, setEditingCell] = useState<{ lineId: string; columnId: string } | null>(null);
   const [editingFsCategory, setEditingFsCategory] = useState<string | null>(null);
   const [editingFootnotes, setEditingFootnotes] = useState<string | null>(null);
+  
+  // Split Declaration state
+  const [selectedLineForSplit, setSelectedLineForSplit] = useState<TBLine | null>(null);
+  const [splitDeclarations, setSplitDeclarations] = useState<SplitDeclaration[]>(sampleSplitDeclarations);
+  
+  // Working Papers state
+  const [workingPapers, setWorkingPapers] = useState<WorkingPaper[]>(sampleWorkingPapers);
+  const [selectedWorkingPaper, setSelectedWorkingPaper] = useState<WorkingPaper | null>(null);
+  
+  // Print/Export Engine state
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportOptions, setExportOptions] = useState({
+    format: "pdf" as "pdf" | "excel" | "word",
+    includeNotes: true,
+    includeSchedules: true,
+    includeWorkingPapers: false,
+    lockPeriod: false,
+    watermark: false,
+    selectedStatements: ["balance-sheet", "income-statement", "equity-statement", "cash-flow"] as string[]
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   
   const kpis = calculateDashboardKPIs(sampleNotes, sampleSchedules, sampleNarratives, sampleReviews);
   const activePeriod = samplePeriods.find(p => p.state !== "FINAL") || samplePeriods[0];
@@ -125,6 +150,10 @@ export default function NetToolPage() {
           <Badge className={getStatusColor(activePeriod.state)}>
             {activePeriod.state.replace("_", " ")}
           </Badge>
+          <Button onClick={() => setShowExportDialog(true)} data-testid="button-generate-fs">
+            <FileDown className="h-4 w-4 mr-2" />
+            Generate Financials
+          </Button>
         </div>
       </div>
 
@@ -1635,6 +1664,413 @@ export default function NetToolPage() {
     }
   };
 
+  // Cross-Reference Trail Generator - uses explicit IDs for accurate linking
+  const getReferenceTrail = (line: TBLine): { nodeType: string; label: string; amount?: number }[] => {
+    const trail: { nodeType: string; label: string; amount?: number }[] = [];
+    
+    // GL Account (always present) - linked by accountId
+    trail.push({
+      nodeType: "GL",
+      label: `GL ${line.accountCode}`,
+      amount: line.closingBalance
+    });
+    
+    // Check for Split Declaration - linked by explicit accountId match
+    const split = splitDeclarations.find(s => s.accountId === line.accountId);
+    if (split) {
+      trail.push({
+        nodeType: "SPLIT",
+        label: split.isComplete ? "Split Declaration (Complete)" : "Split Declaration (Incomplete)",
+        amount: split.totalAssigned
+      });
+    }
+    
+    // Check for linked Working Paper - uses explicit linkedTbAccountIds if available, 
+    // otherwise falls back to footnote ID matching for backwards compatibility
+    const linkedWps = workingPapers.filter(wp => {
+      // Check if working paper has explicit linked TB account IDs
+      if ((wp as any).linkedTbAccountIds?.includes(line.accountId)) {
+        return true;
+      }
+      // Fall back to footnote ID matching (working papers linked to notes that are linked to this TB line)
+      return wp.linkedNotes.some(noteId => line.footnoteIds.includes(noteId));
+    });
+    
+    linkedWps.forEach(wp => {
+      trail.push({
+        nodeType: "WP",
+        label: wp.name,
+      });
+    });
+    
+    // Check for linked Notes - explicit footnoteId matching
+    if (line.footnoteIds.length > 0) {
+      line.footnoteIds.forEach(fnId => {
+        const footnote = tbFootnotes.find(fn => fn.footnoteId === fnId);
+        if (footnote) {
+          trail.push({
+            nodeType: "NOTE",
+            label: `${footnote.footnoteCode}: ${footnote.footnoteTitle}`,
+          });
+        }
+      });
+    }
+    
+    return trail;
+  };
+
+  const getWpStatusColor = (status: string) => {
+    switch (status) {
+      case "APPROVED": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "IN_REVIEW": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "LOCKED": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+    }
+  };
+
+  const getWpTypeLabel = (type: string) => {
+    switch (type) {
+      case "LINEAR": return "Linear";
+      case "AGING": return "Aging";
+      case "ROLLFORWARD": return "Rollforward";
+      case "CUSTOM": return "Custom";
+      default: return type;
+    }
+  };
+
+  const handleGenerateFinancialStatements = async () => {
+    setIsExporting(true);
+    setExportProgress(0);
+    
+    const steps = [
+      "Validating data integrity...",
+      "Compiling financial statements...",
+      "Generating disclosure notes...",
+      "Adding schedules and working papers...",
+      "Applying formatting...",
+      "Finalizing document..."
+    ];
+    
+    for (let i = 0; i < steps.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 400));
+      setExportProgress(Math.round(((i + 1) / steps.length) * 100));
+    }
+    
+    if (exportOptions.lockPeriod) {
+      console.log("Period locked for:", activePeriod.periodLabel);
+    }
+    
+    setIsExporting(false);
+    setShowExportDialog(false);
+    setExportProgress(0);
+  };
+
+  const toggleStatementSelection = (statement: string) => {
+    setExportOptions(prev => ({
+      ...prev,
+      selectedStatements: prev.selectedStatements.includes(statement)
+        ? prev.selectedStatements.filter(s => s !== statement)
+        : [...prev.selectedStatements, statement]
+    }));
+  };
+
+  const renderWorkingPapers = () => {
+    if (selectedWorkingPaper) {
+      return renderWorkingPaperGrid(selectedWorkingPaper);
+    }
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold" data-testid="text-wp-title">Working Papers</h1>
+            <p className="text-muted-foreground">Structured calculations and supporting schedules</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" data-testid="button-wp-new">
+              <Plus className="w-4 h-4 mr-1" />
+              New Working Paper
+            </Button>
+          </div>
+        </div>
+
+        {/* Working Papers List */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">All Working Papers</CardTitle>
+            <CardDescription>{workingPapers.length} working papers for {sampleTBWorkspace.periodLabel}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Linked FS</TableHead>
+                  <TableHead>Linked Notes</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workingPapers.map((wp) => (
+                  <TableRow 
+                    key={wp.workingPaperId} 
+                    className="cursor-pointer hover-elevate"
+                    onClick={() => setSelectedWorkingPaper(wp)}
+                    data-testid={`row-wp-${wp.workingPaperId}`}
+                  >
+                    <TableCell className="font-medium">{wp.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getWpTypeLabel(wp.type)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {wp.linkedFsLines.length > 0 ? (
+                        <Badge variant="secondary" className="text-xs">
+                          {wp.linkedFsLines.length} line(s)
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">None</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {wp.linkedNotes.length > 0 ? (
+                        <div className="flex gap-1">
+                          {wp.linkedNotes.map((noteId) => {
+                            const footnote = tbFootnotes.find(fn => fn.footnoteId === noteId);
+                            return (
+                              <Badge key={noteId} variant="outline" className="text-xs">
+                                {footnote?.footnoteCode || noteId}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">None</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getWpStatusColor(wp.status)}>{wp.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(wp.lastUpdated).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon">
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
+  const renderWorkingPaperGrid = (wp: WorkingPaper) => {
+    const sortedRows = [...wp.rows].sort((a, b) => a.orderIndex - b.orderIndex);
+    const sortedCols = [...wp.columns].sort((a, b) => a.orderIndex - b.orderIndex);
+    
+    const formatWpValue = (value: string | number | undefined): string => {
+      if (value === undefined || value === null) return "-";
+      if (typeof value === "number") {
+        if (value < 0) return `(${formatCurrency(Math.abs(value))})`;
+        return formatCurrency(value);
+      }
+      return String(value);
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-1 text-sm text-muted-foreground" data-testid="breadcrumb-wp">
+          <button 
+            onClick={() => setSelectedWorkingPaper(null)} 
+            className="hover:text-foreground transition-colors"
+            data-testid="breadcrumb-wp-list"
+          >
+            Working Papers
+          </button>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-foreground font-medium">{wp.name}</span>
+        </nav>
+
+        {/* Header with back button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedWorkingPaper(null)}
+              data-testid="button-wp-back"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180 mr-1" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold" data-testid="text-wp-grid-title">{wp.name}</h1>
+              <p className="text-muted-foreground">{getWpTypeLabel(wp.type)} Working Paper</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className={getWpStatusColor(wp.status)}>{wp.status}</Badge>
+            <Button variant="outline" size="sm" data-testid="button-wp-add-row">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Row
+            </Button>
+            <Button variant="outline" size="sm" data-testid="button-wp-add-column">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Column
+            </Button>
+          </div>
+        </div>
+
+        {/* Working Paper Grid */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Grid View</CardTitle>
+                <CardDescription>
+                  {wp.rows.length} rows × {wp.columns.length} columns
+                  {wp.frozenRows > 0 && ` · ${wp.frozenRows} frozen header row(s)`}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {wp.linkedNotes.map((noteId) => {
+                  const footnote = tbFootnotes.find(fn => fn.footnoteId === noteId);
+                  return (
+                    <Badge key={noteId} variant="outline" className="text-xs">
+                      {footnote?.footnoteCode}: {footnote?.footnoteTitle}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[500px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    {sortedCols.map((col) => (
+                      <TableHead 
+                        key={col.columnId}
+                        className={`min-w-[${col.widthPx}px] ${col.isLocked ? "bg-muted" : ""}`}
+                        style={{ minWidth: col.widthPx }}
+                      >
+                        <div className="flex items-center gap-1">
+                          {col.label}
+                          {col.isLocked && <Lock className="w-3 h-3 text-muted-foreground" />}
+                          {col.formula && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge variant="outline" className="text-[10px] px-1">fx</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-mono text-xs">{col.formula}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedRows.map((row) => (
+                    <TableRow 
+                      key={row.rowId}
+                      className={`
+                        ${row.rowType === "HEADER" ? "bg-muted/30 font-semibold" : ""}
+                        ${row.rowType === "TOTAL" ? "bg-primary/5 font-bold border-t-2" : ""}
+                        ${row.rowType === "SUBTOTAL" ? "bg-muted/20 font-medium" : ""}
+                        ${row.isLocked ? "opacity-80" : ""}
+                      `}
+                      data-testid={`row-wp-grid-${row.rowId}`}
+                    >
+                      {sortedCols.map((col) => {
+                        const value = row.values[col.columnId];
+                        const isNumeric = typeof value === "number";
+                        return (
+                          <TableCell 
+                            key={col.columnId}
+                            className={`
+                              ${isNumeric ? "text-right font-mono" : ""}
+                              ${col.isLocked ? "bg-muted/30" : ""}
+                              ${typeof value === "number" && value < 0 ? "text-red-600 dark:text-red-400" : ""}
+                            `}
+                          >
+                            {formatWpValue(value)}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Text Blocks */}
+        {wp.textBlocks.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Notes & Annotations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {wp.textBlocks.map((block) => (
+                  <div key={block.blockId} className="p-3 bg-muted/30 rounded-md">
+                    <p className={`
+                      ${block.style === "HEADING" ? "font-bold text-lg" : ""}
+                      ${block.style === "SUBHEADING" ? "font-semibold" : ""}
+                      ${block.style === "NOTE" ? "text-sm text-muted-foreground italic" : ""}
+                    `}>
+                      {block.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Metadata */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Working Paper Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Created By</span>
+                <p className="font-medium">{wp.createdBy}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Created</span>
+                <p className="font-medium">{new Date(wp.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Last Updated By</span>
+                <p className="font-medium">{wp.updatedBy}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Last Updated</span>
+                <p className="font-medium">{new Date(wp.lastUpdated).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderTrialBalance = () => {
     const totals = calculateTBTotals();
     const isBalanced = Math.abs(totals.totalClosingBalance) < 0.01;
@@ -1766,7 +2202,16 @@ export default function NetToolPage() {
                     
                     return (
                       <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-tb-${line.accountCode}`}>
-                        <TableCell className="font-mono text-sm sticky left-0 bg-background z-10">{line.accountCode}</TableCell>
+                        <TableCell 
+                          className="font-mono text-sm sticky left-0 bg-background z-10 cursor-pointer hover:text-primary hover:underline"
+                          onClick={() => setSelectedLineForSplit(line)}
+                          data-testid={`cell-account-code-${line.accountCode}`}
+                        >
+                          {line.accountCode}
+                          {splitDeclarations.some(s => s.accountId === line.accountId && !s.isComplete) && (
+                            <AlertCircle className="w-3 h-3 inline ml-1 text-amber-500" />
+                          )}
+                        </TableCell>
                         <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
                         {/* FS Category */}
                         <TableCell>
@@ -1866,9 +2311,39 @@ export default function NetToolPage() {
                             {formatNetAmount(netMovement)}
                           </TableCell>
                         )}
-                        {/* Closing Balance - Single column, net amount (calculated) */}
+                        {/* Closing Balance - Single column, net amount (calculated) - with Cross-Reference Trail */}
                         <TableCell className={`text-right font-mono text-sm font-semibold bg-primary/5 ${line.closingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                          {formatNetAmount(line.closingBalance)}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help underline decoration-dotted decoration-muted-foreground/50" data-testid={`trail-closing-${line.accountCode}`}>
+                                {formatNetAmount(line.closingBalance)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="w-72 p-3" data-testid={`tooltip-trail-${line.accountCode}`}>
+                              <div className="space-y-2">
+                                <p className="font-semibold text-xs text-muted-foreground mb-2">Source Trail</p>
+                                {getReferenceTrail(line).map((node, idx) => (
+                                  <div key={idx} className="flex items-center gap-2 text-sm">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                      node.nodeType === "GL" ? "bg-blue-500" :
+                                      node.nodeType === "SPLIT" ? "bg-amber-500" :
+                                      node.nodeType === "WP" ? "bg-purple-500" :
+                                      "bg-green-500"
+                                    }`} />
+                                    <span className="flex-1">{node.label}</span>
+                                    {node.amount !== undefined && (
+                                      <span className={`font-mono text-xs ${node.amount < 0 ? "text-red-500" : ""}`}>
+                                        {formatNetAmount(node.amount)}
+                                      </span>
+                                    )}
+                                    {idx < getReferenceTrail(line).length - 1 && (
+                                      <ChevronRight className="w-3 h-3 text-muted-foreground absolute right-2" />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     );
@@ -1991,6 +2466,147 @@ export default function NetToolPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Split Declaration Panel (Right Drawer) */}
+        <Sheet open={selectedLineForSplit !== null} onOpenChange={(open) => !open && setSelectedLineForSplit(null)}>
+          <SheetContent className="w-[500px] sm:w-[600px] overflow-y-auto" data-testid="panel-split-declaration">
+            {selectedLineForSplit && (
+              <>
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5" />
+                    Split Declaration
+                  </SheetTitle>
+                  <SheetDescription>
+                    GL Account: {selectedLineForSplit.accountCode} - {selectedLineForSplit.accountName}
+                  </SheetDescription>
+                </SheetHeader>
+                
+                {(() => {
+                  const existingSplit = splitDeclarations.find(s => s.accountId === selectedLineForSplit.accountId);
+                  const tbBalance = selectedLineForSplit.closingBalance;
+                  const totalAssigned = existingSplit?.totalAssigned || 0;
+                  const totalUnassigned = tbBalance - totalAssigned;
+                  const isComplete = Math.abs(totalUnassigned) < 0.01;
+                  
+                  return (
+                    <div className="mt-6 space-y-6">
+                      {/* Split Summary Section */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm">Balance Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center p-3 rounded-md bg-muted">
+                              <div className="text-xs text-muted-foreground mb-1">Trial Balance</div>
+                              <div className={`font-mono font-semibold ${tbBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-split-tb-balance">
+                                {tbBalance < 0 ? `(${formatCurrency(Math.abs(tbBalance))})` : formatCurrency(tbBalance)}
+                              </div>
+                            </div>
+                            <div className="text-center p-3 rounded-md bg-green-50 dark:bg-green-900/20">
+                              <div className="text-xs text-muted-foreground mb-1">Assigned</div>
+                              <div className={`font-mono font-semibold text-green-600 dark:text-green-400`} data-testid="text-split-assigned">
+                                {totalAssigned < 0 ? `(${formatCurrency(Math.abs(totalAssigned))})` : formatCurrency(totalAssigned)}
+                              </div>
+                            </div>
+                            <div className={`text-center p-3 rounded-md ${isComplete ? "bg-green-50 dark:bg-green-900/20" : "bg-amber-50 dark:bg-amber-900/20"}`}>
+                              <div className="text-xs text-muted-foreground mb-1">Unassigned</div>
+                              <div className={`font-mono font-semibold ${isComplete ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`} data-testid="text-split-unassigned">
+                                {totalUnassigned < 0 ? `(${formatCurrency(Math.abs(totalUnassigned))})` : formatCurrency(totalUnassigned)}
+                                {!isComplete && <AlertCircle className="w-3 h-3 inline ml-1" />}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex justify-center">
+                            {isComplete ? (
+                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Complete
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-500 text-amber-600">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                Incomplete - Balance not fully assigned
+                              </Badge>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Split Components Table */}
+                      <Card>
+                        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                          <CardTitle className="text-sm">Split Components</CardTitle>
+                          <Button size="sm" variant="outline" data-testid="button-add-split-component">
+                            <Plus className="w-4 h-4 mr-1" />
+                            Add Component
+                          </Button>
+                        </CardHeader>
+                        <CardContent>
+                          {existingSplit && existingSplit.components.length > 0 ? (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Component</TableHead>
+                                  <TableHead className="text-right">Amount</TableHead>
+                                  <TableHead>Source</TableHead>
+                                  <TableHead>Basis</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {existingSplit.components.map((comp) => (
+                                  <TableRow key={comp.componentId} data-testid={`row-split-${comp.componentId}`}>
+                                    <TableCell className="font-medium text-sm">{comp.componentName}</TableCell>
+                                    <TableCell className={`text-right font-mono ${comp.amount < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                                      {comp.amount < 0 ? `(${formatCurrency(Math.abs(comp.amount))})` : formatCurrency(comp.amount)}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className="text-xs">
+                                        {comp.sourceType === "DECLARED" && "Declared"}
+                                        {comp.sourceType === "GL_BACKED" && "GL-Backed"}
+                                        {comp.sourceType === "CALCULATED" && "Calculated"}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate" title={comp.basis}>
+                                      {comp.basis}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <FileSpreadsheet className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No split components declared</p>
+                              <p className="text-xs mt-1">Add components to break down this GL balance</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Split Rules */}
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-muted-foreground" />
+                            Split Rules
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-xs text-muted-foreground space-y-2">
+                          <p>• Total splits must equal GL balance</p>
+                          <p>• Declared splits require name and explanation</p>
+                          <p>• No proportional or automated allocations</p>
+                          <p>• Declared splits are period-locked after close</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </SheetContent>
+        </Sheet>
       </div>
     );
   };
@@ -2023,6 +2639,8 @@ export default function NetToolPage() {
         return renderCashFlowStatement();
       case "fs-trial-balance":
         return renderTrialBalance();
+      case "working-papers":
+        return renderWorkingPapers();
       default:
         return renderDashboard();
     }
@@ -2122,6 +2740,188 @@ export default function NetToolPage() {
             <Button variant="outline" onClick={() => setShowCreateScheduleDialog(false)}>Cancel</Button>
             <Button onClick={() => setShowCreateScheduleDialog(false)}>Create Schedule</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print/Export Engine Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-lg" data-testid="dialog-export">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileDown className="h-5 w-5" />
+              Generate Financial Statements
+            </DialogTitle>
+            <DialogDescription>
+              Export complete financial statements package for {activePeriod.periodLabel}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!isExporting ? (
+            <div className="space-y-6 py-4">
+              {/* Format Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Output Format</label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={exportOptions.format === "pdf" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setExportOptions(prev => ({ ...prev, format: "pdf" }))}
+                    data-testid="button-format-pdf"
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    PDF
+                  </Button>
+                  <Button
+                    variant={exportOptions.format === "excel" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setExportOptions(prev => ({ ...prev, format: "excel" }))}
+                    data-testid="button-format-excel"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-1" />
+                    Excel
+                  </Button>
+                  <Button
+                    variant={exportOptions.format === "word" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setExportOptions(prev => ({ ...prev, format: "word" }))}
+                    data-testid="button-format-word"
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    Word
+                  </Button>
+                </div>
+              </div>
+
+              {/* Statements Selection */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Include Statements</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "balance-sheet", label: "Balance Sheet" },
+                    { id: "income-statement", label: "Income Statement" },
+                    { id: "equity-statement", label: "Changes in Equity" },
+                    { id: "cash-flow", label: "Cash Flow Statement" }
+                  ].map(stmt => (
+                    <Button
+                      key={stmt.id}
+                      variant={exportOptions.selectedStatements.includes(stmt.id) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleStatementSelection(stmt.id)}
+                      className="justify-start"
+                      data-testid={`button-stmt-${stmt.id}`}
+                    >
+                      {exportOptions.selectedStatements.includes(stmt.id) && (
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                      )}
+                      {stmt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Content Options */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Additional Content</label>
+                <div className="space-y-2">
+                  <Button
+                    variant={exportOptions.includeNotes ? "default" : "outline"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setExportOptions(prev => ({ ...prev, includeNotes: !prev.includeNotes }))}
+                    data-testid="button-include-notes"
+                  >
+                    {exportOptions.includeNotes && <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    <FileText className="w-4 h-4 mr-2" />
+                    Include Disclosure Notes
+                  </Button>
+                  <Button
+                    variant={exportOptions.includeSchedules ? "default" : "outline"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setExportOptions(prev => ({ ...prev, includeSchedules: !prev.includeSchedules }))}
+                    data-testid="button-include-schedules"
+                  >
+                    {exportOptions.includeSchedules && <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    <LayoutGrid className="w-4 h-4 mr-2" />
+                    Include Schedules
+                  </Button>
+                  <Button
+                    variant={exportOptions.includeWorkingPapers ? "default" : "outline"}
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => setExportOptions(prev => ({ ...prev, includeWorkingPapers: !prev.includeWorkingPapers }))}
+                    data-testid="button-include-wp"
+                  >
+                    {exportOptions.includeWorkingPapers && <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Include Working Papers
+                  </Button>
+                </div>
+              </div>
+
+              {/* Period Lock Option */}
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800">
+                <Button
+                  variant={exportOptions.lockPeriod ? "default" : "outline"}
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={() => setExportOptions(prev => ({ ...prev, lockPeriod: !prev.lockPeriod }))}
+                  data-testid="button-lock-period"
+                >
+                  {exportOptions.lockPeriod ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
+                  Lock Period After Export
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1 ml-1">
+                  Prevent further changes to {activePeriod.periodLabel}
+                </p>
+              </div>
+
+              {/* Watermark Option */}
+              <Button
+                variant={exportOptions.watermark ? "default" : "outline"}
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setExportOptions(prev => ({ ...prev, watermark: !prev.watermark }))}
+                data-testid="button-watermark"
+              >
+                {exportOptions.watermark && <CheckCircle2 className="w-4 h-4 mr-2" />}
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Add DRAFT watermark
+              </Button>
+            </div>
+          ) : (
+            /* Export Progress */
+            <div className="py-8 space-y-4">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                  <FileDown className="w-8 h-8 text-primary animate-pulse" />
+                </div>
+                <h3 className="font-semibold text-lg">Generating Financial Statements</h3>
+                <p className="text-sm text-muted-foreground mt-1">Please wait while we compile your documents...</p>
+              </div>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${exportProgress}%` }}
+                />
+              </div>
+              <p className="text-center text-sm text-muted-foreground">{exportProgress}% complete</p>
+            </div>
+          )}
+
+          {!isExporting && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowExportDialog(false)}>Cancel</Button>
+              <Button 
+                onClick={handleGenerateFinancialStatements}
+                disabled={exportOptions.selectedStatements.length === 0}
+                data-testid="button-export-generate"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Generate {exportOptions.format.toUpperCase()}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

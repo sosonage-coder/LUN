@@ -2076,3 +2076,97 @@ export interface FSPackageSummary {
   linkedNotesCount: number;
   isComplete: boolean;
 }
+
+// ========================
+// Split Declaration Types (for GL account breakdown)
+// ========================
+
+export type SplitSourceType = "DECLARED" | "GL_BACKED" | "CALCULATED";
+
+export interface SplitComponent {
+  componentId: string;
+  componentName: string;
+  amount: number;
+  sourceType: SplitSourceType;
+  sourceReference: string | null; // GL account, calculation ref, or null for declared
+  basis: string; // explanation text for declared splits
+  footnoteId: string | null; // which disclosure note this flows to
+  createdAt: string;
+  createdBy: string;
+  isLocked: boolean; // locked after period close
+}
+
+export interface SplitDeclaration {
+  splitId: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  periodId: string;
+  tbBalance: number; // must match Trial Balance closing balance
+  components: SplitComponent[];
+  totalAssigned: number;
+  totalUnassigned: number;
+  isComplete: boolean; // all balance assigned
+  lastUpdated: string;
+  updatedBy: string;
+}
+
+// Working Paper Types
+export type WorkingPaperType = "LINEAR" | "AGING" | "ROLLFORWARD" | "CUSTOM";
+export type WorkingPaperStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "LOCKED";
+
+export interface WorkingPaperColumn {
+  columnId: string;
+  label: string;
+  widthPx: number;
+  orderIndex: number;
+  isLocked: boolean;
+  formula: string | null; // e.g., "SUM(A:A)" for auto-calculated columns
+}
+
+export interface WorkingPaperRow {
+  rowId: string;
+  rowType: "DATA" | "HEADER" | "SUBTOTAL" | "TOTAL";
+  orderIndex: number;
+  values: Record<string, string | number>; // columnId -> value
+  isLocked: boolean;
+}
+
+export interface WorkingPaperTextBlock {
+  blockId: string;
+  content: string;
+  orderIndex: number; // position in grid (inserted between rows)
+  style: "HEADING" | "SUBHEADING" | "NOTE";
+}
+
+export interface WorkingPaper {
+  workingPaperId: string;
+  name: string;
+  type: WorkingPaperType;
+  periodId: string;
+  linkedFsLines: string[]; // FS line item IDs
+  linkedNotes: string[]; // Disclosure note IDs
+  columns: WorkingPaperColumn[];
+  rows: WorkingPaperRow[];
+  textBlocks: WorkingPaperTextBlock[];
+  frozenRows: number; // number of header rows to freeze
+  status: WorkingPaperStatus;
+  createdAt: string;
+  createdBy: string;
+  lastUpdated: string;
+  updatedBy: string;
+}
+
+// Cross-Reference Trail (for hover trails)
+export interface ReferenceTrail {
+  nodeType: "GL" | "SPLIT" | "WP" | "NOTE" | "FS";
+  nodeId: string;
+  nodeLabel: string;
+  amount: number | null;
+}
+
+export interface CrossReference {
+  sourceType: "GL" | "SPLIT" | "WP" | "NOTE" | "FS";
+  sourceId: string;
+  trail: ReferenceTrail[];
+}

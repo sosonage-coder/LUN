@@ -43,6 +43,7 @@ import {
   Award,
   Scale,
   ArrowDownUp,
+  Table2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -619,6 +620,7 @@ export function AppSidebar() {
     { title: "Dashboard", url: "/nettool", icon: LayoutDashboard },
     { title: "Disclosures", url: "/nettool/disclosures", icon: FileText },
     { title: "Schedules", url: "/nettool/schedules", icon: FileSpreadsheet },
+    { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
     { title: "Narratives", url: "/nettool/narratives", icon: BookOpen },
     { title: "Review", url: "/nettool/review", icon: ClipboardCheck },
     { title: "Audit View", url: "/nettool/audit", icon: Users },

@@ -1024,6 +1024,139 @@ export const sampleTBWorkspace: TBWorkspace = {
   lastUpdated: "2024-12-31T23:59:59Z",
 };
 
+// Sample Split Declarations (for accounts mapped to multiple disclosures)
+import type { SplitDeclaration, WorkingPaper } from "@shared/schema";
+
+export const sampleSplitDeclarations: SplitDeclaration[] = [
+  {
+    splitId: "split-2100",
+    accountId: "gl-2100",
+    accountCode: "2100",
+    accountName: "Accrued Expenses",
+    periodId: "FY2024",
+    tbBalance: -700000, // Credit balance from TB
+    components: [
+      { componentId: "comp-1", componentName: "Payroll accrual", amount: -120000, sourceType: "DECLARED", sourceReference: null, basis: "January payroll accrual per HR", footnoteId: "fn-1", createdAt: "2024-12-15T10:00:00Z", createdBy: "Controller", isLocked: false },
+      { componentId: "comp-2", componentName: "Legal accrual", amount: -80000, sourceType: "DECLARED", sourceReference: null, basis: "Legal invoices received post year-end", footnoteId: "fn-10", createdAt: "2024-12-15T10:05:00Z", createdBy: "Controller", isLocked: false },
+      { componentId: "comp-3", componentName: "Bonus accrual", amount: -250000, sourceType: "GL_BACKED", sourceReference: "GL 2150", basis: "Per bonus calculation schedule", footnoteId: "fn-1", createdAt: "2024-12-15T10:10:00Z", createdBy: "Controller", isLocked: false },
+      { componentId: "comp-4", componentName: "Utilities accrual", amount: -50000, sourceType: "DECLARED", sourceReference: null, basis: "Estimated utility bills", footnoteId: null, createdAt: "2024-12-15T10:15:00Z", createdBy: "Controller", isLocked: false },
+    ],
+    totalAssigned: -500000,
+    totalUnassigned: -200000,
+    isComplete: false,
+    lastUpdated: "2024-12-15T10:15:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    splitId: "split-6300",
+    accountId: "gl-6300",
+    accountCode: "6300",
+    accountName: "Depreciation & Amortization",
+    periodId: "FY2024",
+    tbBalance: 875000, // Debit balance
+    components: [
+      { componentId: "comp-5", componentName: "PPE Depreciation", amount: 630000, sourceType: "CALCULATED", sourceReference: "WP-PPE-001", basis: "Per fixed asset register", footnoteId: "fn-3", createdAt: "2024-12-20T09:00:00Z", createdBy: "Senior Accountant", isLocked: false },
+      { componentId: "comp-6", componentName: "Intangibles Amortization", amount: 225000, sourceType: "CALCULATED", sourceReference: "WP-INT-001", basis: "Per intangible schedule", footnoteId: "fn-4", createdAt: "2024-12-20T09:05:00Z", createdBy: "Senior Accountant", isLocked: false },
+      { componentId: "comp-7", componentName: "ROU Depreciation", amount: 20000, sourceType: "DECLARED", sourceReference: null, basis: "Lease amortization per schedule", footnoteId: "fn-5", createdAt: "2024-12-20T09:10:00Z", createdBy: "Senior Accountant", isLocked: false },
+    ],
+    totalAssigned: 875000,
+    totalUnassigned: 0,
+    isComplete: true,
+    lastUpdated: "2024-12-20T09:10:00Z",
+    updatedBy: "Senior Accountant",
+  },
+];
+
+// Sample Working Papers
+export const sampleWorkingPapers: WorkingPaper[] = [
+  {
+    workingPaperId: "wp-ppe-001",
+    name: "Property, Plant & Equipment Rollforward",
+    type: "ROLLFORWARD",
+    periodId: "FY2024",
+    linkedFsLines: ["bs-ppe"],
+    linkedNotes: ["fn-3"],
+    columns: [
+      { columnId: "col-desc", label: "Description", widthPx: 200, orderIndex: 0, isLocked: false, formula: null },
+      { columnId: "col-opening", label: "Opening", widthPx: 120, orderIndex: 1, isLocked: true, formula: null },
+      { columnId: "col-additions", label: "Additions", widthPx: 100, orderIndex: 2, isLocked: false, formula: null },
+      { columnId: "col-disposals", label: "Disposals", widthPx: 100, orderIndex: 3, isLocked: false, formula: null },
+      { columnId: "col-depreciation", label: "Depreciation", widthPx: 100, orderIndex: 4, isLocked: false, formula: null },
+      { columnId: "col-closing", label: "Closing", widthPx: 120, orderIndex: 5, isLocked: true, formula: "col-opening+col-additions+col-disposals+col-depreciation" },
+    ],
+    rows: [
+      { rowId: "row-1", rowType: "DATA", orderIndex: 0, values: { "col-desc": "Land & Buildings", "col-opening": 3500000, "col-additions": 200000, "col-disposals": 0, "col-depreciation": -250000, "col-closing": 3450000 }, isLocked: false },
+      { rowId: "row-2", rowType: "DATA", orderIndex: 1, values: { "col-desc": "Machinery & Equipment", "col-opening": 2800000, "col-additions": 300000, "col-disposals": -50000, "col-depreciation": -280000, "col-closing": 2770000 }, isLocked: false },
+      { rowId: "row-3", rowType: "DATA", orderIndex: 2, values: { "col-desc": "Vehicles", "col-opening": 550000, "col-additions": 50000, "col-disposals": 0, "col-depreciation": -100000, "col-closing": 500000 }, isLocked: false },
+      { rowId: "row-4", rowType: "TOTAL", orderIndex: 3, values: { "col-desc": "Total", "col-opening": 6850000, "col-additions": 550000, "col-disposals": -50000, "col-depreciation": -630000, "col-closing": 6720000 }, isLocked: true },
+    ],
+    textBlocks: [],
+    frozenRows: 1,
+    status: "IN_REVIEW",
+    createdAt: "2024-11-01T00:00:00Z",
+    createdBy: "Senior Accountant",
+    lastUpdated: "2024-12-20T14:30:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    workingPaperId: "wp-int-001",
+    name: "Intangible Assets Rollforward",
+    type: "ROLLFORWARD",
+    periodId: "FY2024",
+    linkedFsLines: ["bs-intangibles"],
+    linkedNotes: ["fn-4"],
+    columns: [
+      { columnId: "col-desc", label: "Description", widthPx: 200, orderIndex: 0, isLocked: false, formula: null },
+      { columnId: "col-opening", label: "Opening", widthPx: 120, orderIndex: 1, isLocked: true, formula: null },
+      { columnId: "col-additions", label: "Additions", widthPx: 100, orderIndex: 2, isLocked: false, formula: null },
+      { columnId: "col-amortization", label: "Amortization", widthPx: 100, orderIndex: 3, isLocked: false, formula: null },
+      { columnId: "col-closing", label: "Closing", widthPx: 120, orderIndex: 4, isLocked: true, formula: "col-opening+col-additions+col-amortization" },
+    ],
+    rows: [
+      { rowId: "row-1", rowType: "DATA", orderIndex: 0, values: { "col-desc": "Software Licenses", "col-opening": 1200000, "col-additions": 100000, "col-amortization": -150000, "col-closing": 1150000 }, isLocked: false },
+      { rowId: "row-2", rowType: "DATA", orderIndex: 1, values: { "col-desc": "Patents & Trademarks", "col-opening": 600000, "col-additions": 75000, "col-amortization": -75000, "col-closing": 600000 }, isLocked: false },
+      { rowId: "row-3", rowType: "TOTAL", orderIndex: 2, values: { "col-desc": "Total", "col-opening": 1800000, "col-additions": 175000, "col-amortization": -225000, "col-closing": 1750000 }, isLocked: true },
+    ],
+    textBlocks: [],
+    frozenRows: 1,
+    status: "APPROVED",
+    createdAt: "2024-11-01T00:00:00Z",
+    createdBy: "Senior Accountant",
+    lastUpdated: "2024-12-18T16:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    workingPaperId: "wp-aging-001",
+    name: "Accounts Receivable Aging",
+    type: "AGING",
+    periodId: "FY2024",
+    linkedFsLines: ["bs-ar"],
+    linkedNotes: ["fn-2"],
+    columns: [
+      { columnId: "col-customer", label: "Customer", widthPx: 180, orderIndex: 0, isLocked: false, formula: null },
+      { columnId: "col-current", label: "Current", widthPx: 100, orderIndex: 1, isLocked: false, formula: null },
+      { columnId: "col-30", label: "1-30 Days", widthPx: 100, orderIndex: 2, isLocked: false, formula: null },
+      { columnId: "col-60", label: "31-60 Days", widthPx: 100, orderIndex: 3, isLocked: false, formula: null },
+      { columnId: "col-90", label: "61-90 Days", widthPx: 100, orderIndex: 4, isLocked: false, formula: null },
+      { columnId: "col-over90", label: ">90 Days", widthPx: 100, orderIndex: 5, isLocked: false, formula: null },
+      { columnId: "col-total", label: "Total", widthPx: 120, orderIndex: 6, isLocked: true, formula: "SUM(col-current:col-over90)" },
+    ],
+    rows: [
+      { rowId: "row-1", rowType: "DATA", orderIndex: 0, values: { "col-customer": "Customer A", "col-current": 500000, "col-30": 200000, "col-60": 50000, "col-90": 0, "col-over90": 0, "col-total": 750000 }, isLocked: false },
+      { rowId: "row-2", rowType: "DATA", orderIndex: 1, values: { "col-customer": "Customer B", "col-current": 800000, "col-30": 150000, "col-60": 0, "col-90": 25000, "col-over90": 0, "col-total": 975000 }, isLocked: false },
+      { rowId: "row-3", rowType: "DATA", orderIndex: 2, values: { "col-customer": "Customer C", "col-current": 1200000, "col-30": 400000, "col-60": 200000, "col-90": 50000, "col-over90": 25000, "col-total": 1875000 }, isLocked: false },
+      { rowId: "row-4", rowType: "TOTAL", orderIndex: 3, values: { "col-customer": "Total", "col-current": 2500000, "col-30": 750000, "col-60": 250000, "col-90": 75000, "col-over90": 25000, "col-total": 3600000 }, isLocked: true },
+    ],
+    textBlocks: [],
+    frozenRows: 1,
+    status: "DRAFT",
+    createdAt: "2024-12-01T00:00:00Z",
+    createdBy: "Staff Accountant",
+    lastUpdated: "2024-12-22T10:00:00Z",
+    updatedBy: "Staff Accountant",
+  },
+];
+
 // FS Category labels for display
 export const fsCategoryLabels: Record<FSCategory, string> = {
   CURRENT_ASSETS: "Current Assets",
