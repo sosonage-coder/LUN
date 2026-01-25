@@ -95,6 +95,11 @@ The application follows a client-server architecture.
 - **Section Types**: ACCRUAL_LINE_DETAIL (12-month movements), FX_EXCEPTION (only when needed), SUMMARY_TIE_OUT (tie-out to trial balance)
 - **Tie-Out Equation**: Opening Balance (TC) + Monthly Movements (TC) = Ending Balance (TC); Ending Balance (TC) × ERP FX Rate = Trial Balance
 - **Certification Asserts**: Accrual logic understood, monthly movements complete, ERP FX application validated
+- **UI Component**: Accrual12MonthGrid renders horizontal table with Description, Opening Balance, 12 rolling monthly columns, Total Movement, and Ending Balance
+- **Expand/Collapse**: Rows expandable to show Supplier/Vendor, P&L Account, Currency, ERP FX Rate, Converted Amount, FX Difference
+- **Tie-Out Validation**: Visual indicator compares converted total to GL balance, shows variance with Reconciled/Variance status
+- **Period-Aware Rolling Window**: 12-month columns dynamically generated ending at the selected period, with year-aware alignment for cross-year data
+- **Conditional UI**: When templateVariant is ACCRUAL_12M_ROLLFORWARD, standard section cards are replaced with the specialized grid view
 
 ## External Dependencies
 - **React**: Frontend UI library.
