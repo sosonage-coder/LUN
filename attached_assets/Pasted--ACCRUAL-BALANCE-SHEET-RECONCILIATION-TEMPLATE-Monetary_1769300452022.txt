@@ -1,0 +1,192 @@
+🧱 ACCRUAL BALANCE SHEET RECONCILIATION TEMPLATE
+
+(Monetary, ERP-Aligned FX, V1)
+
+0️⃣ Purpose
+
+Provide a clear, line-based explanation of accrual balances by showing how individual accruals move month-by-month over a 12-month period, with cumulative totals, ending balances, and ERP-aligned FX validation.
+
+This template explains balance evolution, not accrual calculation or FX remeasurement.
+
+1️⃣ Account Classification
+
+Account type: Monetary (non-cash)
+
+Subject to FX revaluation in the ERP
+
+Reconciled against the trial balance
+
+FX not calculated in the reconciliation workspace
+
+2️⃣ Core Presentation Structure
+Time Axis
+
+Horizontal 12-month view
+
+Expandable / collapsible by month
+
+Supports rolling forward across periods
+
+Required Columns (Per Accrual Line)
+Column	Purpose
+Description	Accrual identifier (e.g. Audit Fee – 2025)
+Supplier / Vendor ID	Traceability to counterparty
+P&L Account	Expense linkage
+Group Account (Optional)	Grouping logic
+Transaction Currency	Original currency of accrual
+Opening Balance (TC)	Prior period carryforward
+Monthly Movements (TC)	Period accruals by month
+Total Movement (TC)	Cumulative accrual
+Ending Balance (TC)	Transaction-currency balance
+
+TC = Transaction Currency
+
+3️⃣ Accrual Line Logic
+
+Each row represents one accrual logic
+
+Recurring (e.g. audit fees)
+
+One-off (e.g. legal invoice)
+
+Monthly columns may contain values or remain blank
+
+Ending balance (TC) =
+
+Opening Balance + Total Movement
+
+4️⃣ One-Off Accrual Handling
+
+One-off accruals are added as separate rows
+
+Amount appears only in the month incurred
+
+Other months remain blank
+
+Ending balance still reflects the full accrued amount
+
+5️⃣ FX Treatment — ERP-Aligned (Critical Rule)
+FX Philosophy
+
+FX revaluation is performed in the ERP.
+The reconciliation validates FX — it does not calculate it.
+
+Normal Case (Expected)
+
+For each accrual line:
+
+User inputs:
+
+Transaction-currency balance
+
+FX rate as used by the ERP
+
+System converts:
+
+Ending Balance (TC) × ERP FX Rate = Reporting Currency Amount
+
+
+Converted amount must equal the trial balance
+
+✅ No FX adjustment line shown
+
+✅ No FX section expanded
+
+✅ Reconciliation ties cleanly
+
+FX exists implicitly, not visually.
+
+Exception Case (Only When Needed)
+
+FX becomes explicit only if:
+
+Converted balance ≠ trial balance, or
+
+ERP FX rate is unclear or disputed, or
+
+Manual override is required for investigation
+
+In this case, the template surfaces:
+
+An FX difference line, and
+
+A required FX explanation
+
+FX is treated as:
+
+An exception investigation, not a recurring movement
+
+6️⃣ Summary & Tie-Out
+
+The reconciliation must demonstrate:
+
+Opening Accrual Balance (TC)
++ Monthly Accrual Movements (TC)
+= Ending Accrual Balance (TC)
+
+Ending Balance (TC) × ERP FX Rate
+= Ending Balance per Trial Balance
+
+
+FX appears only if this equality does not hold.
+
+7️⃣ Attachments & Evidence
+
+Evidence supported at line level
+
+Typical attachments:
+
+Contracts
+
+Invoices
+
+Accrual calculations
+
+Evidence locked on certification
+
+8️⃣ Certification Behavior
+
+Reconciliation lifecycle:
+
+Draft → Prepared → Reviewed → Certified → Locked
+
+
+Certification asserts:
+
+Accrual logic is understood
+
+Monthly movements are complete
+
+ERP FX application is validated
+
+It does not assert:
+
+FX methodology correctness
+
+Accounting policy decisions
+
+9️⃣ Explicit Non-Goals (V1)
+
+This template does not:
+
+Perform FX remeasurement
+
+Post journals
+
+Replace accrual schedules
+
+Forecast expenses
+
+🔒 One-Line Definition
+
+“An accrual reconciliation template that explains balance-sheet accruals through a 12-month rollforward, validating — not recalculating — ERP FX revaluation and surfacing FX only as an exception.”
+
+Why this is the right model
+
+Respects the ERP as system of record
+
+Eliminates FX noise in clean months
+
+Surfaces FX only when something is wrong
+
+Keeps reviewers focused on real risk

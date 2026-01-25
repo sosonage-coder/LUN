@@ -1297,7 +1297,11 @@ export type ReconciliationSectionType =
   // Cash-specific section types
   | "FX_REVALUATION"      // FX revaluation impact section
   | "BANK_NOT_IN_GL"      // Items in Bank, Not in GL (deposits in transit, fees)
-  | "GL_NOT_IN_BANK";     // Items in GL, Not in Bank (outstanding cheques)
+  | "GL_NOT_IN_BANK"      // Items in GL, Not in Bank (outstanding cheques)
+  // Accrual-specific section types (12-month rollforward)
+  | "ACCRUAL_LINE_DETAIL" // Individual accrual lines with 12-month movements
+  | "FX_EXCEPTION"        // FX exception - only shown when ERP FX validation fails
+  | "SUMMARY_TIE_OUT";    // Summary & tie-out to trial balance
 
 // Monetary classification for accounts
 export type MonetaryType = "MONETARY" | "NON_MONETARY";
@@ -1450,6 +1454,29 @@ export type ReconcilingItemType =
 export type ReconcilingItemNature = "EXPECTED" | "UNEXPECTED";
 export type ReconcilingItemStatus = "OPEN" | "CLEARED";
 
+// Monthly movement for accrual 12-month rollforward
+export interface AccrualMonthlyMovement {
+  period: string;           // YYYY-MM format
+  amount: number;           // Movement amount in transaction currency
+  isActual: boolean;        // true = actual, false = forecast/estimate
+}
+
+// Accrual line detail for 12-month rollforward template
+export interface AccrualLineDetail {
+  supplierVendorId: string | null;    // Traceability to counterparty
+  plAccount: string | null;           // P&L expense linkage
+  groupAccount: string | null;        // Optional grouping logic
+  transactionCurrency: string;        // Original currency of accrual
+  openingBalanceTC: number;           // Prior period carryforward (Transaction Currency)
+  monthlyMovements: AccrualMonthlyMovement[]; // 12-month movements
+  totalMovementTC: number;            // Cumulative accrual (TC)
+  endingBalanceTC: number;            // Transaction-currency balance
+  erpFxRate: number | null;           // FX rate as used by ERP
+  convertedReportingAmount: number | null; // Ending Balance TC × ERP FX Rate
+  fxDifference: number | null;        // Difference vs trial balance (if any)
+  accrualType: "RECURRING" | "ONE_OFF"; // Recurring vs one-off accrual
+}
+
 // Line Item within a section
 export interface ReconciliationLineItem {
   itemId: string;
@@ -1466,6 +1493,8 @@ export interface ReconciliationLineItem {
   customTags: string[];
   // Bank account reference (for multi-bank reconciliations)
   bankAccountId: string | null;
+  // Accrual-specific fields (for 12-month rollforward template)
+  accrualDetail: AccrualLineDetail | null;
   createdAt: string;
   createdBy: string;
 }
@@ -1518,7 +1547,8 @@ export const insertReconciliationTemplateSchema = z.object({
     sectionType: z.enum([
       "OPENING_BALANCE", "ADDITIONS", "DISPOSALS", "ADJUSTMENTS", "CLOSING_BALANCE",
       "SUBLEDGER_DETAIL", "BANK_TRANSACTIONS", "OUTSTANDING_ITEMS", "VARIANCE_ANALYSIS",
-      "SUPPORTING_DOCUMENTATION", "CUSTOM", "FX_REVALUATION", "BANK_NOT_IN_GL", "GL_NOT_IN_BANK"
+      "SUPPORTING_DOCUMENTATION", "CUSTOM", "FX_REVALUATION", "BANK_NOT_IN_GL", "GL_NOT_IN_BANK",
+      "ACCRUAL_LINE_DETAIL", "FX_EXCEPTION", "SUMMARY_TIE_OUT"
     ]),
     name: z.string().min(1),
     description: z.string(),

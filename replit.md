@@ -81,6 +81,21 @@ The application follows a client-server architecture.
 - **Line Item Tagging**: Items tagged with itemType (CHEQUE, DEPOSIT, TRANSFER, WIRE, FEE, INTEREST, FX_ADJUSTMENT, OTHER), itemNature (EXPECTED, UNEXPECTED, DISPUTED, RESOLVED), itemStatus (OPEN, MATCHED, CLEARED, WRITTEN_OFF), customTags, bankAccountId
 - **FX Rate Sources**: SYSTEM (auto-calculated) or MANUAL (user override)
 
+**Accrual Balance Sheet Reconciliation Template (12-Month Rollforward):**
+- **Template Variant**: ACCRUAL_12M_ROLLFORWARD - horizontal 12-month view with line-based accrual tracking
+- **Account Classification**: Monetary (non-cash), subject to FX revaluation in ERP, reconciled against trial balance
+- **ERP-Aligned FX Philosophy**: FX revaluation is performed in ERP, reconciliation validates FX - does not calculate it
+- **Accrual Line Structure**: Each row represents one accrual logic (recurring or one-off) with:
+  - Supplier/Vendor ID, P&L Account, Group Account (optional)
+  - Transaction Currency, Opening Balance (TC), Monthly Movements (TC), Total Movement (TC), Ending Balance (TC)
+  - ERP FX Rate for conversion validation
+- **AccrualLineDetail Interface**: supplierVendorId, plAccount, groupAccount, transactionCurrency, openingBalanceTC, monthlyMovements[], totalMovementTC, endingBalanceTC, erpFxRate, convertedReportingAmount, fxDifference, accrualType
+- **AccrualMonthlyMovement Interface**: period (YYYY-MM), amount, isActual (true = actual, false = forecast)
+- **FX Exception Handling**: FX becomes explicit only when converted balance ≠ trial balance or ERP FX rate is disputed
+- **Section Types**: ACCRUAL_LINE_DETAIL (12-month movements), FX_EXCEPTION (only when needed), SUMMARY_TIE_OUT (tie-out to trial balance)
+- **Tie-Out Equation**: Opening Balance (TC) + Monthly Movements (TC) = Ending Balance (TC); Ending Balance (TC) × ERP FX Rate = Trial Balance
+- **Certification Asserts**: Accrual logic understood, monthly movements complete, ERP FX application validated
+
 ## External Dependencies
 - **React**: Frontend UI library.
 - **TypeScript**: Statically typed superset of JavaScript.
