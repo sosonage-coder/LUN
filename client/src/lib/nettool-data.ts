@@ -148,6 +148,24 @@ export const sampleTemplates: DisclosureTemplate[] = [
     framework: "US_GAAP",
     createdAt: "2024-01-01T00:00:00Z",
   },
+  {
+    templateId: "tmpl-movement-by-category",
+    templateName: "Movement by Category",
+    layoutType: "MOVEMENT_BY_CATEGORY",
+    defaultColumns: [
+      { label: "Category", role: "SYSTEM", widthPx: 150, orderIndex: 0, hidden: false, locked: true },
+      { label: "Opening", role: "SYSTEM", widthPx: 110, orderIndex: 1, hidden: false, locked: true },
+      { label: "Additions", role: "USER", widthPx: 110, orderIndex: 2, hidden: false, locked: false },
+      { label: "Disposals", role: "USER", widthPx: 110, orderIndex: 3, hidden: false, locked: false },
+      { label: "Transfers", role: "USER", widthPx: 110, orderIndex: 4, hidden: false, locked: false },
+      { label: "Closing", role: "SYSTEM", widthPx: 110, orderIndex: 5, hidden: false, locked: true, formula: "col1+col2-col3+col4" },
+    ],
+    defaultRows: [],
+    defaultTextBlocks: [],
+    hiddenColumns: [],
+    framework: "BOTH",
+    createdAt: "2024-01-01T00:00:00Z",
+  },
 ];
 
 // Helper to create a schedule with default columns for a layout type
@@ -311,6 +329,37 @@ export const sampleSchedules: DisclosureSchedule[] = [
     createdAt: "2024-08-01T08:00:00Z",
     updatedAt: "2024-12-01T15:30:00Z",
   },
+  {
+    scheduleId: "sch-intangibles-movement",
+    noteId: "note-intangibles",
+    scheduleTitle: "Intangible Assets Movement",
+    layoutType: "MOVEMENT_BY_CATEGORY",
+    columns: [
+      { columnId: "col-0", label: "Category", role: "SYSTEM", widthPx: 150, orderIndex: 0, hidden: false, locked: true },
+      { columnId: "col-1", label: "Opening", role: "SYSTEM", widthPx: 110, orderIndex: 1, hidden: false, locked: true },
+      { columnId: "col-2", label: "Additions", role: "USER", widthPx: 110, orderIndex: 2, hidden: false, locked: false },
+      { columnId: "col-3", label: "Disposals", role: "USER", widthPx: 110, orderIndex: 3, hidden: false, locked: false },
+      { columnId: "col-4", label: "Transfers", role: "USER", widthPx: 110, orderIndex: 4, hidden: false, locked: false },
+      { columnId: "col-5", label: "Closing", role: "SYSTEM", widthPx: 110, orderIndex: 5, hidden: false, locked: true, formula: "col1+col2-col3+col4" },
+    ],
+    rows: [
+      { rowId: "row-software", label: "Software", role: "DATA", heightPx: 32, orderIndex: 0, hidden: false, locked: false },
+      { rowId: "row-patents", label: "Patents", role: "DATA", heightPx: 32, orderIndex: 1, hidden: false, locked: false },
+      { rowId: "row-trademarks", label: "Trademarks", role: "DATA", heightPx: 32, orderIndex: 2, hidden: false, locked: false },
+      { rowId: "row-total", label: "Total", role: "TOTAL", heightPx: 36, orderIndex: 3, hidden: false, locked: true },
+    ],
+    textBlocks: [],
+    cellValues: {
+      "row-software": { "col-0": "Software", "col-1": 1200000, "col-2": 350000, "col-3": 50000, "col-4": 0, "col-5": 1500000 },
+      "row-patents": { "col-0": "Patents", "col-1": 800000, "col-2": 200000, "col-3": 0, "col-4": 0, "col-5": 1000000 },
+      "row-trademarks": { "col-0": "Trademarks", "col-1": 400000, "col-2": 50000, "col-3": 25000, "col-4": 0, "col-5": 425000 },
+      "row-total": { "col-0": "Total", "col-1": 2400000, "col-2": 600000, "col-3": 75000, "col-4": 0, "col-5": 2925000 },
+    },
+    templateId: "tmpl-movement-by-category",
+    supportAttachments: [],
+    createdAt: "2024-07-01T10:00:00Z",
+    updatedAt: "2024-12-01T16:00:00Z",
+  },
 ];
 
 // Sample Disclosure Notes
@@ -336,7 +385,7 @@ export const sampleNotes: DisclosureNote[] = [
     periodId: "FY2024",
     framework: "BOTH",
     linkedStatementLines: ["bs-intangibles"],
-    scheduleIds: ["sch-intangibles-rollforward"],
+    scheduleIds: ["sch-intangibles-rollforward", "sch-intangibles-movement"],
     narrativeBlockIds: ["narr-intangibles-1"],
     status: "DRAFT",
     owner: "Sarah Johnson",
