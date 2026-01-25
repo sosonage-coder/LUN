@@ -2030,12 +2030,11 @@ export interface TBLine {
   accountName: string;
   fsCategory: FSCategory | null;
   footnoteIds: string[]; // footnotes this account is tagged to for disclosure splits
+  footnoteDescription: string | null; // custom description for footnote disclosure (may differ from GL name)
   normalBalance: "DEBIT" | "CREDIT";
-  openingDebit: number;
-  openingCredit: number;
+  openingBalance: number; // net amount (DR positive, CR negative)
   amounts: Record<string, number>; // columnId -> net amount (DR positive, CR negative)
-  closingDebit: number;
-  closingCredit: number;
+  closingBalance: number; // net amount (DR positive, CR negative)
   orderIndex: number;
 }
 
@@ -2059,10 +2058,8 @@ export interface TBWorkspace {
   columns: TBColumn[];
   lines: TBLine[];
   glAccounts: GLAccount[];
-  totalOpeningDebit: number;
-  totalOpeningCredit: number;
-  totalClosingDebit: number;
-  totalClosingCredit: number;
+  totalOpeningBalance: number; // net amount (should be 0 for balanced TB)
+  totalClosingBalance: number; // net amount (should be 0 for balanced TB)
   isBalanced: boolean;
   lastUpdated: string;
 }

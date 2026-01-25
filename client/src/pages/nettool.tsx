@@ -1484,19 +1484,15 @@ export default function NetToolPage() {
 
   // Trial Balance helper functions
   const calculateTBTotals = () => {
-    let totalOpeningDebit = 0;
-    let totalOpeningCredit = 0;
-    let totalClosingDebit = 0;
-    let totalClosingCredit = 0;
+    let totalOpeningBalance = 0;
+    let totalClosingBalance = 0;
     
     tbLines.forEach(line => {
-      totalOpeningDebit += line.openingDebit;
-      totalOpeningCredit += line.openingCredit;
-      totalClosingDebit += line.closingDebit;
-      totalClosingCredit += line.closingCredit;
+      totalOpeningBalance += line.openingBalance;
+      totalClosingBalance += line.closingBalance;
     });
     
-    return { totalOpeningDebit, totalOpeningCredit, totalClosingDebit, totalClosingCredit };
+    return { totalOpeningBalance, totalClosingBalance };
   };
 
   const handleAddColumn = () => {
@@ -1541,12 +1537,11 @@ export default function NetToolPage() {
       accountName: newRowAccountName,
       fsCategory: null,
       footnoteIds: [],
+      footnoteDescription: null,
       normalBalance: "DEBIT",
-      openingDebit: 0,
-      openingCredit: 0,
+      openingBalance: 0,
       amounts: movementCols.reduce((acc, col) => ({ ...acc, [col.columnId]: 0 }), {}),
-      closingDebit: 0,
-      closingCredit: 0,
+      closingBalance: 0,
       orderIndex: tbLines.length + 1,
     };
     
@@ -1572,21 +1567,10 @@ export default function NetToolPage() {
         })
         .reduce((sum, [, amt]) => sum + (amt as number), 0);
       
-      // Opening + Net Movement = Closing
-      // For debit normal: positive movement increases debit
-      // For credit normal: negative movement increases credit
-      let closingDebit = line.openingDebit;
-      let closingCredit = line.openingCredit;
+      // Opening + Net Movement = Closing (net amount format)
+      const closingBalance = line.openingBalance + netMovement;
       
-      if (line.normalBalance === "DEBIT") {
-        closingDebit = Math.max(0, line.openingDebit + netMovement);
-        closingCredit = Math.max(0, line.openingCredit - netMovement);
-      } else {
-        closingCredit = Math.max(0, line.openingCredit - netMovement);
-        closingDebit = Math.max(0, line.openingDebit + netMovement);
-      }
-      
-      return { ...line, amounts: updatedAmounts, closingDebit, closingCredit };
+      return { ...line, amounts: updatedAmounts, closingBalance };
     }));
     setEditingCell(null);
   };
@@ -1603,6 +1587,12 @@ export default function NetToolPage() {
       line.lineId === lineId ? { ...line, footnoteIds } : line
     ));
     setEditingFootnotes(null);
+  };
+
+  const handleFootnoteDescriptionUpdate = (lineId: string, description: string | null) => {
+    setTbLines(tbLines.map(line => 
+      line.lineId === lineId ? { ...line, footnoteDescription: description } : line
+    ));
   };
 
   const toggleColumnVisibility = (columnId: string) => {
@@ -1647,7 +1637,7 @@ export default function NetToolPage() {
 
   const renderTrialBalance = () => {
     const totals = calculateTBTotals();
-    const isBalanced = Math.abs(totals.totalClosingDebit - totals.totalClosingCredit) < 0.01;
+    const isBalanced = Math.abs(totals.totalClosingBalance) < 0.01;
     
     // Get adjustment columns (MOVEMENT, ADJUSTMENT, USER) - these show net amounts
     const adjustmentColumns = tbColumns.filter(c => 
@@ -1735,10 +1725,11 @@ export default function NetToolPage() {
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
-                    <TableHead className="w-32">Footnotes</TableHead>
-                    <TableHead className="text-center w-28" colSpan={2}>
+                    <TableHead className="w-28">Footnote</TableHead>
+                    <TableHead className="w-40">Footnote Description</TableHead>
+                    <TableHead className="text-center w-28">
                       <div className="flex flex-col items-center">
-                        <span className="text-xs text-muted-foreground">Opening Balance</span>
+                        <span className="text-xs text-muted-foreground">Opening</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
                       </div>
                     </TableHead>
@@ -1760,26 +1751,12 @@ export default function NetToolPage() {
                         </div>
                       </TableHead>
                     )}
-                    <TableHead className="text-center w-28" colSpan={2}>
+                    <TableHead className="text-center w-28">
                       <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold">Closing Balance</span>
+                        <span className="text-xs font-semibold">Closing</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
                       </div>
                     </TableHead>
-                  </TableRow>
-                  <TableRow className="bg-muted/30">
-                    <TableHead className="sticky left-0 bg-muted/30 z-10"></TableHead>
-                    <TableHead className="sticky left-20 bg-muted/30 z-10"></TableHead>
-                    <TableHead></TableHead>
-                    <TableHead></TableHead>
-                    <TableHead className="text-right text-xs">Debit</TableHead>
-                    <TableHead className="text-right text-xs">Credit</TableHead>
-                    {visibleAdjColumns.map(col => (
-                      <TableHead key={`${col.columnId}-net`} className="text-right text-xs">Net</TableHead>
-                    ))}
-                    {hasNetMoveCol && <TableHead className="text-right text-xs bg-accent/30">Net</TableHead>}
-                    <TableHead className="text-right text-xs font-semibold">Debit</TableHead>
-                    <TableHead className="text-right text-xs font-semibold">Credit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1819,49 +1796,43 @@ export default function NetToolPage() {
                             </Badge>
                           )}
                         </TableCell>
-                        {/* Footnotes */}
+                        {/* Footnote Tag - Dropdown */}
                         <TableCell>
-                          {editingFootnotes === line.lineId ? (
-                            <Select
-                              value={line.footnoteIds[0] || ""}
-                              onValueChange={(value) => handleFootnoteUpdate(line.lineId, value ? [value] : [])}
-                            >
-                              <SelectTrigger className="h-7 text-xs" data-testid={`select-footnote-${line.accountCode}`}>
-                                <SelectValue placeholder="Add note" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">None</SelectItem>
-                                {tbFootnotes.map((fn) => (
-                                  <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <div 
-                              className="flex flex-wrap gap-1 cursor-pointer"
-                              onClick={() => setEditingFootnotes(line.lineId)}
-                              data-testid={`footnotes-${line.accountCode}`}
-                            >
-                              {lineFootnotes.length > 0 ? (
-                                lineFootnotes.map(fn => (
-                                  <Badge key={fn.footnoteId} variant="outline" className="text-[10px] px-1">
-                                    {fn.footnoteCode}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <Badge variant="outline" className="text-[10px] text-muted-foreground px-1">
-                                  + Note
-                                </Badge>
-                              )}
-                            </div>
-                          )}
+                          <Select
+                            value={line.footnoteIds[0] || "none"}
+                            onValueChange={(value) => handleFootnoteUpdate(line.lineId, value === "none" ? [] : [value])}
+                          >
+                            <SelectTrigger className="h-7 text-xs" data-testid={`select-footnote-${line.accountCode}`}>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {tbFootnotes.map((fn) => (
+                                <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
-                        {/* Opening Balance - Locked */}
-                        <TableCell className="text-right font-mono text-sm bg-muted/20">
-                          {line.openingDebit > 0 ? formatCurrency(line.openingDebit) : "-"}
+                        {/* Footnote Description - Dropdown with footnote titles */}
+                        <TableCell>
+                          <Select
+                            value={line.footnoteDescription || "gl-name"}
+                            onValueChange={(value) => handleFootnoteDescriptionUpdate(line.lineId, value === "gl-name" ? null : value)}
+                          >
+                            <SelectTrigger className="h-7 text-xs" data-testid={`select-fn-desc-${line.accountCode}`}>
+                              <SelectValue placeholder="Select description" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gl-name">Use GL Name</SelectItem>
+                              {tbFootnotes.map((fn) => (
+                                <SelectItem key={fn.footnoteId} value={fn.footnoteTitle}>{fn.footnoteTitle}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm bg-muted/20">
-                          {line.openingCredit > 0 ? formatCurrency(line.openingCredit) : "-"}
+                        {/* Opening Balance - Single column, net amount (locked) */}
+                        <TableCell className={`text-right font-mono text-sm bg-muted/20 ${line.openingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                          {formatNetAmount(line.openingBalance)}
                         </TableCell>
                         {/* Adjustment Columns - Net Amount (editable) */}
                         {visibleAdjColumns.map(col => {
@@ -1895,12 +1866,9 @@ export default function NetToolPage() {
                             {formatNetAmount(netMovement)}
                           </TableCell>
                         )}
-                        {/* Closing Balance - Calculated */}
-                        <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
-                          {line.closingDebit > 0 ? formatCurrency(line.closingDebit) : "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
-                          {line.closingCredit > 0 ? formatCurrency(line.closingCredit) : "-"}
+                        {/* Closing Balance - Single column, net amount (calculated) */}
+                        <TableCell className={`text-right font-mono text-sm font-semibold bg-primary/5 ${line.closingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                          {formatNetAmount(line.closingBalance)}
                         </TableCell>
                       </TableRow>
                     );
@@ -1910,8 +1878,10 @@ export default function NetToolPage() {
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
-                    <TableCell className="text-right font-mono" data-testid="text-tb-opening-debit-total">{formatCurrency(totals.totalOpeningDebit)}</TableCell>
-                    <TableCell className="text-right font-mono" data-testid="text-tb-opening-credit-total">{formatCurrency(totals.totalOpeningCredit)}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className={`text-right font-mono ${totals.totalOpeningBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-tb-opening-total">
+                      {formatNetAmount(totals.totalOpeningBalance)}
+                    </TableCell>
                     {visibleAdjColumns.map(col => {
                       const colTotal = tbLines.reduce((sum, line) => sum + ((line.amounts[col.columnId] as number) || 0), 0);
                       return (
@@ -1925,8 +1895,9 @@ export default function NetToolPage() {
                         {formatNetAmount(tbLines.reduce((sum, line) => sum + calculateNetMovement(line), 0))}
                       </TableCell>
                     )}
-                    <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-debit-total">{formatCurrency(totals.totalClosingDebit)}</TableCell>
-                    <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-credit-total">{formatCurrency(totals.totalClosingCredit)}</TableCell>
+                    <TableCell className={`text-right font-mono bg-primary/10 ${totals.totalClosingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-tb-closing-total">
+                      {formatNetAmount(totals.totalClosingBalance)}
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -1944,9 +1915,7 @@ export default function NetToolPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Object.entries(fsCategoryLabels).slice(0, 8).map(([key, label]) => {
                 const categoryLines = tbLines.filter(l => l.fsCategory === key);
-                const totalDebit = categoryLines.reduce((sum, l) => sum + l.closingDebit, 0);
-                const totalCredit = categoryLines.reduce((sum, l) => sum + l.closingCredit, 0);
-                const netAmount = totalDebit - totalCredit;
+                const netAmount = categoryLines.reduce((sum, l) => sum + l.closingBalance, 0);
                 
                 return (
                   <div key={key} className="p-3 border rounded-md">
