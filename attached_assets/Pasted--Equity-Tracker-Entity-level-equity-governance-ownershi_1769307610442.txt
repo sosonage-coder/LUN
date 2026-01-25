@@ -1,0 +1,262 @@
+## Equity Tracker
+
+**Entity-level equity governance, ownership control, and audit-ready history**
+
+The Equity Tracker is a centralized system of record for **ownership, capital, and shareholder governance** across all legal entities in a group.
+
+It gives finance, legal, and executive teams a **single, authoritative view of who owns what, how it changed, who approved it, and what rights apply**, at any point in time.
+
+It replaces fragile spreadsheets, scattered legal documents, and institutional memory with **structured, auditable equity governance**.
+
+---
+
+## The Problem It Solves
+
+In most organizations, equity information is:
+
+- Fragmented across Excel files, PDFs, and emails
+- Maintained by a few individuals
+- Difficult to reconstruct historically
+- Painful during audits, tax reviews, or transactions
+
+This works until:
+
+- A restructuring happens
+- Capital is injected or returned
+- Dividends are declared
+- A subsidiary is sold
+- Auditors or buyers ask for proof
+
+Then equity becomes one of the highest-risk, slowest areas to clean up.
+
+The Equity Tracker exists to prevent that.
+
+---
+
+## What the Product Covers
+
+The Equity Tracker governs **entity-level equity**, including:
+
+- Shareholders and ownership percentages
+- Share classes and rights
+- Capital structure and changes
+- Dividend approvals and payments
+- Equity-related approvals and resolutions
+- Historical ownership and capital snapshots
+
+It focuses on **governance and evidence**, not accounting postings or valuation.
+
+---
+
+## Core Product Components
+
+### 1. Entity-Level Ownership Registry
+
+Each legal entity has a definitive ownership record that includes:
+
+- Shareholders
+- Ownership percentages
+- Share classes
+- Voting and economic rights
+
+Ownership data is structured, not descriptive.
+
+**Outcome**
+
+- One source of truth
+- No conflicting answers across teams
+- Immediate clarity during reviews
+
+---
+
+### 2. Cap Table & Share Class Management
+
+The system maintains:
+
+- Cap tables by entity
+- Share classes and series
+- Rights, preferences, and restrictions
+- Conversion or liquidation terms (where applicable)
+
+Share class rules are visible before actions are taken.
+
+**Outcome**
+
+- Reduced risk of invalid equity actions
+- Stronger legal and governance discipline
+
+---
+
+### 3. Equity Event Lifecycle Tracking
+
+All equity changes are tracked as formal events, including:
+
+- Issuances
+- Transfers
+- Cancellations
+- Capital contributions
+- Returns of capital
+
+Each event records:
+
+- Date and effective period
+- Amount or percentage
+- Required approvals
+- Supporting documentation
+
+**Outcome**
+
+- No undocumented equity movements
+- Full traceability from decision to outcome
+
+---
+
+### 4. Dividend Governance
+
+The Equity Tracker manages the full dividend lifecycle:
+
+- Approval and declaration
+- Payment tracking
+- Currency and timing
+- Intercompany dividend visibility
+
+Dividends are linked to:
+
+- Ownership rights
+- Approvals
+- Evidence
+- Downstream elimination at consolidation
+
+**Outcome**
+
+- Fewer audit questions
+- Cleaner intercompany eliminations
+- Better cash governance
+
+---
+
+### 5. Approval, Authority & Resolution Linking
+
+Every equity action is linked to:
+
+- Required governance approvals
+- Board or shareholder resolutions
+- Signing authority and delegation rules
+- E-signature workflows where applicable
+
+Approvals are time-stamped and immutable.
+
+**Outcome**
+
+- Strong audit and legal defensibility
+- Clear proof of authority
+- Reduced governance risk
+
+---
+
+### 6. Historical Snapshots & Point-in-Time Views
+
+The system supports:
+
+- “As of” ownership views
+- Period-locked snapshots
+- Full change logs
+
+Teams can see:
+
+- Current ownership
+- Ownership at prior reporting dates
+- Ownership at transaction dates
+
+**Outcome**
+
+- Faster audits
+- Easier tax and legal reviews
+- Strong support for due diligence
+
+---
+
+### 7. Interactive Ownership Visualization
+
+Ownership structures are visualized through:
+
+- Dynamic entity org charts
+- Drill-down ownership views
+- Linked source documentation
+
+Charts update automatically as equity events occur.
+
+**Outcome**
+
+- No static PowerPoint org charts
+- Always-current structure views
+- Faster executive understanding
+
+---
+
+### 8. Evidence & Audit Trail
+
+For every equity position and change, the system retains:
+
+- Approvals and resolutions
+- Signed documents
+- Filing confirmations (where applicable)
+- Time-stamped change history
+
+Evidence is preserved across periods and cannot be overwritten.
+
+**Outcome**
+
+- Immediate audit readiness
+- Strong support for existence, rights, and obligations
+- Reduced reliance on memory and emails
+
+---
+
+## How It Fits with the Broader Governance Stack
+
+The Equity Tracker integrates naturally with:
+
+- **Entity Compliance Calendar**
+    
+    Capital and dividend approvals become tracked obligations with deadlines and evidence.
+    
+- **Intersettle**
+    
+    Dividends and equity-related intercompany positions feed directly into elimination logic.
+    
+- **Authority & Policy Modules**
+    
+    Equity actions are validated against delegation of authority and governance policies.
+    
+
+Together, these modules ensure equity is not just recorded, but **properly governed**.
+
+---
+
+## What the Equity Tracker Is Not
+
+The Equity Tracker does **not**:
+
+- Replace ERP equity accounting
+- Perform journal entries
+- Calculate valuations
+- Replace legal counsel or registrars
+
+It governs **equity reality**, not accounting mechanics.
+
+---
+
+## Who This Is For
+
+- Group Controllers and CFOs
+- Legal and corporate secretariat teams
+- Tax and transfer pricing teams
+- Internal audit
+- M&A and strategy teams
+
+Especially valuable for:
+
+- Multi-entity groups
+- Cross-border structures
+- Organizations planning growth, restructuring, or exits
