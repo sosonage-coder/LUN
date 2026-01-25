@@ -84,6 +84,23 @@ The application uses a client-server architecture.
         - Period lock option to prevent changes after export.
         - DRAFT watermark option.
         - Progress indicator during document generation.
+    - **TB Adjustments Workspace**:
+        - Main grid with columns: Initial TB, RJE-1, RJE-2, Total RJE, AJE-1, AJE-2, AJE-3, Total AJE, Net Movement, Final Balance.
+        - Entry summary cards showing RJE/AJE entries with status (DRAFT, PENDING_REVIEW, APPROVED, REJECTED).
+        - Account-level FS Category and Footnote tagging.
+        - Entry detail sheet opens when clicking entry cards.
+    - **Final TB View**:
+        - Read-only comparative view showing Prior Year Closing vs Current Year Final.
+        - Variance columns showing changes year-over-year.
+        - Values looked up from TB Adjustments Workspace.
+    - **Template Repository**:
+        - Central repository for managing all template types.
+        - Four template categories: Disclosure, Working Paper, Reconciliation, Close Control.
+        - Full CRUD operations (add, edit, delete) for disclosure templates.
+        - Template properties: Name, Layout Type (6 options), Framework (IFRS/US GAAP/Both).
+        - Pre-built templates for working papers (Rollforward, Aging, Linear, Custom).
+        - Pre-built templates for reconciliations (Cash, Prepaid, Accrual, Fixed Asset, Intercompany).
+        - Pre-built templates for close control (Month-End, Quarter-End, Year-End, Consolidation, Audit Prep).
 - **One Compliance (Entity Governance & Compliance System)**:
     - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
     - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.
