@@ -1,0 +1,377 @@
+Got it — thank you for the correction.
+Below is a **clean, build-ready PRODUCT SPEC for the DISCLOSURE TOOL ONLY**, written **explicitly for Replit**.
+
+No reporting engine.
+No close management.
+No ERP posture.
+
+This is **Notes, Disclosures, Schedules, MD&A, and Review** — period.
+
+---
+
+# 🧾 PRODUCT SPEC — DISCLOSURE & NOTES TO FS TOOL (V1)
+
+**Product name (working):** Disclosure Workspace
+**Audience:** Finance, Technical Accounting, Audit
+**Build context:** Replit (small team, full-stack web app)
+
+---
+
+## 0️⃣ PRODUCT BOUNDARIES (LOCK THIS)
+
+### This tool DOES
+
+* Build **Notes to Financial Statements**
+* Manage **disclosure schedules**
+* Enforce **internal consistency**
+* Support **review, audit, and sign-off**
+* Generate **publishable outputs**
+
+### This tool DOES NOT
+
+* Process transactions
+* Post journals
+* Perform consolidations
+* Manage close tasks
+* Interpret accounting standards
+* Replace ERP or Excel for raw analysis
+
+---
+
+## 1️⃣ CORE CONCEPT
+
+> **Disclosures are structured objects, not documents.**
+
+Each disclosure (note) is composed of:
+
+* One or more **Schedules**
+* Optional **Narrative blocks**
+* Links to **statement line items**
+* Period & framework context (IFRS / US GAAP)
+
+---
+
+## 2️⃣ PRIMARY OBJECTS (V1)
+
+### 2.1 Disclosure Note
+
+**Purpose:** Container for one footnote
+
+Fields:
+
+* `note_id`
+* `note_number`
+* `note_title`
+* `period_id`
+* `framework` (IFRS | US GAAP | Both)
+* `linked_statement_lines[]`
+* `schedules[]`
+* `narrative_blocks[]`
+* `status` (draft | under_review | approved | published)
+
+---
+
+### 2.2 Schedule (Core Engine)
+
+**Purpose:** Controlled grid for numeric disclosure data
+
+Each schedule has:
+
+* A **fixed schedule type**
+* A **flexible layout**
+* **System-enforced math**
+
+#### Supported Schedule Types (ONLY THESE)
+
+1. Rollforward
+2. Movement by Category
+3. Timing / Maturity
+4. Gross → Adjustment → Net
+5. Composition / Breakdown
+6. Reconciliation
+
+No others in V1.
+
+---
+
+### 2.3 Schedule Data Model
+
+Each schedule stores:
+
+#### A. Grid
+
+* `rows[]`
+* `columns[]`
+* `cell_values[row_id][column_id]`
+
+#### B. Schema
+
+* `column_role` (system | user)
+* `row_role` (data | total | text_block)
+* `locked_columns[]`
+* `locked_rows[]`
+
+#### C. Layout Metadata
+
+* `column_width_px`
+* `row_height_px`
+* `hidden`
+* `order_index`
+
+---
+
+### 2.4 Text Blocks (Instead of Merged Cells)
+
+**Purpose:** Section headers & visual grouping
+
+Stored as:
+
+```json
+{
+  "type": "text_block",
+  "position": 3,
+  "span": "full_width",
+  "content": "LEASE MOVEMENTS",
+  "style": "section_header"
+}
+```
+
+Rules:
+
+* No numeric values
+* No formulas
+* Ignored by totals
+* Presentation only
+
+---
+
+## 3️⃣ USER CAPABILITIES (VERY SPECIFIC)
+
+### Users CAN
+
+* Add/remove **data rows**
+* Add/remove **user columns**
+* Rename rows and columns
+* Resize rows and columns
+* Hide/show rows and columns
+* Insert text blocks
+* Reorder rows and columns
+* Attach support to schedules
+
+### Users CANNOT
+
+* Edit system columns (totals, opening, closing)
+* Break enforced calculations
+* Merge cells
+* Reference other schedules
+* Write free-form formulas (V1)
+
+---
+
+## 4️⃣ TEMPLATE SYSTEM (CRITICAL FOR REUSE)
+
+### What a Template Is
+
+A **presentation preset**, not a new schedule.
+
+Templates define:
+
+* Default column labels
+* Default row labels
+* Default text blocks
+* Hidden vs published columns
+
+Templates DO NOT:
+
+* Duplicate data
+* Create new schedules
+* Change math rules
+
+---
+
+### Template Selection (UI)
+
+```
+Select Disclosure Template
+
+◉ Rollforward — Opening → Closing
+○ Rollforward — Adjustment Split
+○ Gross to Net
+○ Maturity Buckets
+○ Reconciliation
+```
+
+Template applies instantly to the same schedule.
+
+---
+
+## 5️⃣ NARRATIVE BLOCKS (MD&A-READY, LIGHT)
+
+Narratives are **free-text**, but **anchored**.
+
+Fields:
+
+* `narrative_id`
+* `linked_schedule_ids[]`
+* `linked_movements[]`
+* `content`
+* `owner`
+* `status`
+
+System can:
+
+* Highlight large movements
+* Flag mismatches between numbers & narrative
+
+System does NOT:
+
+* Auto-write conclusions
+* Override human judgment
+
+---
+
+## 6️⃣ STANDARDS AWARENESS (NON-INTERPRETIVE)
+
+Each disclosure note can be tagged with:
+
+* Applicable standards (IFRS / US GAAP)
+* Optional reference links
+
+Purpose:
+
+* Context
+* Review support
+
+❌ No enforcement
+❌ No technical conclusions
+
+---
+
+## 7️⃣ REVIEW & APPROVAL MODEL
+
+### Review Levels
+
+* Per Note
+* Per Schedule
+* Per Narrative Block
+
+Fields:
+
+* `reviewer`
+* `comments[]`
+* `approval_status`
+* `timestamp`
+
+Rules:
+
+* Approved = read-only
+* Rejection reopens editable state
+* Audit trail is immutable
+
+---
+
+## 8️⃣ PERIOD & VERSIONING
+
+### Period States
+
+* Draft
+* Under Review
+* Final
+
+Rules:
+
+* Final = locked
+* Restatement = new version
+* Prior periods immutable
+
+---
+
+## 9️⃣ AUDIT ACCESS (READ-ONLY)
+
+Auditors can:
+
+* View notes
+* View schedules
+* View support
+* Comment inline
+
+They cannot:
+
+* Edit numbers
+* Change layout
+* Approve
+
+---
+
+## 🔟 EXPORTS (V1 ONLY)
+
+Supported formats:
+
+* PDF
+* Word
+
+Export rules:
+
+* Uses **published view**
+* Hidden columns excluded
+* Text blocks rendered as headers
+* Totals preserved
+
+---
+
+## 1️⃣1️⃣ UI STRUCTURE (MINIMAL)
+
+### Left Navigation
+
+```
+Disclosures
+Schedules
+Narratives
+Review
+Audit View
+Exports
+```
+
+### Schedule Screen
+
+* Spreadsheet-style grid
+* Toolbar:
+
+  * * Row
+  * * Column
+  * * Text Block
+  * Hide / Show
+  * Resize
+
+Live recalculation always on.
+
+---
+
+## 🔒 OUT OF SCOPE (DO NOT BUILD)
+
+* Excel-level formulas
+* Cross-schedule references
+* Consolidation logic
+* Journal posting
+* Close task orchestration
+* XBRL
+* AI-generated disclosures
+
+---
+
+## 🧠 ENGINEERING SUMMARY (PIN THIS)
+
+> **This tool is a governed disclosure grid with flexible layout and locked math — not Excel, not Word.**
+
+---
+
+## NEXT (IF YOU WANT)
+
+I can now:
+
+* Define **exact DB tables**
+* Write **JSON schemas for schedules**
+* Design **frontend grid components**
+* Break this into **Replit tickets**
+
+Say which one and I’ll go straight there.

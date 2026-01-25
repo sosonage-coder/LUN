@@ -1627,3 +1627,231 @@ export const updateReconciliationStatusSchema = z.object({
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "PENDING_REVIEW", "REVIEWED", "APPROVED", "LOCKED"]),
   notes: z.string().optional(),
 });
+
+// ===== NETTOOL - DISCLOSURE & NOTES TO FS TYPES =====
+
+export type DisclosureFramework = "IFRS" | "US_GAAP" | "BOTH";
+export type DisclosureStatus = "DRAFT" | "UNDER_REVIEW" | "APPROVED" | "PUBLISHED";
+export type ScheduleLayoutType = 
+  | "ROLLFORWARD" 
+  | "MOVEMENT_BY_CATEGORY" 
+  | "TIMING_MATURITY" 
+  | "GROSS_TO_NET" 
+  | "COMPOSITION" 
+  | "RECONCILIATION";
+
+export type ColumnRole = "SYSTEM" | "USER";
+export type RowRole = "DATA" | "TOTAL" | "TEXT_BLOCK";
+export type TextBlockStyle = "SECTION_HEADER" | "SUBHEADER" | "NOTE";
+export type NarrativeStatus = "DRAFT" | "UNDER_REVIEW" | "APPROVED";
+export type ReviewApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type PeriodPublishState = "DRAFT" | "UNDER_REVIEW" | "FINAL";
+
+// Disclosure Note - Container for one footnote
+export interface DisclosureNote {
+  noteId: string;
+  noteNumber: string;
+  noteTitle: string;
+  periodId: string;
+  framework: DisclosureFramework;
+  linkedStatementLines: string[];
+  scheduleIds: string[];
+  narrativeBlockIds: string[];
+  status: DisclosureStatus;
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Schedule Column Definition
+export interface ScheduleColumn {
+  columnId: string;
+  label: string;
+  role: ColumnRole;
+  widthPx: number;
+  orderIndex: number;
+  hidden: boolean;
+  locked: boolean;
+  formula?: string; // For system columns with calculations
+}
+
+// Schedule Row Definition
+export interface ScheduleRow {
+  rowId: string;
+  label: string;
+  role: RowRole;
+  heightPx: number;
+  orderIndex: number;
+  hidden: boolean;
+  locked: boolean;
+}
+
+// Text Block - Section headers & visual grouping
+export interface ScheduleTextBlock {
+  textBlockId: string;
+  position: number; // Row position where text block appears
+  span: "FULL_WIDTH" | "PARTIAL";
+  content: string;
+  style: TextBlockStyle;
+}
+
+// Schedule Cell Value
+export interface ScheduleCellValue {
+  rowId: string;
+  columnId: string;
+  value: number | string | null;
+  isCalculated: boolean;
+  formula?: string;
+}
+
+// Disclosure Schedule - Core grid for numeric disclosure data
+export interface DisclosureSchedule {
+  scheduleId: string;
+  noteId: string;
+  scheduleTitle: string;
+  layoutType: ScheduleLayoutType;
+  columns: ScheduleColumn[];
+  rows: ScheduleRow[];
+  textBlocks: ScheduleTextBlock[];
+  cellValues: Record<string, Record<string, number | string | null>>; // [rowId][columnId]
+  templateId: string | null;
+  supportAttachments: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Narrative Block - Free-text anchored to schedules
+export interface NarrativeBlock {
+  narrativeId: string;
+  noteId: string;
+  linkedScheduleIds: string[];
+  linkedMovements: string[]; // References to significant movements
+  content: string;
+  owner: string;
+  status: NarrativeStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Schedule Template - Presentation preset
+export interface DisclosureTemplate {
+  templateId: string;
+  templateName: string;
+  layoutType: ScheduleLayoutType;
+  defaultColumns: Omit<ScheduleColumn, 'columnId'>[];
+  defaultRows: Omit<ScheduleRow, 'rowId'>[];
+  defaultTextBlocks: Omit<ScheduleTextBlock, 'textBlockId'>[];
+  hiddenColumns: string[];
+  framework: DisclosureFramework;
+  createdAt: string;
+}
+
+// Review Record
+export interface DisclosureReview {
+  reviewId: string;
+  targetType: "NOTE" | "SCHEDULE" | "NARRATIVE";
+  targetId: string;
+  reviewer: string;
+  comments: DisclosureComment[];
+  approvalStatus: ReviewApprovalStatus;
+  timestamp: string;
+}
+
+export interface DisclosureComment {
+  commentId: string;
+  author: string;
+  content: string;
+  timestamp: string;
+  isResolved: boolean;
+}
+
+// Period for versioning
+export interface DisclosurePeriod {
+  periodId: string;
+  periodLabel: string; // e.g., "FY2024", "Q3 2024"
+  startDate: string;
+  endDate: string;
+  state: PeriodPublishState;
+  version: number;
+  isRestatement: boolean;
+  lockedAt: string | null;
+}
+
+// Audit Access Record
+export interface AuditAccessLog {
+  logId: string;
+  auditorId: string;
+  auditorName: string;
+  accessType: "VIEW" | "COMMENT";
+  targetType: "NOTE" | "SCHEDULE" | "NARRATIVE" | "SUPPORT";
+  targetId: string;
+  timestamp: string;
+}
+
+// Statement Line Item (for linking)
+export interface StatementLineItem {
+  lineId: string;
+  statementType: "BALANCE_SHEET" | "INCOME_STATEMENT" | "CASH_FLOW" | "EQUITY";
+  lineLabel: string;
+  lineNumber: string;
+  amount: number;
+  period: string;
+}
+
+// Dashboard Summary
+export interface DisclosureDashboardKPIs {
+  totalNotes: number;
+  draftNotes: number;
+  underReviewNotes: number;
+  approvedNotes: number;
+  publishedNotes: number;
+  totalSchedules: number;
+  totalNarratives: number;
+  pendingReviews: number;
+}
+
+// Zod Schemas for inserts
+export const insertDisclosureNoteSchema = z.object({
+  noteNumber: z.string().min(1, "Note number is required"),
+  noteTitle: z.string().min(1, "Note title is required"),
+  periodId: z.string().min(1, "Period is required"),
+  framework: z.enum(["IFRS", "US_GAAP", "BOTH"]),
+  linkedStatementLines: z.array(z.string()).default([]),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertDisclosureNote = z.infer<typeof insertDisclosureNoteSchema>;
+
+export const insertDisclosureScheduleSchema = z.object({
+  noteId: z.string().min(1, "Note is required"),
+  scheduleTitle: z.string().min(1, "Schedule title is required"),
+  layoutType: z.enum(["ROLLFORWARD", "MOVEMENT_BY_CATEGORY", "TIMING_MATURITY", "GROSS_TO_NET", "COMPOSITION", "RECONCILIATION"]),
+  templateId: z.string().nullable().optional(),
+});
+
+export type InsertDisclosureSchedule = z.infer<typeof insertDisclosureScheduleSchema>;
+
+export const insertNarrativeBlockSchema = z.object({
+  noteId: z.string().min(1, "Note is required"),
+  linkedScheduleIds: z.array(z.string()).default([]),
+  content: z.string().min(1, "Content is required"),
+  owner: z.string().min(1, "Owner is required"),
+});
+
+export type InsertNarrativeBlock = z.infer<typeof insertNarrativeBlockSchema>;
+
+export const insertDisclosureTemplateSchema = z.object({
+  templateName: z.string().min(1, "Template name is required"),
+  layoutType: z.enum(["ROLLFORWARD", "MOVEMENT_BY_CATEGORY", "TIMING_MATURITY", "GROSS_TO_NET", "COMPOSITION", "RECONCILIATION"]),
+  framework: z.enum(["IFRS", "US_GAAP", "BOTH"]),
+});
+
+export type InsertDisclosureTemplate = z.infer<typeof insertDisclosureTemplateSchema>;
+
+export const insertDisclosureReviewSchema = z.object({
+  targetType: z.enum(["NOTE", "SCHEDULE", "NARRATIVE"]),
+  targetId: z.string().min(1),
+  reviewer: z.string().min(1, "Reviewer is required"),
+});
+
+export type InsertDisclosureReview = z.infer<typeof insertDisclosureReviewSchema>;

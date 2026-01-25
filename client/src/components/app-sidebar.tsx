@@ -229,6 +229,7 @@ const productInfo = {
   "close-tasks": { name: "Close Tasks", icon: ListChecks, description: "Task & Control" },
   "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Account Reconciliation" },
   "onecompliance": { name: "One Compliance", icon: Globe, description: "Entity Governance" },
+  "nettool": { name: "NetTool", icon: FileSpreadsheet, description: "FS Disclosures" },
   "policies": { name: "Policies", icon: FileText, description: "Coming Soon" },
   "walkthroughs": { name: "Walkthroughs", icon: ClipboardCheck, description: "Coming Soon" },
   "reports": { name: "Reports", icon: FileText, description: "Coming Soon" },
@@ -610,6 +611,46 @@ export function AppSidebar() {
     </>
   );
 
+  const netToolNav = [
+    { title: "Dashboard", url: "/nettool", icon: LayoutDashboard },
+    { title: "Disclosures", url: "/nettool/disclosures", icon: FileText },
+    { title: "Schedules", url: "/nettool/schedules", icon: FileSpreadsheet },
+    { title: "Narratives", url: "/nettool/narratives", icon: BookOpen },
+    { title: "Review", url: "/nettool/review", icon: ClipboardCheck },
+    { title: "Audit View", url: "/nettool/audit", icon: Users },
+    { title: "Exports", url: "/nettool/exports", icon: FileCheck },
+  ];
+
+  const renderNetTool = () => (
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {netToolNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/nettool" && location.startsWith(item.url));
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-nettool-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+
   const renderCloseTasks = () => (
     <>
       <SidebarGroup>
@@ -673,7 +714,8 @@ export function AppSidebar() {
         {activeProduct === "close-tasks" && renderCloseTasks()}
         {activeProduct === "reconciliations" && renderReconciliations()}
         {activeProduct === "onecompliance" && renderOneCompliance()}
-        {!["schedule-studio", "oneclose", "close-tasks", "reconciliations", "onecompliance"].includes(activeProduct) && renderComingSoon()}
+        {activeProduct === "nettool" && renderNetTool()}
+        {!["schedule-studio", "oneclose", "close-tasks", "reconciliations", "onecompliance", "nettool"].includes(activeProduct) && renderComingSoon()}
         
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
