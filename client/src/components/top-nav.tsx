@@ -20,6 +20,7 @@ import {
   Calculator,
   Shield,
   FileCheck,
+  FileText,
   ClipboardList,
   BarChart3,
   Settings,
@@ -77,6 +78,14 @@ const products: Product[] = [
     icon: Globe,
     href: "/compliance",
     description: "Entity governance & compliance",
+    available: true,
+  },
+  {
+    id: "nettool",
+    name: "NetTool",
+    icon: FileText,
+    href: "/nettool",
+    description: "Financial statement disclosures",
     available: true,
   },
   {
