@@ -2247,3 +2247,97 @@ export interface CrossReference {
   sourceId: string;
   trail: ReferenceTrail[];
 }
+
+// ========================
+// TB Adjustments Workspace Types
+// ========================
+
+export type AdjustmentEntryType = "RJE" | "AJE"; // Reclassification Journal Entry or Adjusting Journal Entry
+
+export interface TBAdjustmentEntry {
+  entryId: string;
+  entryType: AdjustmentEntryType;
+  entryNumber: number; // RJE-1, RJE-2, AJE-1, AJE-2, etc.
+  entryLabel: string; // e.g., "RJE-1" or "AJE-3"
+  description: string;
+  debitAccountId: string | null;
+  creditAccountId: string | null;
+  amount: number;
+  reference: string | null; // supporting document reference
+  preparedBy: string;
+  reviewedBy: string | null;
+  status: "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+  createdAt: string;
+  approvedAt: string | null;
+}
+
+export interface TBAdjustmentColumn {
+  columnId: string;
+  entryType: AdjustmentEntryType;
+  entryNumber: number;
+  columnLabel: string; // "RJE-1", "AJE-2", etc.
+  isVisible: boolean;
+  orderIndex: number;
+}
+
+export interface TBAdjustmentAccountLine {
+  lineId: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  fsCategory: FSCategory | null;
+  footnoteIds: string[];
+  normalBalance: "DEBIT" | "CREDIT";
+  initialBalance: number; // from GL import (DR positive, CR negative)
+  adjustments: Record<string, number>; // columnId -> amount (DR positive, CR negative)
+  totalRJE: number; // sum of all RJE adjustments
+  totalAJE: number; // sum of all AJE adjustments
+  netMovement: number; // totalRJE + totalAJE
+  finalBalance: number; // initialBalance + netMovement
+  orderIndex: number;
+}
+
+export interface TBAdjustmentsWorkspace {
+  workspaceId: string;
+  periodId: string;
+  periodLabel: string;
+  entityName: string;
+  reportingCurrency: string;
+  footnotes: TBFootnote[];
+  rjeColumns: TBAdjustmentColumn[];
+  ajeColumns: TBAdjustmentColumn[];
+  entries: TBAdjustmentEntry[];
+  lines: TBAdjustmentAccountLine[];
+  totalInitialBalance: number;
+  totalFinalBalance: number;
+  isBalanced: boolean;
+  lastUpdated: string;
+  updatedBy: string;
+}
+
+// Final TB View - Read-only comparative view
+export interface FinalTBLine {
+  lineId: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  fsCategory: FSCategory | null;
+  priorYearClosing: number; // from prior period
+  currentYearFinal: number; // looks up from Adjustments Workspace finalBalance
+  variance: number;
+  variancePercent: number | null;
+}
+
+export interface FinalTBView {
+  viewId: string;
+  currentPeriodId: string;
+  currentPeriodLabel: string;
+  priorPeriodId: string;
+  priorPeriodLabel: string;
+  entityName: string;
+  reportingCurrency: string;
+  lines: FinalTBLine[];
+  totalPriorYear: number;
+  totalCurrentYear: number;
+  isBalanced: boolean;
+}
