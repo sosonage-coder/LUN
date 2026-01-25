@@ -167,6 +167,113 @@ export interface Dividend {
 }
 
 // ================================
+// Startup Equity - Funding Rounds
+// ================================
+
+export type FundingRoundType = "PRE_SEED" | "SEED" | "SERIES_A" | "SERIES_B" | "SERIES_C" | "SERIES_D" | "BRIDGE" | "GROWTH";
+export type FundingRoundStatus = "PLANNING" | "OPEN" | "CLOSING" | "CLOSED" | "CANCELLED";
+export type ConvertibleType = "SAFE" | "CONVERTIBLE_NOTE";
+export type ConvertibleStatus = "ACTIVE" | "CONVERTED" | "REPAID" | "CANCELLED";
+export type OptionGrantStatus = "GRANTED" | "VESTING" | "FULLY_VESTED" | "EXERCISED" | "CANCELLED" | "EXPIRED";
+
+export interface FundingRound {
+  id: string;
+  entityId: string;
+  roundType: FundingRoundType;
+  roundName: string;
+  status: FundingRoundStatus;
+  targetAmount: number;
+  raisedAmount: number;
+  currency: string;
+  preMoneyValuation: number;
+  postMoneyValuation: number;
+  pricePerShare: number;
+  shareClass: string;
+  openDate: string;
+  closeDate: string | null;
+  leadInvestor: string | null;
+  boardSeatsOffered: number;
+  proRataRights: boolean;
+  antiDilutionProvision: "NONE" | "BROAD_BASED" | "NARROW_BASED" | "FULL_RATCHET";
+  liquidationPreference: number;
+  participatingPreferred: boolean;
+  notes: string | null;
+}
+
+export interface FundingRoundInvestor {
+  id: string;
+  roundId: string;
+  investorName: string;
+  investorType: "VC" | "ANGEL" | "CORPORATE" | "FAMILY_OFFICE" | "ACCELERATOR" | "FOUNDER";
+  investmentAmount: number;
+  sharesIssued: number;
+  ownershipPercentage: number;
+  boardSeat: boolean;
+  proRataRights: boolean;
+  investmentDate: string;
+  isLead: boolean;
+}
+
+export interface ConvertibleInstrument {
+  id: string;
+  entityId: string;
+  instrumentType: ConvertibleType;
+  investorName: string;
+  principalAmount: number;
+  currency: string;
+  issueDate: string;
+  maturityDate: string | null;
+  valuationCap: number | null;
+  discountRate: number | null;
+  interestRate: number | null;
+  status: ConvertibleStatus;
+  convertedToRoundId: string | null;
+  convertedShares: number | null;
+  convertedDate: string | null;
+  mfnClause: boolean;
+  proRataRights: boolean;
+  notes: string | null;
+}
+
+export interface OptionPool {
+  id: string;
+  entityId: string;
+  poolName: string;
+  authorizedShares: number;
+  issuedShares: number;
+  reservedShares: number;
+  availableShares: number;
+  shareClass: string;
+  createdDate: string;
+  expirationDate: string | null;
+  vestingScheduleDefault: string;
+  exercisePriceDefault: number | null;
+}
+
+export interface OptionGrant {
+  id: string;
+  entityId: string;
+  optionPoolId: string;
+  granteeName: string;
+  granteeRole: string;
+  grantDate: string;
+  sharesGranted: number;
+  exercisePrice: number;
+  vestingStartDate: string;
+  vestingSchedule: "4_YEAR_1_CLIFF" | "4_YEAR_NO_CLIFF" | "3_YEAR_1_CLIFF" | "IMMEDIATE" | "CUSTOM";
+  cliffMonths: number;
+  vestingMonths: number;
+  sharesVested: number;
+  sharesExercised: number;
+  sharesUnvested: number;
+  expirationDate: string;
+  status: OptionGrantStatus;
+  exercisedDate: string | null;
+  terminationDate: string | null;
+  notes: string | null;
+}
+
+// ================================
 // Obligations & Filings
 // ================================
 
@@ -873,6 +980,67 @@ const dividends: Dividend[] = [
 ];
 
 // ================================
+// Startup Equity Sample Data
+// ================================
+
+const fundingRounds: FundingRound[] = [
+  { id: "FR-001", entityId: "ENT-001", roundType: "SEED", roundName: "Seed Round", status: "CLOSED", targetAmount: 2000000, raisedAmount: 2500000, currency: "USD", preMoneyValuation: 8000000, postMoneyValuation: 10500000, pricePerShare: 1.05, shareClass: "Preferred A", openDate: "2022-03-01", closeDate: "2022-05-15", leadInvestor: "Sequoia Capital", boardSeatsOffered: 1, proRataRights: true, antiDilutionProvision: "BROAD_BASED", liquidationPreference: 1, participatingPreferred: false, notes: "Initial institutional round" },
+  { id: "FR-002", entityId: "ENT-001", roundType: "SERIES_A", roundName: "Series A", status: "CLOSED", targetAmount: 10000000, raisedAmount: 12000000, currency: "USD", preMoneyValuation: 40000000, postMoneyValuation: 52000000, pricePerShare: 4.80, shareClass: "Preferred B", openDate: "2023-06-01", closeDate: "2023-08-20", leadInvestor: "Andreessen Horowitz", boardSeatsOffered: 1, proRataRights: true, antiDilutionProvision: "BROAD_BASED", liquidationPreference: 1, participatingPreferred: false, notes: "Growth round for product expansion" },
+  { id: "FR-003", entityId: "ENT-001", roundType: "SERIES_B", roundName: "Series B", status: "CLOSING", targetAmount: 30000000, raisedAmount: 25000000, currency: "USD", preMoneyValuation: 150000000, postMoneyValuation: 180000000, pricePerShare: 15.00, shareClass: "Preferred C", openDate: "2025-09-01", closeDate: null, leadInvestor: "Tiger Global", boardSeatsOffered: 1, proRataRights: true, antiDilutionProvision: "BROAD_BASED", liquidationPreference: 1, participatingPreferred: false, notes: "International expansion round" },
+  { id: "FR-004", entityId: "ENT-007", roundType: "PRE_SEED", roundName: "Pre-Seed", status: "CLOSED", targetAmount: 500000, raisedAmount: 600000, currency: "USD", preMoneyValuation: 2000000, postMoneyValuation: 2600000, pricePerShare: 0.26, shareClass: "Preferred A", openDate: "2024-01-15", closeDate: "2024-03-01", leadInvestor: "Y Combinator", boardSeatsOffered: 0, proRataRights: true, antiDilutionProvision: "NONE", liquidationPreference: 1, participatingPreferred: false, notes: "YC batch W24" },
+  { id: "FR-005", entityId: "ENT-007", roundType: "SEED", roundName: "Seed Round", status: "OPEN", targetAmount: 3000000, raisedAmount: 1800000, currency: "USD", preMoneyValuation: 12000000, postMoneyValuation: 15000000, pricePerShare: 1.50, shareClass: "Preferred B", openDate: "2025-11-01", closeDate: null, leadInvestor: null, boardSeatsOffered: 1, proRataRights: true, antiDilutionProvision: "BROAD_BASED", liquidationPreference: 1, participatingPreferred: false, notes: "Post-YC seed extension" },
+];
+
+const fundingRoundInvestors: FundingRoundInvestor[] = [
+  { id: "FRI-001", roundId: "FR-001", investorName: "Sequoia Capital", investorType: "VC", investmentAmount: 1500000, sharesIssued: 1428571, ownershipPercentage: 14.3, boardSeat: true, proRataRights: true, investmentDate: "2022-05-15", isLead: true },
+  { id: "FRI-002", roundId: "FR-001", investorName: "First Round Capital", investorType: "VC", investmentAmount: 500000, sharesIssued: 476190, ownershipPercentage: 4.8, boardSeat: false, proRataRights: true, investmentDate: "2022-05-15", isLead: false },
+  { id: "FRI-003", roundId: "FR-001", investorName: "Jason Calacanis", investorType: "ANGEL", investmentAmount: 250000, sharesIssued: 238095, ownershipPercentage: 2.4, boardSeat: false, proRataRights: false, investmentDate: "2022-04-20", isLead: false },
+  { id: "FRI-004", roundId: "FR-001", investorName: "Naval Ravikant", investorType: "ANGEL", investmentAmount: 250000, sharesIssued: 238095, ownershipPercentage: 2.4, boardSeat: false, proRataRights: false, investmentDate: "2022-04-25", isLead: false },
+  { id: "FRI-005", roundId: "FR-002", investorName: "Andreessen Horowitz", investorType: "VC", investmentAmount: 8000000, sharesIssued: 1666667, ownershipPercentage: 15.4, boardSeat: true, proRataRights: true, investmentDate: "2023-08-20", isLead: true },
+  { id: "FRI-006", roundId: "FR-002", investorName: "Sequoia Capital", investorType: "VC", investmentAmount: 2000000, sharesIssued: 416667, ownershipPercentage: 3.8, boardSeat: false, proRataRights: true, investmentDate: "2023-08-20", isLead: false },
+  { id: "FRI-007", roundId: "FR-002", investorName: "First Round Capital", investorType: "VC", investmentAmount: 1000000, sharesIssued: 208333, ownershipPercentage: 1.9, boardSeat: false, proRataRights: true, investmentDate: "2023-08-20", isLead: false },
+  { id: "FRI-008", roundId: "FR-002", investorName: "Acme Ventures", investorType: "CORPORATE", investmentAmount: 1000000, sharesIssued: 208333, ownershipPercentage: 1.9, boardSeat: false, proRataRights: false, investmentDate: "2023-08-20", isLead: false },
+  { id: "FRI-009", roundId: "FR-003", investorName: "Tiger Global", investorType: "VC", investmentAmount: 20000000, sharesIssued: 1333333, ownershipPercentage: 11.1, boardSeat: true, proRataRights: true, investmentDate: "2025-12-15", isLead: true },
+  { id: "FRI-010", roundId: "FR-003", investorName: "Coatue Management", investorType: "VC", investmentAmount: 5000000, sharesIssued: 333333, ownershipPercentage: 2.8, boardSeat: false, proRataRights: true, investmentDate: "2025-12-20", isLead: false },
+  { id: "FRI-011", roundId: "FR-004", investorName: "Y Combinator", investorType: "ACCELERATOR", investmentAmount: 500000, sharesIssued: 1923077, ownershipPercentage: 19.2, boardSeat: false, proRataRights: true, investmentDate: "2024-03-01", isLead: true },
+  { id: "FRI-012", roundId: "FR-004", investorName: "Founder (Michael Chen)", investorType: "FOUNDER", investmentAmount: 100000, sharesIssued: 384615, ownershipPercentage: 3.8, boardSeat: false, proRataRights: false, investmentDate: "2024-01-15", isLead: false },
+  { id: "FRI-013", roundId: "FR-005", investorName: "General Catalyst", investorType: "VC", investmentAmount: 1000000, sharesIssued: 666667, ownershipPercentage: 6.7, boardSeat: false, proRataRights: true, investmentDate: "2025-11-15", isLead: false },
+  { id: "FRI-014", roundId: "FR-005", investorName: "Craft Ventures", investorType: "VC", investmentAmount: 500000, sharesIssued: 333333, ownershipPercentage: 3.3, boardSeat: false, proRataRights: true, investmentDate: "2025-12-01", isLead: false },
+  { id: "FRI-015", roundId: "FR-005", investorName: "Sam Altman", investorType: "ANGEL", investmentAmount: 300000, sharesIssued: 200000, ownershipPercentage: 2.0, boardSeat: false, proRataRights: false, investmentDate: "2025-12-10", isLead: false },
+];
+
+const convertibleInstruments: ConvertibleInstrument[] = [
+  { id: "CONV-001", entityId: "ENT-001", instrumentType: "SAFE", investorName: "TechStars", principalAmount: 150000, currency: "USD", issueDate: "2021-09-01", maturityDate: null, valuationCap: 5000000, discountRate: 20, interestRate: null, status: "CONVERTED", convertedToRoundId: "FR-001", convertedShares: 150000, convertedDate: "2022-05-15", mfnClause: true, proRataRights: false, notes: "Accelerator SAFE converted at seed" },
+  { id: "CONV-002", entityId: "ENT-001", instrumentType: "SAFE", investorName: "Marc Benioff", principalAmount: 100000, currency: "USD", issueDate: "2021-11-15", maturityDate: null, valuationCap: 6000000, discountRate: 15, interestRate: null, status: "CONVERTED", convertedToRoundId: "FR-001", convertedShares: 85000, convertedDate: "2022-05-15", mfnClause: false, proRataRights: true, notes: "Angel SAFE with pro-rata rights" },
+  { id: "CONV-003", entityId: "ENT-007", instrumentType: "SAFE", investorName: "Precursor Ventures", principalAmount: 200000, currency: "USD", issueDate: "2023-08-01", maturityDate: null, valuationCap: 8000000, discountRate: 20, interestRate: null, status: "CONVERTED", convertedToRoundId: "FR-004", convertedShares: 100000, convertedDate: "2024-03-01", mfnClause: true, proRataRights: true, notes: "Pre-YC SAFE" },
+  { id: "CONV-004", entityId: "ENT-007", instrumentType: "SAFE", investorName: "K9 Ventures", principalAmount: 150000, currency: "USD", issueDate: "2025-06-15", maturityDate: null, valuationCap: 10000000, discountRate: 20, interestRate: null, status: "ACTIVE", convertedToRoundId: null, convertedShares: null, convertedDate: null, mfnClause: true, proRataRights: true, notes: "Bridge SAFE before seed extension" },
+  { id: "CONV-005", entityId: "ENT-001", instrumentType: "CONVERTIBLE_NOTE", investorName: "Silicon Valley Bank", principalAmount: 500000, currency: "USD", issueDate: "2023-01-15", maturityDate: "2025-01-15", valuationCap: 35000000, discountRate: 20, interestRate: 5, status: "CONVERTED", convertedToRoundId: "FR-002", convertedShares: 130000, convertedDate: "2023-08-20", mfnClause: false, proRataRights: false, notes: "Venture debt note converted at Series A" },
+  { id: "CONV-006", entityId: "ENT-007", instrumentType: "CONVERTIBLE_NOTE", investorName: "Lighter Capital", principalAmount: 250000, currency: "USD", issueDate: "2025-03-01", maturityDate: "2027-03-01", valuationCap: 15000000, discountRate: 15, interestRate: 8, status: "ACTIVE", convertedToRoundId: null, convertedShares: null, convertedDate: null, mfnClause: false, proRataRights: false, notes: "Revenue-based financing note" },
+];
+
+const optionPools: OptionPool[] = [
+  { id: "POOL-001", entityId: "ENT-001", poolName: "2022 Equity Incentive Plan", authorizedShares: 2000000, issuedShares: 1450000, reservedShares: 350000, availableShares: 200000, shareClass: "Common Stock", createdDate: "2022-01-01", expirationDate: "2032-01-01", vestingScheduleDefault: "4 year with 1 year cliff", exercisePriceDefault: null },
+  { id: "POOL-002", entityId: "ENT-001", poolName: "2024 Equity Incentive Plan", authorizedShares: 1500000, issuedShares: 320000, reservedShares: 180000, availableShares: 1000000, shareClass: "Common Stock", createdDate: "2024-01-01", expirationDate: "2034-01-01", vestingScheduleDefault: "4 year with 1 year cliff", exercisePriceDefault: 4.80 },
+  { id: "POOL-003", entityId: "ENT-007", poolName: "2024 Stock Option Plan", authorizedShares: 1000000, issuedShares: 250000, reservedShares: 100000, availableShares: 650000, shareClass: "Common Stock", createdDate: "2024-02-01", expirationDate: "2034-02-01", vestingScheduleDefault: "4 year with 1 year cliff", exercisePriceDefault: 0.10 },
+];
+
+const optionGrants: OptionGrant[] = [
+  { id: "OPT-001", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "Sarah Johnson", granteeRole: "CEO", grantDate: "2022-02-01", sharesGranted: 500000, exercisePrice: 0.10, vestingStartDate: "2022-02-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 500000, sharesExercised: 200000, sharesUnvested: 0, expirationDate: "2032-02-01", status: "FULLY_VESTED", exercisedDate: "2025-06-15", terminationDate: null, notes: "Founder grant" },
+  { id: "OPT-002", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "James Lee", granteeRole: "CTO", grantDate: "2022-02-01", sharesGranted: 400000, exercisePrice: 0.10, vestingStartDate: "2022-02-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 400000, sharesExercised: 100000, sharesUnvested: 0, expirationDate: "2032-02-01", status: "FULLY_VESTED", exercisedDate: "2025-03-01", terminationDate: null, notes: "Founder grant" },
+  { id: "OPT-003", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "Emily Chen", granteeRole: "VP Engineering", grantDate: "2022-09-01", sharesGranted: 150000, exercisePrice: 1.05, vestingStartDate: "2022-09-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 118750, sharesExercised: 0, sharesUnvested: 31250, expirationDate: "2032-09-01", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Post-seed hire" },
+  { id: "OPT-004", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "David Kim", granteeRole: "VP Sales", grantDate: "2023-03-15", sharesGranted: 120000, exercisePrice: 2.50, vestingStartDate: "2023-03-15", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 70000, sharesExercised: 0, sharesUnvested: 50000, expirationDate: "2033-03-15", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Series A hire" },
+  { id: "OPT-005", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "Lisa Wang", granteeRole: "VP Marketing", grantDate: "2023-06-01", sharesGranted: 100000, exercisePrice: 2.50, vestingStartDate: "2023-06-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 52083, sharesExercised: 0, sharesUnvested: 47917, expirationDate: "2033-06-01", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Series A hire" },
+  { id: "OPT-006", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "Alex Rodriguez", granteeRole: "Senior Engineer", grantDate: "2023-01-10", sharesGranted: 40000, exercisePrice: 1.50, vestingStartDate: "2023-01-10", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 25000, sharesExercised: 0, sharesUnvested: 15000, expirationDate: "2033-01-10", status: "VESTING", exercisedDate: null, terminationDate: null, notes: null },
+  { id: "OPT-007", entityId: "ENT-001", optionPoolId: "POOL-001", granteeName: "Maria Garcia", granteeRole: "Product Manager", grantDate: "2023-08-15", sharesGranted: 35000, exercisePrice: 4.80, vestingStartDate: "2023-08-15", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 16042, sharesExercised: 0, sharesUnvested: 18958, expirationDate: "2033-08-15", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Post Series A hire" },
+  { id: "OPT-008", entityId: "ENT-001", optionPoolId: "POOL-002", granteeName: "Chris Thompson", granteeRole: "CFO", grantDate: "2024-03-01", sharesGranted: 200000, exercisePrice: 4.80, vestingStartDate: "2024-03-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 45833, sharesExercised: 0, sharesUnvested: 154167, expirationDate: "2034-03-01", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Executive hire pre-Series B" },
+  { id: "OPT-009", entityId: "ENT-001", optionPoolId: "POOL-002", granteeName: "Rachel Brown", granteeRole: "Head of HR", grantDate: "2024-09-01", sharesGranted: 50000, exercisePrice: 8.00, vestingStartDate: "2024-09-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 0, sharesExercised: 0, sharesUnvested: 50000, expirationDate: "2034-09-01", status: "GRANTED", exercisedDate: null, terminationDate: null, notes: "Pre-cliff" },
+  { id: "OPT-010", entityId: "ENT-001", optionPoolId: "POOL-002", granteeName: "Tom Miller", granteeRole: "Lead Designer", grantDate: "2025-01-15", sharesGranted: 30000, exercisePrice: 10.00, vestingStartDate: "2025-01-15", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 0, sharesExercised: 0, sharesUnvested: 30000, expirationDate: "2035-01-15", status: "GRANTED", exercisedDate: null, terminationDate: null, notes: "Series B prep hire" },
+  { id: "OPT-011", entityId: "ENT-001", optionPoolId: "POOL-002", granteeName: "Kevin White", granteeRole: "Senior Engineer", grantDate: "2024-06-01", sharesGranted: 40000, exercisePrice: 5.50, vestingStartDate: "2024-06-01", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 6667, sharesExercised: 0, sharesUnvested: 33333, expirationDate: "2034-06-01", status: "VESTING", exercisedDate: null, terminationDate: null, notes: null },
+  { id: "OPT-012", entityId: "ENT-007", optionPoolId: "POOL-003", granteeName: "Michael Chen", granteeRole: "Founder/CEO", grantDate: "2024-02-15", sharesGranted: 150000, exercisePrice: 0.01, vestingStartDate: "2024-02-15", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 37500, sharesExercised: 37500, sharesUnvested: 112500, expirationDate: "2034-02-15", status: "VESTING", exercisedDate: "2025-06-01", terminationDate: null, notes: "Founder options" },
+  { id: "OPT-013", entityId: "ENT-007", optionPoolId: "POOL-003", granteeName: "Amy Lin", granteeRole: "Co-Founder/CTO", grantDate: "2024-02-15", sharesGranted: 100000, exercisePrice: 0.01, vestingStartDate: "2024-02-15", vestingSchedule: "4_YEAR_1_CLIFF", cliffMonths: 12, vestingMonths: 48, sharesVested: 25000, sharesExercised: 0, sharesUnvested: 75000, expirationDate: "2034-02-15", status: "VESTING", exercisedDate: null, terminationDate: null, notes: "Co-founder options" },
+];
+
+// ================================
 // Equity Tracker Export Functions
 // ================================
 
@@ -939,5 +1107,88 @@ export function getCapTableSummary(entityId: string) {
     totalIssuedShares: totalIssued,
     availableShares: totalAuthorized - totalIssued,
     utilizationRate: totalAuthorized > 0 ? Math.round((totalIssued / totalAuthorized) * 100) : 0,
+  };
+}
+
+// ================================
+// Startup Equity Export Functions
+// ================================
+
+export function getFundingRounds(entityId?: string): FundingRound[] {
+  if (entityId) {
+    return fundingRounds.filter(fr => fr.entityId === entityId);
+  }
+  return fundingRounds.sort((a, b) => new Date(b.openDate).getTime() - new Date(a.openDate).getTime());
+}
+
+export function getFundingRoundInvestors(roundId?: string): FundingRoundInvestor[] {
+  if (roundId) {
+    return fundingRoundInvestors.filter(fri => fri.roundId === roundId);
+  }
+  return fundingRoundInvestors;
+}
+
+export function getConvertibleInstruments(entityId?: string): ConvertibleInstrument[] {
+  if (entityId) {
+    return convertibleInstruments.filter(ci => ci.entityId === entityId);
+  }
+  return convertibleInstruments.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+}
+
+export function getOptionPools(entityId?: string): OptionPool[] {
+  if (entityId) {
+    return optionPools.filter(op => op.entityId === entityId);
+  }
+  return optionPools;
+}
+
+export function getOptionGrants(entityId?: string, poolId?: string): OptionGrant[] {
+  let grants = optionGrants;
+  if (entityId) {
+    grants = grants.filter(og => og.entityId === entityId);
+  }
+  if (poolId) {
+    grants = grants.filter(og => og.optionPoolId === poolId);
+  }
+  return grants.sort((a, b) => new Date(b.grantDate).getTime() - new Date(a.grantDate).getTime());
+}
+
+export function getStartupEquityMetrics(entityId?: string) {
+  const relevantRounds = entityId ? fundingRounds.filter(fr => fr.entityId === entityId) : fundingRounds;
+  const relevantConvertibles = entityId ? convertibleInstruments.filter(ci => ci.entityId === entityId) : convertibleInstruments;
+  const relevantPools = entityId ? optionPools.filter(op => op.entityId === entityId) : optionPools;
+  const relevantGrants = entityId ? optionGrants.filter(og => og.entityId === entityId) : optionGrants;
+
+  const totalRaised = relevantRounds.filter(fr => fr.status === "CLOSED").reduce((sum, fr) => sum + fr.raisedAmount, 0);
+  const activeRounds = relevantRounds.filter(fr => fr.status === "OPEN" || fr.status === "CLOSING");
+  const latestValuation = relevantRounds.filter(fr => fr.status === "CLOSED").sort((a, b) => new Date(b.closeDate || b.openDate).getTime() - new Date(a.closeDate || a.openDate).getTime())[0]?.postMoneyValuation || 0;
+
+  const activeConvertibles = relevantConvertibles.filter(ci => ci.status === "ACTIVE");
+  const totalConvertiblePrincipal = activeConvertibles.reduce((sum, ci) => sum + ci.principalAmount, 0);
+
+  const totalOptionsAuthorized = relevantPools.reduce((sum, op) => sum + op.authorizedShares, 0);
+  const totalOptionsIssued = relevantPools.reduce((sum, op) => sum + op.issuedShares, 0);
+  const totalOptionsAvailable = relevantPools.reduce((sum, op) => sum + op.availableShares, 0);
+  
+  const totalVestedOptions = relevantGrants.reduce((sum, og) => sum + og.sharesVested, 0);
+  const totalExercisedOptions = relevantGrants.reduce((sum, og) => sum + og.sharesExercised, 0);
+  const totalUnvestedOptions = relevantGrants.reduce((sum, og) => sum + og.sharesUnvested, 0);
+
+  return {
+    totalRaised,
+    activeRoundsCount: activeRounds.length,
+    latestValuation,
+    totalFundingRounds: relevantRounds.length,
+    closedRounds: relevantRounds.filter(fr => fr.status === "CLOSED").length,
+    activeConvertiblesCount: activeConvertibles.length,
+    totalConvertiblePrincipal,
+    totalOptionsAuthorized,
+    totalOptionsIssued,
+    totalOptionsAvailable,
+    optionPoolUtilization: totalOptionsAuthorized > 0 ? Math.round((totalOptionsIssued / totalOptionsAuthorized) * 100) : 0,
+    totalVestedOptions,
+    totalExercisedOptions,
+    totalUnvestedOptions,
+    activeGrantees: new Set(relevantGrants.filter(og => og.status !== "CANCELLED" && og.status !== "EXPIRED").map(og => og.granteeName)).size,
   };
 }

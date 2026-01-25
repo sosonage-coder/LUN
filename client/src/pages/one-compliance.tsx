@@ -56,6 +56,12 @@ import {
   CircleDollarSign,
   Receipt,
   LayoutGrid,
+  Rocket,
+  FileSpreadsheet,
+  Award,
+  Percent,
+  Timer,
+  Wallet,
 } from "lucide-react";
 import {
   getEntities,
@@ -79,6 +85,12 @@ import {
   getEquityEvents,
   getDividends,
   getEquityMetrics,
+  getFundingRounds,
+  getFundingRoundInvestors,
+  getConvertibleInstruments,
+  getOptionPools,
+  getOptionGrants,
+  getStartupEquityMetrics,
   type Entity,
   type Obligation,
   type TimelineItem,
@@ -1071,7 +1083,7 @@ function OrgChart({ entities }: { entities: Entity[] }) {
   );
 }
 
-const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi", "shareholders", "captable", "equity-events", "dividends"];
+const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi", "shareholders", "captable", "equity-events", "dividends", "funding-rounds", "convertibles", "options"];
 
 const sectionToTab: Record<string, string> = {
   "dashboard": "overview",
@@ -1089,6 +1101,9 @@ const sectionToTab: Record<string, string> = {
   "captable": "captable",
   "equity-events": "equity-events",
   "dividends": "dividends",
+  "funding-rounds": "funding-rounds",
+  "convertibles": "convertibles",
+  "options": "options",
 };
 
 const tabToSection: Record<string, string> = {
@@ -1107,6 +1122,9 @@ const tabToSection: Record<string, string> = {
   "captable": "captable",
   "equity-events": "equity-events",
   "dividends": "dividends",
+  "funding-rounds": "funding-rounds",
+  "convertibles": "convertibles",
+  "options": "options",
 };
 
 export default function OneCompliancePage() {
@@ -1154,6 +1172,12 @@ export default function OneCompliancePage() {
   const equityEvents = getEquityEvents(selectedEntity || undefined);
   const dividendsData = getDividends(selectedEntity || undefined);
   const equityMetrics = getEquityMetrics();
+  
+  const fundingRounds = getFundingRounds(selectedEntity || undefined);
+  const convertibles = getConvertibleInstruments(selectedEntity || undefined);
+  const optionPools = getOptionPools(selectedEntity || undefined);
+  const optionGrants = getOptionGrants(selectedEntity || undefined);
+  const startupMetrics = getStartupEquityMetrics(selectedEntity || undefined);
 
   const filteredEntities = selectedEntity 
     ? entities.filter(e => e.id === selectedEntity)
@@ -1253,6 +1277,18 @@ export default function OneCompliancePage() {
               <TabsTrigger value="dividends" data-testid="tab-dividends">
                 <CircleDollarSign className="h-4 w-4 mr-2" />
                 Dividends
+              </TabsTrigger>
+              <TabsTrigger value="funding-rounds" data-testid="tab-funding-rounds">
+                <Rocket className="h-4 w-4 mr-2" />
+                Funding Rounds
+              </TabsTrigger>
+              <TabsTrigger value="convertibles" data-testid="tab-convertibles">
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Convertibles
+              </TabsTrigger>
+              <TabsTrigger value="options" data-testid="tab-options">
+                <Award className="h-4 w-4 mr-2" />
+                Options
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -2006,6 +2042,429 @@ export default function OneCompliancePage() {
                               ) : (
                                 <span className="text-muted-foreground">External</span>
                               )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Funding Rounds Tab */}
+            <TabsContent value="funding-rounds" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Total Raised"
+                  value={formatCurrency(startupMetrics.totalRaised, "USD")}
+                  subtitle={`${startupMetrics.closedRounds} closed rounds`}
+                  icon={Wallet}
+                  variant="success"
+                />
+                <MetricCard
+                  title="Latest Valuation"
+                  value={formatCurrency(startupMetrics.latestValuation, "USD")}
+                  subtitle="Post-money valuation"
+                  icon={TrendingUp}
+                />
+                <MetricCard
+                  title="Active Rounds"
+                  value={startupMetrics.activeRoundsCount}
+                  subtitle="Currently fundraising"
+                  icon={Rocket}
+                  variant={startupMetrics.activeRoundsCount > 0 ? "warning" : "default"}
+                />
+                <MetricCard
+                  title="Total Rounds"
+                  value={startupMetrics.totalFundingRounds}
+                  subtitle="Funding history"
+                  icon={BarChart3}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Rocket className="h-5 w-5" />
+                    Funding Round History
+                  </CardTitle>
+                  <CardDescription>
+                    Track fundraising rounds with valuations, investor participation, and terms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Round</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Target</TableHead>
+                        <TableHead className="text-right">Raised</TableHead>
+                        <TableHead className="text-right">Pre-Money</TableHead>
+                        <TableHead className="text-right">Post-Money</TableHead>
+                        <TableHead>Lead Investor</TableHead>
+                        <TableHead>Close Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fundingRounds.map((round) => {
+                        const entity = entities.find(e => e.id === round.entityId);
+                        const investors = getFundingRoundInvestors(round.id);
+                        return (
+                          <TableRow key={round.id} data-testid={`row-funding-round-${round.id}`}>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{round.roundName}</span>
+                                <Badge variant="outline" className="w-fit mt-1">
+                                  {round.roundType.replace("_", " ")}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>{entity?.name || round.entityId}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  round.status === "CLOSED" ? "default" : 
+                                  round.status === "OPEN" || round.status === "CLOSING" ? "secondary" : 
+                                  "outline"
+                                }
+                              >
+                                {round.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(round.targetAmount, round.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(round.raisedAmount, round.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-muted-foreground">
+                              {formatCurrency(round.preMoneyValuation, round.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(round.postMoneyValuation, round.currency)}
+                            </TableCell>
+                            <TableCell>
+                              {round.leadInvestor ? (
+                                <div className="flex items-center gap-1">
+                                  <Users className="h-3 w-3 text-muted-foreground" />
+                                  <span>{round.leadInvestor}</span>
+                                  {investors.length > 1 && (
+                                    <Badge variant="secondary" className="ml-1">
+                                      +{investors.length - 1}
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">No lead yet</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {round.closeDate ? formatDate(round.closeDate) : "Open"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Convertibles Tab */}
+            <TabsContent value="convertibles" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Active Convertibles"
+                  value={startupMetrics.activeConvertiblesCount}
+                  subtitle="SAFEs & Notes outstanding"
+                  icon={FileSpreadsheet}
+                  variant={startupMetrics.activeConvertiblesCount > 0 ? "warning" : "default"}
+                />
+                <MetricCard
+                  title="Outstanding Principal"
+                  value={formatCurrency(startupMetrics.totalConvertiblePrincipal, "USD")}
+                  subtitle="Total unconverted amount"
+                  icon={DollarSign}
+                />
+                <MetricCard
+                  title="SAFEs"
+                  value={convertibles.filter(c => c.instrumentType === "SAFE").length}
+                  subtitle="Simple agreements"
+                  icon={FileText}
+                />
+                <MetricCard
+                  title="Conv. Notes"
+                  value={convertibles.filter(c => c.instrumentType === "CONVERTIBLE_NOTE").length}
+                  subtitle="With interest accrual"
+                  icon={Receipt}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Convertible Instruments
+                  </CardTitle>
+                  <CardDescription>
+                    SAFEs, convertible notes, and their conversion terms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Investor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Principal</TableHead>
+                        <TableHead className="text-right">Val Cap</TableHead>
+                        <TableHead className="text-right">Discount</TableHead>
+                        <TableHead>Issue Date</TableHead>
+                        <TableHead>Converted</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {convertibles.map((conv) => {
+                        const entity = entities.find(e => e.id === conv.entityId);
+                        return (
+                          <TableRow key={conv.id} data-testid={`row-convertible-${conv.id}`}>
+                            <TableCell>
+                              <Badge variant={conv.instrumentType === "SAFE" ? "default" : "secondary"}>
+                                {conv.instrumentType === "SAFE" ? "SAFE" : "Note"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{entity?.name || conv.entityId}</TableCell>
+                            <TableCell>{conv.investorName}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  conv.status === "CONVERTED" ? "default" : 
+                                  conv.status === "ACTIVE" ? "secondary" : 
+                                  "outline"
+                                }
+                              >
+                                {conv.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(conv.principalAmount, conv.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-muted-foreground">
+                              {conv.valuationCap ? formatCurrency(conv.valuationCap, conv.currency) : "—"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {conv.discountRate ? (
+                                <span className="flex items-center justify-end gap-1">
+                                  <Percent className="h-3 w-3" />
+                                  {conv.discountRate}%
+                                </span>
+                              ) : "—"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDate(conv.issueDate)}
+                            </TableCell>
+                            <TableCell>
+                              {conv.status === "CONVERTED" && conv.convertedDate ? (
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium">
+                                    {conv.convertedShares?.toLocaleString()} shares
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDate(conv.convertedDate)}
+                                  </span>
+                                </div>
+                              ) : conv.instrumentType === "CONVERTIBLE_NOTE" && conv.maturityDate ? (
+                                <span className="text-xs text-muted-foreground">
+                                  Matures: {formatDate(conv.maturityDate)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Options Tab */}
+            <TabsContent value="options" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Pool Authorized"
+                  value={startupMetrics.totalOptionsAuthorized.toLocaleString()}
+                  subtitle={`${startupMetrics.optionPoolUtilization}% utilized`}
+                  icon={Layers}
+                />
+                <MetricCard
+                  title="Options Issued"
+                  value={startupMetrics.totalOptionsIssued.toLocaleString()}
+                  subtitle={`${startupMetrics.totalOptionsAvailable.toLocaleString()} available`}
+                  icon={Award}
+                />
+                <MetricCard
+                  title="Vested"
+                  value={startupMetrics.totalVestedOptions.toLocaleString()}
+                  subtitle={`${startupMetrics.totalExercisedOptions.toLocaleString()} exercised`}
+                  icon={CheckCircle2}
+                  variant="success"
+                />
+                <MetricCard
+                  title="Active Grantees"
+                  value={startupMetrics.activeGrantees}
+                  subtitle="Team members with options"
+                  icon={Users}
+                />
+              </div>
+
+              {/* Option Pools */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layers className="h-5 w-5" />
+                    Option Pools
+                  </CardTitle>
+                  <CardDescription>
+                    Equity incentive plans and pool utilization
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Pool Name</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead className="text-right">Authorized</TableHead>
+                        <TableHead className="text-right">Issued</TableHead>
+                        <TableHead className="text-right">Reserved</TableHead>
+                        <TableHead className="text-right">Available</TableHead>
+                        <TableHead>Utilization</TableHead>
+                        <TableHead>Expiration</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {optionPools.map((pool) => {
+                        const entity = entities.find(e => e.id === pool.entityId);
+                        const utilization = pool.authorizedShares > 0 
+                          ? Math.round((pool.issuedShares / pool.authorizedShares) * 100) 
+                          : 0;
+                        return (
+                          <TableRow key={pool.id} data-testid={`row-option-pool-${pool.id}`}>
+                            <TableCell className="font-medium">{pool.poolName}</TableCell>
+                            <TableCell>{entity?.name || pool.entityId}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {pool.authorizedShares.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {pool.issuedShares.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-muted-foreground">
+                              {pool.reservedShares.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-medium">
+                              {pool.availableShares.toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Progress value={utilization} className="w-16 h-2" />
+                                <span className="text-sm text-muted-foreground">{utilization}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {pool.expirationDate ? formatDate(pool.expirationDate) : "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Option Grants */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Option Grants
+                  </CardTitle>
+                  <CardDescription>
+                    Individual grants with vesting schedules and exercise tracking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Grantee</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Granted</TableHead>
+                        <TableHead className="text-right">Vested</TableHead>
+                        <TableHead className="text-right">Exercised</TableHead>
+                        <TableHead className="text-right">Strike Price</TableHead>
+                        <TableHead>Vesting</TableHead>
+                        <TableHead>Grant Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {optionGrants.map((grant) => {
+                        const vestedPct = grant.sharesGranted > 0 
+                          ? Math.round((grant.sharesVested / grant.sharesGranted) * 100) 
+                          : 0;
+                        return (
+                          <TableRow key={grant.id} data-testid={`row-option-grant-${grant.id}`}>
+                            <TableCell className="font-medium">{grant.granteeName}</TableCell>
+                            <TableCell className="text-muted-foreground">{grant.granteeRole}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  grant.status === "FULLY_VESTED" ? "default" : 
+                                  grant.status === "VESTING" ? "secondary" : 
+                                  grant.status === "EXERCISED" ? "default" :
+                                  "outline"
+                                }
+                              >
+                                {grant.status.replace("_", " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {grant.sharesGranted.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="font-mono">{grant.sharesVested.toLocaleString()}</span>
+                                <span className="text-xs text-muted-foreground">({vestedPct}%)</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {grant.sharesExercised > 0 ? (
+                                <span className="font-medium">
+                                  {grant.sharesExercised.toLocaleString()}
+                                </span>
+                              ) : "—"}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(grant.exercisePrice, "USD")}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Timer className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {grant.vestingSchedule.replace(/_/g, " ").toLowerCase()}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDate(grant.grantDate)}
                             </TableCell>
                           </TableRow>
                         );

@@ -36,6 +36,9 @@ import {
   DollarSign,
   CircleDollarSign,
   Coins,
+  Rocket,
+  FileSpreadsheet,
+  Award,
 } from "lucide-react";
 import {
   Sidebar,
@@ -203,6 +206,12 @@ const equityTrackerNav = [
   { title: "Cap Table", url: "/compliance/captable", icon: Layers },
   { title: "Equity Events", url: "/compliance/equity-events", icon: Coins },
   { title: "Dividends", url: "/compliance/dividends", icon: CircleDollarSign },
+];
+
+const startupEquityNav = [
+  { title: "Funding Rounds", url: "/compliance/funding-rounds", icon: Rocket },
+  { title: "Convertibles", url: "/compliance/convertibles", icon: FileSpreadsheet },
+  { title: "Options", url: "/compliance/options", icon: Award },
 ];
 
 const productInfo = {
@@ -551,6 +560,31 @@ export function AppSidebar() {
                     asChild 
                     isActive={isActive}
                     data-testid={`nav-equity-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      
+      <SidebarGroup>
+        <SidebarGroupLabel>Startup Equity</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {startupEquityNav.map((item) => {
+              const isActive = location === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-startup-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
