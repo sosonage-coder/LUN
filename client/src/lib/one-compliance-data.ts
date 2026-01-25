@@ -17,6 +17,9 @@ export type ChangeType = "FORMATION" | "OFFICER_CHANGE" | "ADDRESS_CHANGE" | "NA
 export type AdvisorType = "LEGAL_COUNSEL" | "TAX_ADVISOR" | "ACCOUNTANT" | "CORPORATE_SECRETARY" | "REGISTERED_AGENT";
 export type ShareClass = "COMMON" | "PREFERRED" | "RESTRICTED" | "OPTIONS";
 export type AuthorityType = "BANKING" | "CONTRACT" | "FILING" | "FINANCIAL" | "OPERATIONAL";
+export type EquityEventType = "ISSUANCE" | "TRANSFER" | "CANCELLATION" | "CAPITAL_CONTRIBUTION" | "RETURN_OF_CAPITAL" | "CONVERSION" | "STOCK_SPLIT";
+export type DividendStatus = "PROPOSED" | "DECLARED" | "APPROVED" | "PAID" | "CANCELLED";
+export type DividendType = "CASH" | "STOCK" | "PROPERTY" | "SPECIAL";
 
 // ================================
 // Entity & Jurisdiction
@@ -78,6 +81,89 @@ export interface Shareholder {
   ownershipPercentage: number;
   votingRights: number;
   acquisitionDate: string;
+}
+
+// ================================
+// Equity Tracker - Share Classes
+// ================================
+
+export interface ShareClassDefinition {
+  id: string;
+  entityId: string;
+  className: string;
+  classCode: ShareClass;
+  authorizedShares: number;
+  issuedShares: number;
+  parValue: number;
+  currency: string;
+  votingRightsPerShare: number;
+  dividendRights: "PARTICIPATING" | "NON_PARTICIPATING" | "PREFERRED";
+  dividendRate: number | null;
+  liquidationPreference: number | null;
+  conversionRatio: number | null;
+  isConvertible: boolean;
+  restrictions: string[];
+  createdDate: string;
+  lastModifiedDate: string;
+}
+
+// ================================
+// Equity Tracker - Equity Events
+// ================================
+
+export interface EquityEvent {
+  id: string;
+  entityId: string;
+  eventType: EquityEventType;
+  eventDate: string;
+  effectiveDate: string;
+  shareClassId: string;
+  shareClassName: string;
+  numberOfShares: number;
+  pricePerShare: number | null;
+  totalValue: number;
+  currency: string;
+  fromParty: string | null;
+  toParty: string;
+  resolutionId: string | null;
+  resolutionDate: string | null;
+  approvalStatus: ApprovalStatus;
+  approvedBy: string | null;
+  approvedDate: string | null;
+  documents: string[];
+  notes: string | null;
+}
+
+// ================================
+// Equity Tracker - Dividends
+// ================================
+
+export interface Dividend {
+  id: string;
+  entityId: string;
+  dividendType: DividendType;
+  status: DividendStatus;
+  declarationDate: string;
+  recordDate: string;
+  paymentDate: string;
+  amountPerShare: number;
+  totalAmount: number;
+  currency: string;
+  shareClassId: string | null;
+  shareClassName: string | null;
+  fiscalYear: string;
+  fiscalPeriod: string;
+  resolutionId: string | null;
+  approvedBy: string | null;
+  approvedDate: string | null;
+  paidDate: string | null;
+  paidBy: string | null;
+  isIntercompany: boolean;
+  recipientEntityId: string | null;
+  witholdingTaxRate: number | null;
+  witholdingTaxAmount: number | null;
+  netAmount: number;
+  notes: string | null;
 }
 
 // ================================
@@ -734,4 +820,124 @@ export function getTimeline(days: number = 90): TimelineItem[] {
   }
   
   return items.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+}
+
+// ================================
+// Equity Tracker Sample Data
+// ================================
+
+const shareholders: Shareholder[] = [
+  { id: "SH-001", entityId: "ENT-001", name: "Acme Founders Trust", shareholderType: "TRUST", shareClass: "COMMON", sharesHeld: 5000000, ownershipPercentage: 50, votingRights: 50, acquisitionDate: "2015-03-15" },
+  { id: "SH-002", entityId: "ENT-001", name: "John Smith", shareholderType: "INDIVIDUAL", shareClass: "COMMON", sharesHeld: 2000000, ownershipPercentage: 20, votingRights: 20, acquisitionDate: "2015-03-15" },
+  { id: "SH-003", entityId: "ENT-001", name: "Venture Partners III LP", shareholderType: "CORPORATE", shareClass: "PREFERRED", sharesHeld: 2000000, ownershipPercentage: 20, votingRights: 20, acquisitionDate: "2018-06-01" },
+  { id: "SH-004", entityId: "ENT-001", name: "Employee Stock Pool", shareholderType: "TRUST", shareClass: "OPTIONS", sharesHeld: 1000000, ownershipPercentage: 10, votingRights: 0, acquisitionDate: "2016-01-01" },
+  { id: "SH-005", entityId: "ENT-002", name: "Acme Corp", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 1000, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2017-08-22" },
+  { id: "SH-006", entityId: "ENT-003", name: "Acme Holdings UK", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 100, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2018-02-10" },
+  { id: "SH-007", entityId: "ENT-004", name: "Acme Holdings UK", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 100, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2019-05-18" },
+  { id: "SH-008", entityId: "ENT-005", name: "Acme Corp", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 1000000, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2019-11-05" },
+  { id: "SH-009", entityId: "ENT-006", name: "Acme Singapore", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 10000, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2020-03-20" },
+  { id: "SH-010", entityId: "ENT-007", name: "Acme Singapore", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 1000, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2020-07-14" },
+  { id: "SH-011", entityId: "ENT-008", name: "Acme Holdings UK", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 25000, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2021-01-12" },
+  { id: "SH-012", entityId: "ENT-009", name: "Acme Singapore", shareholderType: "CORPORATE", shareClass: "COMMON", sharesHeld: 100, ownershipPercentage: 100, votingRights: 100, acquisitionDate: "2021-04-01" },
+];
+
+const shareClasses: ShareClassDefinition[] = [
+  { id: "SC-001", entityId: "ENT-001", className: "Common Stock", classCode: "COMMON", authorizedShares: 20000000, issuedShares: 7000000, parValue: 0.001, currency: "USD", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2015-03-15", lastModifiedDate: "2024-06-01" },
+  { id: "SC-002", entityId: "ENT-001", className: "Series A Preferred", classCode: "PREFERRED", authorizedShares: 5000000, issuedShares: 2000000, parValue: 0.001, currency: "USD", votingRightsPerShare: 1, dividendRights: "PREFERRED", dividendRate: 8, liquidationPreference: 1.5, conversionRatio: 1, isConvertible: true, restrictions: ["Anti-dilution protection", "Board seat rights"], createdDate: "2018-06-01", lastModifiedDate: "2024-06-01" },
+  { id: "SC-003", entityId: "ENT-001", className: "Stock Options Pool", classCode: "OPTIONS", authorizedShares: 2000000, issuedShares: 1000000, parValue: 0.001, currency: "USD", votingRightsPerShare: 0, dividendRights: "NON_PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: 1, isConvertible: true, restrictions: ["Vesting schedule required", "Exercise price at FMV"], createdDate: "2016-01-01", lastModifiedDate: "2025-01-01" },
+  { id: "SC-004", entityId: "ENT-002", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 10000, issuedShares: 1000, parValue: 1, currency: "GBP", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2017-08-22", lastModifiedDate: "2023-08-22" },
+  { id: "SC-005", entityId: "ENT-003", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 1000, issuedShares: 100, parValue: 1, currency: "EUR", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2018-02-10", lastModifiedDate: "2023-02-10" },
+  { id: "SC-006", entityId: "ENT-004", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 1000, issuedShares: 100, parValue: 1, currency: "EUR", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2019-05-18", lastModifiedDate: "2023-05-18" },
+  { id: "SC-007", entityId: "ENT-005", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 10000000, issuedShares: 1000000, parValue: 1, currency: "SGD", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2019-11-05", lastModifiedDate: "2024-11-05" },
+  { id: "SC-008", entityId: "ENT-006", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 100000, issuedShares: 10000, parValue: 1, currency: "HKD", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: [], createdDate: "2020-03-20", lastModifiedDate: "2024-03-20" },
+  { id: "SC-009", entityId: "ENT-008", className: "Ordinary Shares", classCode: "COMMON", authorizedShares: 100000, issuedShares: 25000, parValue: 1, currency: "EUR", votingRightsPerShare: 1, dividendRights: "PARTICIPATING", dividendRate: null, liquidationPreference: null, conversionRatio: null, isConvertible: false, restrictions: ["German commercial code restrictions"], createdDate: "2021-01-12", lastModifiedDate: "2024-01-12" },
+];
+
+const equityEvents: EquityEvent[] = [
+  { id: "EE-001", entityId: "ENT-001", eventType: "ISSUANCE", eventDate: "2015-03-15", effectiveDate: "2015-03-15", shareClassId: "SC-001", shareClassName: "Common Stock", numberOfShares: 5000000, pricePerShare: 0.001, totalValue: 5000, currency: "USD", fromParty: null, toParty: "Acme Founders Trust", resolutionId: "RES-F001", resolutionDate: "2015-03-15", approvalStatus: "APPROVED", approvedBy: "Board of Directors", approvedDate: "2015-03-15", documents: ["Incorporation Documents", "Stock Certificates"], notes: "Founding shares issuance" },
+  { id: "EE-002", entityId: "ENT-001", eventType: "ISSUANCE", eventDate: "2015-03-15", effectiveDate: "2015-03-15", shareClassId: "SC-001", shareClassName: "Common Stock", numberOfShares: 2000000, pricePerShare: 0.001, totalValue: 2000, currency: "USD", fromParty: null, toParty: "John Smith", resolutionId: "RES-F001", resolutionDate: "2015-03-15", approvalStatus: "APPROVED", approvedBy: "Board of Directors", approvedDate: "2015-03-15", documents: ["Stock Certificates"], notes: "Founder shares" },
+  { id: "EE-003", entityId: "ENT-001", eventType: "ISSUANCE", eventDate: "2018-06-01", effectiveDate: "2018-06-01", shareClassId: "SC-002", shareClassName: "Series A Preferred", numberOfShares: 2000000, pricePerShare: 5, totalValue: 10000000, currency: "USD", fromParty: null, toParty: "Venture Partners III LP", resolutionId: "RES-2018-001", resolutionDate: "2018-05-28", approvalStatus: "APPROVED", approvedBy: "Board of Directors", approvedDate: "2018-05-30", documents: ["Series A Term Sheet", "Stock Purchase Agreement", "Investor Rights Agreement"], notes: "Series A financing round" },
+  { id: "EE-004", entityId: "ENT-001", eventType: "ISSUANCE", eventDate: "2016-01-01", effectiveDate: "2016-01-01", shareClassId: "SC-003", shareClassName: "Stock Options Pool", numberOfShares: 1000000, pricePerShare: null, totalValue: 0, currency: "USD", fromParty: null, toParty: "Employee Stock Pool", resolutionId: "RES-2016-001", resolutionDate: "2016-01-01", approvalStatus: "APPROVED", approvedBy: "Board of Directors", approvedDate: "2016-01-01", documents: ["Stock Option Plan", "Board Resolution"], notes: "Employee stock option pool establishment" },
+  { id: "EE-005", entityId: "ENT-002", eventType: "ISSUANCE", eventDate: "2017-08-22", effectiveDate: "2017-08-22", shareClassId: "SC-004", shareClassName: "Ordinary Shares", numberOfShares: 1000, pricePerShare: 1, totalValue: 1000, currency: "GBP", fromParty: null, toParty: "Acme Corp", resolutionId: null, resolutionDate: null, approvalStatus: "APPROVED", approvedBy: "Acme Corp Board", approvedDate: "2017-08-22", documents: ["Certificate of Incorporation", "Share Certificates"], notes: "Incorporation shares" },
+  { id: "EE-006", entityId: "ENT-005", eventType: "CAPITAL_CONTRIBUTION", eventDate: "2022-06-15", effectiveDate: "2022-06-15", shareClassId: "SC-007", shareClassName: "Ordinary Shares", numberOfShares: 0, pricePerShare: null, totalValue: 5000000, currency: "SGD", fromParty: "Acme Corp", toParty: "Acme Singapore", resolutionId: "RES-2022-003", resolutionDate: "2022-06-10", approvalStatus: "APPROVED", approvedBy: "John Smith", approvedDate: "2022-06-12", documents: ["Capital Contribution Agreement", "Bank Transfer Confirmation"], notes: "Capital injection for APAC expansion" },
+  { id: "EE-007", entityId: "ENT-005", eventType: "CAPITAL_CONTRIBUTION", eventDate: "2024-03-01", effectiveDate: "2024-03-01", shareClassId: "SC-007", shareClassName: "Ordinary Shares", numberOfShares: 0, pricePerShare: null, totalValue: 3000000, currency: "SGD", fromParty: "Acme Corp", toParty: "Acme Singapore", resolutionId: "RES-2024-001", resolutionDate: "2024-02-25", approvalStatus: "APPROVED", approvedBy: "Sarah Johnson", approvedDate: "2024-02-28", documents: ["Capital Contribution Agreement", "Board Resolution"], notes: "Additional funding for Japan operations" },
+  { id: "EE-008", entityId: "ENT-008", eventType: "ISSUANCE", eventDate: "2021-01-12", effectiveDate: "2021-01-12", shareClassId: "SC-009", shareClassName: "Ordinary Shares", numberOfShares: 25000, pricePerShare: 1, totalValue: 25000, currency: "EUR", fromParty: null, toParty: "Acme Holdings UK", resolutionId: null, resolutionDate: null, approvalStatus: "APPROVED", approvedBy: "Emma Watson", approvedDate: "2021-01-12", documents: ["Notarial Deed", "Commercial Register Entry"], notes: "GmbH formation" },
+];
+
+const dividends: Dividend[] = [
+  { id: "DIV-001", entityId: "ENT-005", dividendType: "CASH", status: "PAID", declarationDate: "2025-03-15", recordDate: "2025-03-31", paymentDate: "2025-04-15", amountPerShare: 0.50, totalAmount: 500000, currency: "SGD", shareClassId: "SC-007", shareClassName: "Ordinary Shares", fiscalYear: "2024", fiscalPeriod: "FY", resolutionId: "RES-2025-002", approvedBy: "Wei Lin", approvedDate: "2025-03-15", paidDate: "2025-04-15", paidBy: "Treasury", isIntercompany: true, recipientEntityId: "ENT-001", witholdingTaxRate: 0, witholdingTaxAmount: 0, netAmount: 500000, notes: "Annual dividend distribution to parent" },
+  { id: "DIV-002", entityId: "ENT-002", dividendType: "CASH", status: "PAID", declarationDate: "2025-06-01", recordDate: "2025-06-15", paymentDate: "2025-06-30", amountPerShare: 100, totalAmount: 100000, currency: "GBP", shareClassId: "SC-004", shareClassName: "Ordinary Shares", fiscalYear: "2024", fiscalPeriod: "FY", resolutionId: "RES-2025-003", approvedBy: "Emma Watson", approvedDate: "2025-06-01", paidDate: "2025-06-30", paidBy: "Treasury", isIntercompany: true, recipientEntityId: "ENT-001", witholdingTaxRate: 0, witholdingTaxAmount: 0, netAmount: 100000, notes: "UK dividend repatriation" },
+  { id: "DIV-003", entityId: "ENT-003", dividendType: "CASH", status: "APPROVED", declarationDate: "2025-12-15", recordDate: "2025-12-31", paymentDate: "2026-01-31", amountPerShare: 500, totalAmount: 50000, currency: "EUR", shareClassId: "SC-005", shareClassName: "Ordinary Shares", fiscalYear: "2025", fiscalPeriod: "FY", resolutionId: "RES-2025-008", approvedBy: "Siobhan O'Brien", approvedDate: "2025-12-15", paidDate: null, paidBy: null, isIntercompany: true, recipientEntityId: "ENT-002", witholdingTaxRate: 25, witholdingTaxAmount: 12500, netAmount: 37500, notes: "Irish dividend with WHT" },
+  { id: "DIV-004", entityId: "ENT-006", dividendType: "CASH", status: "DECLARED", declarationDate: "2026-01-10", recordDate: "2026-01-31", paymentDate: "2026-02-28", amountPerShare: 10, totalAmount: 100000, currency: "HKD", shareClassId: "SC-008", shareClassName: "Ordinary Shares", fiscalYear: "2025", fiscalPeriod: "FY", resolutionId: "RES-2026-001", approvedBy: "Tony Chan", approvedDate: "2026-01-10", paidDate: null, paidBy: null, isIntercompany: true, recipientEntityId: "ENT-005", witholdingTaxRate: 0, witholdingTaxAmount: 0, netAmount: 100000, notes: "HK dividend to Singapore holding" },
+  { id: "DIV-005", entityId: "ENT-001", dividendType: "CASH", status: "PROPOSED", declarationDate: "2026-02-01", recordDate: "2026-03-15", paymentDate: "2026-03-31", amountPerShare: 0.10, totalAmount: 900000, currency: "USD", shareClassId: "SC-001", shareClassName: "Common Stock", fiscalYear: "2025", fiscalPeriod: "FY", resolutionId: null, approvedBy: null, approvedDate: null, paidDate: null, paidBy: null, isIntercompany: false, recipientEntityId: null, witholdingTaxRate: null, witholdingTaxAmount: null, netAmount: 900000, notes: "Proposed annual dividend pending board approval" },
+];
+
+// ================================
+// Equity Tracker Export Functions
+// ================================
+
+export function getShareholders(entityId?: string): Shareholder[] {
+  if (entityId) {
+    return shareholders.filter(s => s.entityId === entityId);
+  }
+  return shareholders;
+}
+
+export function getShareClasses(entityId?: string): ShareClassDefinition[] {
+  if (entityId) {
+    return shareClasses.filter(sc => sc.entityId === entityId);
+  }
+  return shareClasses;
+}
+
+export function getEquityEvents(entityId?: string): EquityEvent[] {
+  if (entityId) {
+    return equityEvents.filter(e => e.entityId === entityId);
+  }
+  return equityEvents.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+}
+
+export function getDividends(entityId?: string): Dividend[] {
+  if (entityId) {
+    return dividends.filter(d => d.entityId === entityId);
+  }
+  return dividends.sort((a, b) => new Date(b.declarationDate).getTime() - new Date(a.declarationDate).getTime());
+}
+
+export function getEquityMetrics() {
+  const totalAuthorizedShares = shareClasses.reduce((sum, sc) => sum + sc.authorizedShares, 0);
+  const totalIssuedShares = shareClasses.reduce((sum, sc) => sum + sc.issuedShares, 0);
+  const totalDividendsPaid = dividends.filter(d => d.status === "PAID").reduce((sum, d) => sum + d.totalAmount, 0);
+  const pendingDividends = dividends.filter(d => d.status === "DECLARED" || d.status === "APPROVED");
+  const recentEquityEvents = equityEvents.slice(0, 5);
+  
+  return {
+    totalAuthorizedShares,
+    totalIssuedShares,
+    utilizationRate: Math.round((totalIssuedShares / totalAuthorizedShares) * 100),
+    totalShareholders: shareholders.length,
+    totalShareClasses: shareClasses.length,
+    totalDividendsPaid,
+    pendingDividendsCount: pendingDividends.length,
+    pendingDividendsTotal: pendingDividends.reduce((sum, d) => sum + d.totalAmount, 0),
+    recentEquityEvents,
+    entitiesWithEquity: new Set(shareClasses.map(sc => sc.entityId)).size,
+  };
+}
+
+export function getCapTableSummary(entityId: string) {
+  const entityShareClasses = shareClasses.filter(sc => sc.entityId === entityId);
+  const entityShareholders = shareholders.filter(s => s.entityId === entityId);
+  
+  const totalAuthorized = entityShareClasses.reduce((sum, sc) => sum + sc.authorizedShares, 0);
+  const totalIssued = entityShareClasses.reduce((sum, sc) => sum + sc.issuedShares, 0);
+  
+  return {
+    shareClasses: entityShareClasses,
+    shareholders: entityShareholders,
+    totalAuthorizedShares: totalAuthorized,
+    totalIssuedShares: totalIssued,
+    availableShares: totalAuthorized - totalIssued,
+    utilizationRate: totalAuthorized > 0 ? Math.round((totalIssued / totalAuthorized) * 100) : 0,
+  };
 }
