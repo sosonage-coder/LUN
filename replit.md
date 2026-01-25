@@ -101,6 +101,7 @@ The application uses a client-server architecture.
         - Pre-built templates for working papers (Rollforward, Aging, Linear, Custom).
         - Pre-built templates for reconciliations (Cash, Prepaid, Accrual, Fixed Asset, Intercompany).
         - Pre-built templates for close control (Month-End, Quarter-End, Year-End, Consolidation, Audit Prep).
+        - **Template Preview**: Eye icon buttons on all template types to preview before use, showing category, type, layout, framework, column structure with badges, and sample data visualization in a scrollable dialog.
 - **One Compliance (Entity Governance & Compliance System)**:
     - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
     - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.
