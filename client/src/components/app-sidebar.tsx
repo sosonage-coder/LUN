@@ -32,6 +32,10 @@ import {
   Sparkles,
   Activity,
   Target,
+  Layers,
+  DollarSign,
+  CircleDollarSign,
+  Coins,
 } from "lucide-react";
 import {
   Sidebar,
@@ -192,6 +196,13 @@ const oneComplianceNav = [
   { title: "Audit Readiness", url: "/compliance/audit", icon: Shield },
   { title: "AI Insights", url: "/compliance/insights", icon: Sparkles },
   { title: "ROI Metrics", url: "/compliance/roi", icon: Target },
+];
+
+const equityTrackerNav = [
+  { title: "Shareholders", url: "/compliance/shareholders", icon: Users },
+  { title: "Cap Table", url: "/compliance/captable", icon: Layers },
+  { title: "Equity Events", url: "/compliance/equity-events", icon: Coins },
+  { title: "Dividends", url: "/compliance/dividends", icon: CircleDollarSign },
 ];
 
 const productInfo = {
@@ -501,31 +512,58 @@ export function AppSidebar() {
   );
 
   const renderOneCompliance = () => (
-    <SidebarGroup>
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {oneComplianceNav.map((item) => {
-            const isActive = location === item.url || 
-              (item.url !== "/compliance" && location.startsWith(item.url));
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={isActive}
-                  data-testid={`nav-compliance-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  <Link href={item.url}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {oneComplianceNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/compliance" && location.startsWith(item.url));
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-compliance-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      
+      <SidebarGroup>
+        <SidebarGroupLabel>Equity Tracker</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {equityTrackerNav.map((item) => {
+              const isActive = location === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-equity-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
   );
 
   const renderComingSoon = () => (

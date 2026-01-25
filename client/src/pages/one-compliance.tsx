@@ -52,6 +52,10 @@ import {
   PieChart,
   Layers,
   ExternalLink,
+  Coins,
+  CircleDollarSign,
+  Receipt,
+  LayoutGrid,
 } from "lucide-react";
 import {
   getEntities,
@@ -70,6 +74,11 @@ import {
   getSnapshots,
   getOfficers,
   getJurisdictions,
+  getShareholders,
+  getShareClasses,
+  getEquityEvents,
+  getDividends,
+  getEquityMetrics,
   type Entity,
   type Obligation,
   type TimelineItem,
@@ -1062,7 +1071,7 @@ function OrgChart({ entities }: { entities: Entity[] }) {
   );
 }
 
-const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi"];
+const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi", "shareholders", "captable", "equity-events", "dividends"];
 
 const sectionToTab: Record<string, string> = {
   "dashboard": "overview",
@@ -1076,6 +1085,10 @@ const sectionToTab: Record<string, string> = {
   "audit": "audit",
   "insights": "insights",
   "roi": "roi",
+  "shareholders": "shareholders",
+  "captable": "captable",
+  "equity-events": "equity-events",
+  "dividends": "dividends",
 };
 
 const tabToSection: Record<string, string> = {
@@ -1090,6 +1103,10 @@ const tabToSection: Record<string, string> = {
   "audit": "audit",
   "insights": "insights",
   "roi": "roi",
+  "shareholders": "shareholders",
+  "captable": "captable",
+  "equity-events": "equity-events",
+  "dividends": "dividends",
 };
 
 export default function OneCompliancePage() {
@@ -1132,6 +1149,11 @@ export default function OneCompliancePage() {
   const resolutions = getResolutions();
   const signatories = getSignatories();
   const changes = getChanges();
+  const shareholders = getShareholders(selectedEntity || undefined);
+  const shareClasses = getShareClasses(selectedEntity || undefined);
+  const equityEvents = getEquityEvents(selectedEntity || undefined);
+  const dividendsData = getDividends(selectedEntity || undefined);
+  const equityMetrics = getEquityMetrics();
 
   const filteredEntities = selectedEntity 
     ? entities.filter(e => e.id === selectedEntity)
@@ -1214,6 +1236,23 @@ export default function OneCompliancePage() {
               <TabsTrigger value="roi" data-testid="tab-roi">
                 <TrendingUp className="h-4 w-4 mr-2" />
                 ROI
+              </TabsTrigger>
+              <Separator orientation="vertical" className="h-6 mx-2" />
+              <TabsTrigger value="shareholders" data-testid="tab-shareholders">
+                <Users className="h-4 w-4 mr-2" />
+                Shareholders
+              </TabsTrigger>
+              <TabsTrigger value="captable" data-testid="tab-captable">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Cap Table
+              </TabsTrigger>
+              <TabsTrigger value="equity-events" data-testid="tab-equity-events">
+                <Coins className="h-4 w-4 mr-2" />
+                Equity Events
+              </TabsTrigger>
+              <TabsTrigger value="dividends" data-testid="tab-dividends">
+                <CircleDollarSign className="h-4 w-4 mr-2" />
+                Dividends
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1605,6 +1644,376 @@ export default function OneCompliancePage() {
 
             <TabsContent value="roi" className="mt-0">
               <ROIMetricsPanel />
+            </TabsContent>
+
+            {/* Equity Tracker Tabs */}
+            <TabsContent value="shareholders" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Total Shareholders"
+                  value={shareholders.length}
+                  subtitle="Across all share classes"
+                  icon={Users}
+                />
+                <MetricCard
+                  title="Share Classes"
+                  value={shareClasses.length}
+                  subtitle="Defined share types"
+                  icon={Layers}
+                />
+                <MetricCard
+                  title="Total Issued Shares"
+                  value={equityMetrics.totalIssuedShares.toLocaleString()}
+                  subtitle={`${equityMetrics.utilizationRate}% of authorized`}
+                  icon={PieChart}
+                />
+                <MetricCard
+                  title="Entities with Equity"
+                  value={equityMetrics.entitiesWithEquity}
+                  subtitle="With share structure"
+                  icon={Building2}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Shareholder Registry
+                  </CardTitle>
+                  <CardDescription>
+                    Complete list of shareholders across all entities with ownership details
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Shareholder</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Share Class</TableHead>
+                        <TableHead className="text-right">Shares Held</TableHead>
+                        <TableHead className="text-right">Ownership %</TableHead>
+                        <TableHead className="text-right">Voting Rights %</TableHead>
+                        <TableHead>Acquisition Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shareholders.map((sh) => {
+                        const entity = entities.find(e => e.id === sh.entityId);
+                        return (
+                          <TableRow key={sh.id} data-testid={`row-shareholder-${sh.id}`}>
+                            <TableCell className="font-medium">{sh.name}</TableCell>
+                            <TableCell>{entity?.name || sh.entityId}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{sh.shareholderType}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{sh.shareClass}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{sh.sharesHeld.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono">{sh.ownershipPercentage}%</TableCell>
+                            <TableCell className="text-right font-mono">{sh.votingRights}%</TableCell>
+                            <TableCell className="text-muted-foreground">{formatDate(sh.acquisitionDate)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="captable" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Authorized Shares"
+                  value={equityMetrics.totalAuthorizedShares.toLocaleString()}
+                  subtitle="Total authorized across entities"
+                  icon={Target}
+                />
+                <MetricCard
+                  title="Issued Shares"
+                  value={equityMetrics.totalIssuedShares.toLocaleString()}
+                  subtitle={`${equityMetrics.utilizationRate}% utilization`}
+                  icon={PieChart}
+                />
+                <MetricCard
+                  title="Available Shares"
+                  value={(equityMetrics.totalAuthorizedShares - equityMetrics.totalIssuedShares).toLocaleString()}
+                  subtitle="Unissued authorized shares"
+                  icon={Layers}
+                />
+                <MetricCard
+                  title="Share Classes"
+                  value={equityMetrics.totalShareClasses}
+                  subtitle="Distinct share types"
+                  icon={LayoutGrid}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <LayoutGrid className="h-5 w-5" />
+                    Share Class Definitions
+                  </CardTitle>
+                  <CardDescription>
+                    Detailed share class structure with rights, preferences, and restrictions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Class Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Authorized</TableHead>
+                        <TableHead className="text-right">Issued</TableHead>
+                        <TableHead className="text-right">Par Value</TableHead>
+                        <TableHead className="text-right">Voting/Share</TableHead>
+                        <TableHead>Dividend Rights</TableHead>
+                        <TableHead>Convertible</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shareClasses.map((sc) => {
+                        const entity = entities.find(e => e.id === sc.entityId);
+                        const utilization = Math.round((sc.issuedShares / sc.authorizedShares) * 100);
+                        return (
+                          <TableRow key={sc.id} data-testid={`row-shareclass-${sc.id}`}>
+                            <TableCell className="font-medium">{entity?.name || sc.entityId}</TableCell>
+                            <TableCell>{sc.className}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{sc.classCode}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{sc.authorizedShares.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono">{sc.issuedShares.toLocaleString()}</span>
+                                <span className="text-xs text-muted-foreground">{utilization}% used</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(sc.parValue, sc.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{sc.votingRightsPerShare}</TableCell>
+                            <TableCell>
+                              <Badge variant={sc.dividendRights === "PREFERRED" ? "default" : "outline"}>
+                                {sc.dividendRights}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {sc.isConvertible ? (
+                                <Badge variant="default">Yes ({sc.conversionRatio}:1)</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">No</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="equity-events" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Total Events"
+                  value={equityEvents.length}
+                  subtitle="Equity transactions recorded"
+                  icon={Coins}
+                />
+                <MetricCard
+                  title="Issuances"
+                  value={equityEvents.filter(e => e.eventType === "ISSUANCE").length}
+                  subtitle="Share issuance events"
+                  icon={TrendingUp}
+                />
+                <MetricCard
+                  title="Capital Contributions"
+                  value={equityEvents.filter(e => e.eventType === "CAPITAL_CONTRIBUTION").length}
+                  subtitle="Additional capital injected"
+                  icon={DollarSign}
+                />
+                <MetricCard
+                  title="Pending Approvals"
+                  value={equityEvents.filter(e => e.approvalStatus === "PENDING_APPROVAL").length}
+                  subtitle="Awaiting approval"
+                  icon={Clock}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Coins className="h-5 w-5" />
+                    Equity Event History
+                  </CardTitle>
+                  <CardDescription>
+                    Complete audit trail of equity transactions, issuances, transfers, and capital events
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Event Type</TableHead>
+                        <TableHead>Share Class</TableHead>
+                        <TableHead className="text-right">Shares</TableHead>
+                        <TableHead className="text-right">Value</TableHead>
+                        <TableHead>Parties</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {equityEvents.map((event) => {
+                        const entity = entities.find(e => e.id === event.entityId);
+                        return (
+                          <TableRow key={event.id} data-testid={`row-equityevent-${event.id}`}>
+                            <TableCell className="text-muted-foreground">{formatDate(event.eventDate)}</TableCell>
+                            <TableCell className="font-medium">{entity?.name || event.entityId}</TableCell>
+                            <TableCell>
+                              <Badge variant={event.eventType === "ISSUANCE" ? "default" : event.eventType === "CAPITAL_CONTRIBUTION" ? "secondary" : "outline"}>
+                                {event.eventType.replace(/_/g, " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{event.shareClassName}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {event.numberOfShares > 0 ? event.numberOfShares.toLocaleString() : "-"}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(event.totalValue, event.currency)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                {event.fromParty && (
+                                  <span className="text-xs text-muted-foreground">From: {event.fromParty}</span>
+                                )}
+                                <span className="text-xs">To: {event.toParty}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={event.approvalStatus} />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dividends" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                  title="Total Paid"
+                  value={formatCurrency(equityMetrics.totalDividendsPaid, "USD")}
+                  subtitle="Dividends distributed"
+                  icon={CircleDollarSign}
+                  variant="success"
+                />
+                <MetricCard
+                  title="Pending"
+                  value={equityMetrics.pendingDividendsCount}
+                  subtitle={`${formatCurrency(equityMetrics.pendingDividendsTotal, "USD")} awaiting payment`}
+                  icon={Clock}
+                />
+                <MetricCard
+                  title="Intercompany"
+                  value={dividendsData.filter(d => d.isIntercompany).length}
+                  subtitle="Intercompany dividends"
+                  icon={Network}
+                />
+                <MetricCard
+                  title="Proposed"
+                  value={dividendsData.filter(d => d.status === "PROPOSED").length}
+                  subtitle="Awaiting board approval"
+                  icon={FileText}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CircleDollarSign className="h-5 w-5" />
+                    Dividend Register
+                  </CardTitle>
+                  <CardDescription>
+                    Dividend declarations, approvals, and payment tracking with intercompany visibility
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Declaration Date</TableHead>
+                        <TableHead>Payment Date</TableHead>
+                        <TableHead className="text-right">Per Share</TableHead>
+                        <TableHead className="text-right">Total Amount</TableHead>
+                        <TableHead className="text-right">Net Amount</TableHead>
+                        <TableHead>Recipient</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dividendsData.map((div) => {
+                        const entity = entities.find(e => e.id === div.entityId);
+                        const recipient = div.recipientEntityId ? entities.find(e => e.id === div.recipientEntityId) : null;
+                        return (
+                          <TableRow key={div.id} data-testid={`row-dividend-${div.id}`}>
+                            <TableCell className="font-medium">{entity?.name || div.entityId}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{div.dividendType}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={div.status} />
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{formatDate(div.declarationDate)}</TableCell>
+                            <TableCell className="text-muted-foreground">{formatDate(div.paymentDate)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(div.amountPerShare, div.currency)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(div.totalAmount, div.currency)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono">{formatCurrency(div.netAmount, div.currency)}</span>
+                                {div.witholdingTaxRate && (
+                                  <span className="text-xs text-muted-foreground">WHT: {div.witholdingTaxRate}%</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {div.isIntercompany && recipient ? (
+                                <Badge variant="secondary">
+                                  <Network className="h-3 w-3 mr-1" />
+                                  {recipient.name}
+                                </Badge>
+                              ) : div.isIntercompany ? (
+                                <Badge variant="secondary">Intercompany</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">External</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
