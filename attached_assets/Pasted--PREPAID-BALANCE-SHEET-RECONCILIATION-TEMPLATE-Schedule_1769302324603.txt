@@ -1,0 +1,212 @@
+🧱 PREPAID BALANCE SHEET RECONCILIATION TEMPLATE
+
+(Schedule-Anchored, Simple, V1)
+
+0️⃣ Purpose
+
+Provide a clear, low-touch reconciliation of prepaid balances using an approved prepayment schedule as the primary support.
+
+The reconciliation confirms that:
+
+The schedule is valid
+
+The balance rolls forward correctly
+
+The trial balance is supported
+
+It does not recalculate amortization monthly.
+
+1️⃣ Core Design Principle
+
+The schedule does the calculation.
+The reconciliation confirms reliance on the schedule.
+
+Once a schedule is approved, monthly reconciliation requires minimal effort unless new items are added or assumptions change.
+
+2️⃣ Schedule-First Workflow (Mandatory)
+Step 1 — Define Prepayment Parameters
+
+Each prepaid item is defined by:
+
+Description
+
+Vendor / supplier
+
+Expense (P&L) account
+
+Prepaid (BS) account
+
+Start date
+
+End date
+
+Total prepaid amount
+
+Amortization term (months)
+
+Step 2 — Schedule Generation (Pop-Out View)
+
+Based on the parameters:
+
+A prepayment schedule is generated
+
+The schedule opens in a pop-out / dedicated view
+
+The schedule shows:
+
+Total term
+
+Amount amortized to date
+
+Amount remaining
+
+The schedule is treated as supporting evidence
+
+Step 3 — Schedule Review & Approval
+
+Preparer / reviewer explicitly confirms:
+
+“This is the schedule we are relying on for this prepaid.”
+
+Approval locks the schedule as the basis of reconciliation
+
+Any future change requires re-approval
+
+3️⃣ Reconciliation View (Post-Approval)
+
+Once schedules are approved, the reconciliation view is summary-focused.
+
+One Row = One Prepayment
+Field	Description
+Description	Prepayment identifier
+Vendor / Supplier	Traceability
+Expense Account	P&L linkage
+Prepaid Account	Balance sheet linkage
+Start Date	Amortization start
+End Date	Amortization end
+Total Term (Months)	Schedule reference
+Months Amortized	From schedule
+Months Remaining	From schedule
+Amount Amortized to Date	From schedule
+Amount Remaining	Ending prepaid balance
+
+No month-by-month grid is displayed.
+
+4️⃣ Monthly Behavior (Steady State)
+
+On a normal monthly close:
+
+Amortized amount updates automatically
+
+Remaining balance updates automatically
+
+No reconciling items are expected
+
+Reconciliation ties directly to the trial balance
+
+This is intentionally a low-touch reconciliation.
+
+5️⃣ When Manual Action Is Required
+
+Manual action is required only if:
+
+A new prepaid item is added
+
+An existing prepaid is modified
+
+The amortization term changes
+
+The prepaid is terminated early
+
+In these cases:
+
+A new or updated schedule is generated
+
+The schedule must be reviewed and approved again
+
+6️⃣ Evidence & Attachments
+
+The schedule itself is the primary support
+
+Additional attachments may include:
+
+Vendor invoices
+
+Contracts
+
+Evidence is:
+
+Line-level
+
+Locked upon certification
+
+7️⃣ Summary & Tie-Out
+
+At reconciliation level:
+
+Total “Amount Remaining” across all lines
+
+Must equal the prepaid balance in the trial balance
+
+No FX section
+
+No reconciling-item section
+
+This is a direct schedule → BS tie.
+
+8️⃣ Certification Behavior
+
+Reconciliation lifecycle:
+
+Draft → Prepared → Reviewed → Certified → Locked
+
+
+Certification asserts:
+
+Schedules are accurate and approved
+
+The entity is relying on those schedules
+
+The prepaid balance is fully supported
+
+It does not assert:
+
+Posting logic
+
+Expense recognition policy
+
+9️⃣ Explicit Non-Goals (V1)
+
+This template does not:
+
+Display month-by-month amortization
+
+Perform amortization calculations
+
+Handle FX logic
+
+Replace ERP posting
+
+🔒 One-Line Definition
+
+“A schedule-anchored prepayments reconciliation where approved schedules serve as the supporting evidence and balances roll forward automatically unless new items are introduced.”
+
+Why this works
+
+Matches how controllers already manage prepaids
+
+Eliminates unnecessary monthly work
+
+Reads cleanly for auditors
+
+Scales without clutter
+
+If you want next, we can:
+
+Rewrite the Fixed Assets template using the same schedule-anchored pattern
+
+Define a template taxonomy (movement-based vs schedule-anchored)
+
+Design the pop-out schedule UX
+
+Or map how these templates plug into your close tasklists
