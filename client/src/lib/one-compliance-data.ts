@@ -1,0 +1,737 @@
+// One Compliance - Entity Governance Platform Sample Data
+
+// ================================
+// Type Definitions
+// ================================
+
+export type EntityStatus = "ACTIVE" | "DORMANT" | "DISSOLVED" | "PENDING_FORMATION";
+export type JurisdictionRisk = "LOW" | "MEDIUM" | "HIGH";
+export type ObligationType = "STATUTORY" | "TAX" | "REGULATORY" | "GOVERNANCE" | "PAYROLL";
+export type FilingStatus = "FILED" | "PENDING" | "OVERDUE" | "NOT_REQUIRED" | "DRAFT";
+export type ApprovalStatus = "APPROVED" | "PENDING_APPROVAL" | "REJECTED" | "NOT_REQUIRED";
+export type ResolutionStatus = "DRAFT" | "PENDING" | "APPROVED" | "EXECUTED" | "ARCHIVED";
+export type MeetingType = "BOARD" | "SHAREHOLDER" | "COMMITTEE" | "ANNUAL_GENERAL";
+export type PolicyStatus = "ACTIVE" | "DRAFT" | "UNDER_REVIEW" | "ARCHIVED";
+export type RiskSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+export type ChangeType = "FORMATION" | "OFFICER_CHANGE" | "ADDRESS_CHANGE" | "NAME_CHANGE" | "MERGER" | "DISSOLUTION" | "REACTIVATION";
+export type AdvisorType = "LEGAL_COUNSEL" | "TAX_ADVISOR" | "ACCOUNTANT" | "CORPORATE_SECRETARY" | "REGISTERED_AGENT";
+export type ShareClass = "COMMON" | "PREFERRED" | "RESTRICTED" | "OPTIONS";
+export type AuthorityType = "BANKING" | "CONTRACT" | "FILING" | "FINANCIAL" | "OPERATIONAL";
+
+// ================================
+// Entity & Jurisdiction
+// ================================
+
+export interface Jurisdiction {
+  code: string;
+  name: string;
+  country: string;
+  region: string;
+  riskLevel: JurisdictionRisk;
+  filingComplexity: "LOW" | "MEDIUM" | "HIGH";
+  hasElectronicFiling: boolean;
+}
+
+export interface Entity {
+  id: string;
+  name: string;
+  legalName: string;
+  entityType: string;
+  jurisdictionCode: string;
+  status: EntityStatus;
+  incorporationDate: string;
+  fiscalYearEnd: string;
+  registrationNumber: string;
+  taxId: string;
+  registeredAddress: string;
+  operatingAddress: string;
+  parentEntityId: string | null;
+  ownershipPercentage: number | null;
+  reportingCurrency: string;
+  localCurrency: string;
+  healthScore: number;
+  complianceScore: number;
+  lastAuditDate: string | null;
+  registeredAgentId: string | null;
+}
+
+export interface Officer {
+  id: string;
+  entityId: string;
+  name: string;
+  role: string;
+  appointmentDate: string;
+  resignationDate: string | null;
+  email: string;
+  isDirector: boolean;
+  isShareholder: boolean;
+  signatoryLevel: string;
+}
+
+export interface Shareholder {
+  id: string;
+  entityId: string;
+  name: string;
+  shareholderType: "INDIVIDUAL" | "CORPORATE" | "TRUST";
+  shareClass: ShareClass;
+  sharesHeld: number;
+  ownershipPercentage: number;
+  votingRights: number;
+  acquisitionDate: string;
+}
+
+// ================================
+// Obligations & Filings
+// ================================
+
+export interface Obligation {
+  id: string;
+  entityId: string;
+  obligationType: ObligationType;
+  name: string;
+  description: string;
+  authority: string;
+  frequency: "ANNUAL" | "QUARTERLY" | "MONTHLY" | "ONE_TIME" | "EVENT_DRIVEN";
+  dueDate: string;
+  nextDueDate: string;
+  filingStatus: FilingStatus;
+  approvalStatus: ApprovalStatus;
+  requiredForms: string[];
+  requiresSignature: boolean;
+  requiresApproval: boolean;
+  evidenceAttached: boolean;
+  assignedTo: string;
+  lastFiledDate: string | null;
+  lastFiledBy: string | null;
+}
+
+export interface Filing {
+  id: string;
+  obligationId: string;
+  entityId: string;
+  filingDate: string;
+  dueDate: string;
+  status: FilingStatus;
+  confirmationNumber: string | null;
+  filedBy: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  documents: string[];
+  notes: string | null;
+}
+
+// ================================
+// Authority & Delegation
+// ================================
+
+export interface AuthorizedSignatory {
+  id: string;
+  entityId: string;
+  officerId: string;
+  officerName: string;
+  authorityType: AuthorityType;
+  signingLimit: number | null;
+  currency: string;
+  requiresCoSigner: boolean;
+  coSignerRequired: string | null;
+  effectiveDate: string;
+  expiryDate: string | null;
+  isActive: boolean;
+  delegatedBy: string | null;
+  delegationScope: string | null;
+}
+
+// ================================
+// Board & Committee Governance
+// ================================
+
+export interface Meeting {
+  id: string;
+  entityId: string;
+  meetingType: MeetingType;
+  title: string;
+  scheduledDate: string;
+  location: string;
+  quorumRequired: number;
+  attendeesCount: number;
+  isQuorumMet: boolean;
+  minutesApproved: boolean;
+  agendaItems: string[];
+  actionItems: ActionItem[];
+  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+}
+
+export interface ActionItem {
+  id: string;
+  meetingId: string;
+  description: string;
+  assignedTo: string;
+  dueDate: string;
+  status: "OPEN" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE";
+  completedAt: string | null;
+}
+
+export interface Resolution {
+  id: string;
+  entityId: string;
+  title: string;
+  resolutionType: "BOARD" | "SHAREHOLDER" | "WRITTEN_CONSENT";
+  status: ResolutionStatus;
+  proposedDate: string;
+  approvedDate: string | null;
+  executedDate: string | null;
+  proposedBy: string;
+  approvers: string[];
+  votesFor: number;
+  votesAgainst: number;
+  abstentions: number;
+  documentUrl: string | null;
+  relatedMeetingId: string | null;
+}
+
+// ================================
+// Capital & Equity
+// ================================
+
+export interface ShareIssuance {
+  id: string;
+  entityId: string;
+  shareClass: ShareClass;
+  sharesIssued: number;
+  pricePerShare: number;
+  totalValue: number;
+  currency: string;
+  issuanceDate: string;
+  recipientName: string;
+  recipientType: "INDIVIDUAL" | "CORPORATE" | "TRUST";
+  approvalResolutionId: string | null;
+  approvalStatus: ApprovalStatus;
+  vestingSchedule: string | null;
+}
+
+export interface DividendDeclaration {
+  id: string;
+  entityId: string;
+  declarationDate: string;
+  recordDate: string;
+  paymentDate: string;
+  amountPerShare: number;
+  totalAmount: number;
+  currency: string;
+  shareClass: ShareClass;
+  approvalResolutionId: string | null;
+  status: "DECLARED" | "APPROVED" | "PAID" | "CANCELLED";
+}
+
+// ================================
+// Change & Lifecycle
+// ================================
+
+export interface EntityChange {
+  id: string;
+  entityId: string;
+  changeType: ChangeType;
+  description: string;
+  effectiveDate: string;
+  requestedBy: string;
+  requestedAt: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "COMPLETED" | "CANCELLED";
+  oldValue: string | null;
+  newValue: string | null;
+  filingRequired: boolean;
+  filingCompleted: boolean;
+  relatedObligationId: string | null;
+  auditTrail: string[];
+}
+
+// ================================
+// Risk & Issues
+// ================================
+
+export interface ComplianceRisk {
+  id: string;
+  entityId: string | null;
+  jurisdictionCode: string | null;
+  riskType: string;
+  title: string;
+  description: string;
+  severity: RiskSeverity;
+  likelihood: "LIKELY" | "POSSIBLE" | "UNLIKELY";
+  impact: "HIGH" | "MEDIUM" | "LOW";
+  status: "OPEN" | "MITIGATED" | "ACCEPTED" | "CLOSED";
+  mitigationPlan: string | null;
+  owner: string;
+  dueDate: string | null;
+  identifiedDate: string;
+  lastReviewDate: string | null;
+}
+
+export interface RegulatoryCorrespondence {
+  id: string;
+  entityId: string;
+  authority: string;
+  correspondenceType: "NOTICE" | "QUERY" | "WARNING" | "PENALTY" | "INFORMATION_REQUEST";
+  subject: string;
+  receivedDate: string;
+  responseDeadline: string | null;
+  responseStatus: "PENDING" | "RESPONDED" | "ESCALATED" | "RESOLVED";
+  severity: RiskSeverity;
+  assignedTo: string;
+  notes: string | null;
+}
+
+// ================================
+// Policy & Standards
+// ================================
+
+export interface Policy {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  status: PolicyStatus;
+  version: string;
+  effectiveDate: string;
+  reviewDate: string;
+  owner: string;
+  approvedBy: string;
+  applicableEntities: string[];
+  requiresAcknowledgement: boolean;
+  acknowledgementCount: number;
+  totalApplicable: number;
+}
+
+export interface PolicyMapping {
+  id: string;
+  policyId: string;
+  entityId: string;
+  acknowledged: boolean;
+  acknowledgedBy: string | null;
+  acknowledgedAt: string | null;
+  deviation: boolean;
+  deviationReason: string | null;
+  deviationApprovedBy: string | null;
+}
+
+// ================================
+// Third-Party & Advisors
+// ================================
+
+export interface ThirdPartyAdvisor {
+  id: string;
+  name: string;
+  advisorType: AdvisorType;
+  companyName: string;
+  jurisdiction: string;
+  email: string;
+  phone: string;
+  engagementStartDate: string;
+  engagementEndDate: string | null;
+  renewalDate: string | null;
+  annualFee: number;
+  currency: string;
+  status: "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "TERMINATED";
+  assignedEntities: string[];
+  servicesProvided: string[];
+}
+
+// ================================
+// Evidence & Snapshots
+// ================================
+
+export interface PeriodSnapshot {
+  id: string;
+  period: string;
+  snapshotDate: string;
+  entityCount: number;
+  totalObligations: number;
+  filedOnTime: number;
+  filedLate: number;
+  pending: number;
+  overallComplianceScore: number;
+  isLocked: boolean;
+  lockedBy: string | null;
+  lockedAt: string | null;
+}
+
+export interface AuditTrailEntry {
+  id: string;
+  timestamp: string;
+  entityId: string | null;
+  action: string;
+  objectType: string;
+  objectId: string;
+  performedBy: string;
+  oldValue: string | null;
+  newValue: string | null;
+  ipAddress: string;
+}
+
+// ================================
+// Dashboard & Analytics
+// ================================
+
+export interface ComplianceMetrics {
+  healthScore: number;
+  entitiesAtRisk: number;
+  upcomingDeadlines: number;
+  overdueObligations: number;
+  auditReadiness: number;
+  savingsGenerated: number;
+}
+
+export interface JurisdictionHeatmapCell {
+  jurisdictionCode: string;
+  jurisdictionName: string;
+  entityCount: number;
+  healthScore: number;
+  riskLevel: JurisdictionRisk;
+  overdueCount: number;
+  upcomingCount: number;
+}
+
+export interface TimelineItem {
+  id: string;
+  entityId: string;
+  entityName: string;
+  obligationType: ObligationType;
+  title: string;
+  dueDate: string;
+  daysUntilDue: number;
+  status: FilingStatus;
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  assignedTo: string;
+}
+
+export interface AIInsight {
+  id: string;
+  type: "RISK" | "OPPORTUNITY" | "PREDICTION" | "RECOMMENDATION";
+  title: string;
+  description: string;
+  confidence: number;
+  impact: "HIGH" | "MEDIUM" | "LOW";
+  affectedEntities: string[];
+  suggestedAction: string;
+  createdAt: string;
+}
+
+// ================================
+// Sample Data Generator
+// ================================
+
+const jurisdictions: Jurisdiction[] = [
+  { code: "US-DE", name: "Delaware", country: "USA", region: "North America", riskLevel: "LOW", filingComplexity: "LOW", hasElectronicFiling: true },
+  { code: "US-CA", name: "California", country: "USA", region: "North America", riskLevel: "LOW", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "US-NY", name: "New York", country: "USA", region: "North America", riskLevel: "LOW", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "US-TX", name: "Texas", country: "USA", region: "North America", riskLevel: "LOW", filingComplexity: "LOW", hasElectronicFiling: true },
+  { code: "GB", name: "United Kingdom", country: "UK", region: "Europe", riskLevel: "LOW", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "IE", name: "Ireland", country: "Ireland", region: "Europe", riskLevel: "LOW", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "NL", name: "Netherlands", country: "Netherlands", region: "Europe", riskLevel: "LOW", filingComplexity: "HIGH", hasElectronicFiling: true },
+  { code: "DE", name: "Germany", country: "Germany", region: "Europe", riskLevel: "LOW", filingComplexity: "HIGH", hasElectronicFiling: true },
+  { code: "SG", name: "Singapore", country: "Singapore", region: "Asia Pacific", riskLevel: "LOW", filingComplexity: "LOW", hasElectronicFiling: true },
+  { code: "HK", name: "Hong Kong", country: "Hong Kong", region: "Asia Pacific", riskLevel: "MEDIUM", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "AU", name: "Australia", country: "Australia", region: "Asia Pacific", riskLevel: "LOW", filingComplexity: "MEDIUM", hasElectronicFiling: true },
+  { code: "JP", name: "Japan", country: "Japan", region: "Asia Pacific", riskLevel: "LOW", filingComplexity: "HIGH", hasElectronicFiling: true },
+  { code: "KY", name: "Cayman Islands", country: "Cayman Islands", region: "Caribbean", riskLevel: "MEDIUM", filingComplexity: "LOW", hasElectronicFiling: false },
+  { code: "BVI", name: "British Virgin Islands", country: "BVI", region: "Caribbean", riskLevel: "MEDIUM", filingComplexity: "LOW", hasElectronicFiling: false },
+  { code: "LU", name: "Luxembourg", country: "Luxembourg", region: "Europe", riskLevel: "LOW", filingComplexity: "HIGH", hasElectronicFiling: true },
+];
+
+const entities: Entity[] = [
+  { id: "ENT-001", name: "Acme Corp", legalName: "Acme Corporation", entityType: "C-Corporation", jurisdictionCode: "US-DE", status: "ACTIVE", incorporationDate: "2015-03-15", fiscalYearEnd: "12-31", registrationNumber: "5123456", taxId: "12-3456789", registeredAddress: "1209 Orange Street, Wilmington, DE 19801", operatingAddress: "100 Tech Boulevard, San Francisco, CA 94105", parentEntityId: null, ownershipPercentage: null, reportingCurrency: "USD", localCurrency: "USD", healthScore: 94, complianceScore: 96, lastAuditDate: "2025-06-30", registeredAgentId: "RA-001" },
+  { id: "ENT-002", name: "Acme Holdings UK", legalName: "Acme Holdings UK Limited", entityType: "Private Limited", jurisdictionCode: "GB", status: "ACTIVE", incorporationDate: "2017-08-22", fiscalYearEnd: "12-31", registrationNumber: "10123456", taxId: "GB123456789", registeredAddress: "10 Finsbury Square, London EC2A 1AF", operatingAddress: "10 Finsbury Square, London EC2A 1AF", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "GBP", healthScore: 88, complianceScore: 92, lastAuditDate: "2025-06-30", registeredAgentId: "RA-002" },
+  { id: "ENT-003", name: "Acme Ireland", legalName: "Acme Ireland Limited", entityType: "Private Limited", jurisdictionCode: "IE", status: "ACTIVE", incorporationDate: "2018-02-10", fiscalYearEnd: "12-31", registrationNumber: "612345", taxId: "IE1234567A", registeredAddress: "1 Grand Canal Square, Dublin 2", operatingAddress: "1 Grand Canal Square, Dublin 2", parentEntityId: "ENT-002", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "EUR", healthScore: 91, complianceScore: 94, lastAuditDate: "2025-06-30", registeredAgentId: "RA-003" },
+  { id: "ENT-004", name: "Acme Netherlands", legalName: "Acme Netherlands B.V.", entityType: "B.V.", jurisdictionCode: "NL", status: "ACTIVE", incorporationDate: "2019-05-18", fiscalYearEnd: "12-31", registrationNumber: "78901234", taxId: "NL123456789B01", registeredAddress: "Herengracht 500, 1017 CB Amsterdam", operatingAddress: "Herengracht 500, 1017 CB Amsterdam", parentEntityId: "ENT-002", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "EUR", healthScore: 75, complianceScore: 78, lastAuditDate: "2025-03-31", registeredAgentId: "RA-004" },
+  { id: "ENT-005", name: "Acme Singapore", legalName: "Acme Singapore Pte. Ltd.", entityType: "Private Limited", jurisdictionCode: "SG", status: "ACTIVE", incorporationDate: "2019-11-05", fiscalYearEnd: "12-31", registrationNumber: "201912345A", taxId: "201912345A", registeredAddress: "1 Raffles Place, #20-01, Singapore 048616", operatingAddress: "1 Raffles Place, #20-01, Singapore 048616", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "SGD", healthScore: 96, complianceScore: 98, lastAuditDate: "2025-06-30", registeredAgentId: "RA-005" },
+  { id: "ENT-006", name: "Acme Hong Kong", legalName: "Acme Hong Kong Limited", entityType: "Private Limited", jurisdictionCode: "HK", status: "ACTIVE", incorporationDate: "2020-03-20", fiscalYearEnd: "12-31", registrationNumber: "2876543", taxId: "HK2876543", registeredAddress: "28/F, One Pacific Place, 88 Queensway, Hong Kong", operatingAddress: "28/F, One Pacific Place, 88 Queensway, Hong Kong", parentEntityId: "ENT-005", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "HKD", healthScore: 82, complianceScore: 85, lastAuditDate: "2025-06-30", registeredAgentId: "RA-006" },
+  { id: "ENT-007", name: "Acme Australia", legalName: "Acme Australia Pty Ltd", entityType: "Pty Ltd", jurisdictionCode: "AU", status: "ACTIVE", incorporationDate: "2020-07-14", fiscalYearEnd: "06-30", registrationNumber: "123456789", taxId: "12345678901", registeredAddress: "Level 30, 25 Martin Place, Sydney NSW 2000", operatingAddress: "Level 30, 25 Martin Place, Sydney NSW 2000", parentEntityId: "ENT-005", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "AUD", healthScore: 89, complianceScore: 91, lastAuditDate: "2025-06-30", registeredAgentId: "RA-007" },
+  { id: "ENT-008", name: "Acme Germany", legalName: "Acme Deutschland GmbH", entityType: "GmbH", jurisdictionCode: "DE", status: "ACTIVE", incorporationDate: "2021-01-12", fiscalYearEnd: "12-31", registrationNumber: "HRB 12345", taxId: "DE123456789", registeredAddress: "Friedrichstraße 123, 10117 Berlin", operatingAddress: "Friedrichstraße 123, 10117 Berlin", parentEntityId: "ENT-002", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "EUR", healthScore: 68, complianceScore: 72, lastAuditDate: "2025-03-31", registeredAgentId: "RA-008" },
+  { id: "ENT-009", name: "Acme Japan", legalName: "Acme Japan K.K.", entityType: "K.K.", jurisdictionCode: "JP", status: "ACTIVE", incorporationDate: "2021-04-01", fiscalYearEnd: "03-31", registrationNumber: "0100-01-123456", taxId: "JP1234567890123", registeredAddress: "1-1-1 Marunouchi, Chiyoda-ku, Tokyo 100-0005", operatingAddress: "1-1-1 Marunouchi, Chiyoda-ku, Tokyo 100-0005", parentEntityId: "ENT-005", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "JPY", healthScore: 85, complianceScore: 88, lastAuditDate: "2025-03-31", registeredAgentId: "RA-009" },
+  { id: "ENT-010", name: "Acme Cayman", legalName: "Acme Cayman Ltd.", entityType: "Exempt Company", jurisdictionCode: "KY", status: "DORMANT", incorporationDate: "2018-06-30", fiscalYearEnd: "12-31", registrationNumber: "MC-123456", taxId: "N/A", registeredAddress: "PO Box 309, Ugland House, George Town", operatingAddress: "PO Box 309, Ugland House, George Town", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "USD", healthScore: 55, complianceScore: 60, lastAuditDate: "2024-06-30", registeredAgentId: "RA-010" },
+  { id: "ENT-011", name: "Acme California", legalName: "Acme California Inc.", entityType: "Corporation", jurisdictionCode: "US-CA", status: "ACTIVE", incorporationDate: "2022-02-15", fiscalYearEnd: "12-31", registrationNumber: "C4567890", taxId: "45-6789012", registeredAddress: "100 Tech Boulevard, San Francisco, CA 94105", operatingAddress: "100 Tech Boulevard, San Francisco, CA 94105", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "USD", healthScore: 92, complianceScore: 95, lastAuditDate: "2025-06-30", registeredAgentId: "RA-011" },
+  { id: "ENT-012", name: "Acme Texas", legalName: "Acme Texas LLC", entityType: "LLC", jurisdictionCode: "US-TX", status: "ACTIVE", incorporationDate: "2022-08-01", fiscalYearEnd: "12-31", registrationNumber: "0803456789", taxId: "56-7890123", registeredAddress: "500 Main Street, Suite 200, Houston, TX 77002", operatingAddress: "500 Main Street, Suite 200, Houston, TX 77002", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "USD", healthScore: 90, complianceScore: 93, lastAuditDate: "2025-06-30", registeredAgentId: "RA-012" },
+  { id: "ENT-013", name: "Acme Luxembourg", legalName: "Acme Luxembourg S.à r.l.", entityType: "S.à r.l.", jurisdictionCode: "LU", status: "ACTIVE", incorporationDate: "2020-09-25", fiscalYearEnd: "12-31", registrationNumber: "B123456", taxId: "LU12345678", registeredAddress: "2 Boulevard Royal, L-2449 Luxembourg", operatingAddress: "2 Boulevard Royal, L-2449 Luxembourg", parentEntityId: "ENT-002", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "EUR", healthScore: 78, complianceScore: 81, lastAuditDate: "2025-03-31", registeredAgentId: "RA-013" },
+  { id: "ENT-014", name: "Acme BVI", legalName: "Acme BVI Ltd.", entityType: "BC", jurisdictionCode: "BVI", status: "DORMANT", incorporationDate: "2017-12-01", fiscalYearEnd: "12-31", registrationNumber: "1876543", taxId: "N/A", registeredAddress: "Road Town, Tortola, British Virgin Islands", operatingAddress: "Road Town, Tortola, British Virgin Islands", parentEntityId: "ENT-001", ownershipPercentage: 100, reportingCurrency: "USD", localCurrency: "USD", healthScore: 50, complianceScore: 55, lastAuditDate: "2024-06-30", registeredAgentId: "RA-014" },
+];
+
+const officers: Officer[] = [
+  { id: "OFF-001", entityId: "ENT-001", name: "John Smith", role: "CEO & President", appointmentDate: "2015-03-15", resignationDate: null, email: "john.smith@acme.com", isDirector: true, isShareholder: true, signatoryLevel: "A" },
+  { id: "OFF-002", entityId: "ENT-001", name: "Sarah Johnson", role: "CFO", appointmentDate: "2016-06-01", resignationDate: null, email: "sarah.johnson@acme.com", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-003", entityId: "ENT-001", name: "Michael Chen", role: "General Counsel", appointmentDate: "2018-01-15", resignationDate: null, email: "michael.chen@acme.com", isDirector: false, isShareholder: false, signatoryLevel: "B" },
+  { id: "OFF-004", entityId: "ENT-002", name: "Emma Watson", role: "Director", appointmentDate: "2017-08-22", resignationDate: null, email: "emma.watson@acme.co.uk", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-005", entityId: "ENT-002", name: "James Wilson", role: "Company Secretary", appointmentDate: "2017-09-01", resignationDate: null, email: "james.wilson@acme.co.uk", isDirector: false, isShareholder: false, signatoryLevel: "B" },
+  { id: "OFF-006", entityId: "ENT-003", name: "Siobhan O'Brien", role: "Director", appointmentDate: "2018-02-10", resignationDate: null, email: "siobhan.obrien@acme.ie", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-007", entityId: "ENT-005", name: "Wei Lin", role: "Managing Director", appointmentDate: "2019-11-05", resignationDate: null, email: "wei.lin@acme.sg", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-008", entityId: "ENT-006", name: "Tony Chan", role: "Director", appointmentDate: "2020-03-20", resignationDate: null, email: "tony.chan@acme.hk", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-009", entityId: "ENT-008", name: "Hans Mueller", role: "Geschäftsführer", appointmentDate: "2021-01-12", resignationDate: null, email: "hans.mueller@acme.de", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+  { id: "OFF-010", entityId: "ENT-009", name: "Takeshi Yamamoto", role: "Representative Director", appointmentDate: "2021-04-01", resignationDate: null, email: "takeshi.yamamoto@acme.jp", isDirector: true, isShareholder: false, signatoryLevel: "A" },
+];
+
+const obligations: Obligation[] = [
+  { id: "OBL-001", entityId: "ENT-001", obligationType: "STATUTORY", name: "Delaware Annual Franchise Tax", description: "Annual franchise tax filing with Delaware Division of Corporations", authority: "Delaware Division of Corporations", frequency: "ANNUAL", dueDate: "2026-03-01", nextDueDate: "2026-03-01", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["Annual Report"], requiresSignature: false, requiresApproval: false, evidenceAttached: false, assignedTo: "Sarah Johnson", lastFiledDate: "2025-03-01", lastFiledBy: "Sarah Johnson" },
+  { id: "OBL-002", entityId: "ENT-001", obligationType: "TAX", name: "Federal Corporate Tax Return", description: "Form 1120 - U.S. Corporation Income Tax Return", authority: "IRS", frequency: "ANNUAL", dueDate: "2026-04-15", nextDueDate: "2026-04-15", filingStatus: "PENDING", approvalStatus: "PENDING_APPROVAL", requiredForms: ["Form 1120", "Schedule K-1"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "Sarah Johnson", lastFiledDate: "2025-04-15", lastFiledBy: "Sarah Johnson" },
+  { id: "OBL-003", entityId: "ENT-002", obligationType: "STATUTORY", name: "Companies House Annual Return", description: "Annual confirmation statement filing", authority: "Companies House", frequency: "ANNUAL", dueDate: "2026-02-22", nextDueDate: "2026-02-22", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["CS01"], requiresSignature: false, requiresApproval: false, evidenceAttached: false, assignedTo: "Emma Watson", lastFiledDate: "2025-02-22", lastFiledBy: "James Wilson" },
+  { id: "OBL-004", entityId: "ENT-002", obligationType: "TAX", name: "UK Corporation Tax Return", description: "CT600 Corporation Tax Return", authority: "HMRC", frequency: "ANNUAL", dueDate: "2026-12-31", nextDueDate: "2026-12-31", filingStatus: "PENDING", approvalStatus: "PENDING_APPROVAL", requiredForms: ["CT600"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "Emma Watson", lastFiledDate: "2025-12-31", lastFiledBy: "Emma Watson" },
+  { id: "OBL-005", entityId: "ENT-003", obligationType: "STATUTORY", name: "CRO Annual Return", description: "Annual return filing with Companies Registration Office", authority: "CRO Ireland", frequency: "ANNUAL", dueDate: "2026-02-10", nextDueDate: "2026-02-10", filingStatus: "OVERDUE", approvalStatus: "NOT_REQUIRED", requiredForms: ["B1"], requiresSignature: false, requiresApproval: false, evidenceAttached: false, assignedTo: "Siobhan O'Brien", lastFiledDate: "2025-02-10", lastFiledBy: "Siobhan O'Brien" },
+  { id: "OBL-006", entityId: "ENT-004", obligationType: "STATUTORY", name: "KvK Annual Filing", description: "Chamber of Commerce annual registration update", authority: "Kamer van Koophandel", frequency: "ANNUAL", dueDate: "2026-05-18", nextDueDate: "2026-05-18", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["Annual Accounts"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "External Advisor", lastFiledDate: "2025-05-18", lastFiledBy: "External Advisor" },
+  { id: "OBL-007", entityId: "ENT-005", obligationType: "STATUTORY", name: "ACRA Annual Return", description: "Annual return filing with ACRA Singapore", authority: "ACRA", frequency: "ANNUAL", dueDate: "2026-02-28", nextDueDate: "2026-02-28", filingStatus: "FILED", approvalStatus: "APPROVED", requiredForms: ["Annual Return"], requiresSignature: false, requiresApproval: false, evidenceAttached: true, assignedTo: "Wei Lin", lastFiledDate: "2026-01-15", lastFiledBy: "Wei Lin" },
+  { id: "OBL-008", entityId: "ENT-006", obligationType: "STATUTORY", name: "Annual Return - Hong Kong", description: "Companies Registry annual return", authority: "Companies Registry HK", frequency: "ANNUAL", dueDate: "2026-04-20", nextDueDate: "2026-04-20", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["NAR1"], requiresSignature: false, requiresApproval: false, evidenceAttached: false, assignedTo: "Tony Chan", lastFiledDate: "2025-04-20", lastFiledBy: "Tony Chan" },
+  { id: "OBL-009", entityId: "ENT-007", obligationType: "STATUTORY", name: "ASIC Annual Statement", description: "Annual company statement to ASIC", authority: "ASIC", frequency: "ANNUAL", dueDate: "2026-08-14", nextDueDate: "2026-08-14", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["Form 484"], requiresSignature: false, requiresApproval: false, evidenceAttached: false, assignedTo: "External Advisor", lastFiledDate: "2025-08-14", lastFiledBy: "External Advisor" },
+  { id: "OBL-010", entityId: "ENT-008", obligationType: "STATUTORY", name: "Handelsregister Annual Filing", description: "Commercial register update", authority: "Amtsgericht Berlin", frequency: "ANNUAL", dueDate: "2026-01-12", nextDueDate: "2026-01-12", filingStatus: "OVERDUE", approvalStatus: "PENDING_APPROVAL", requiredForms: ["Jahresabschluss"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "Hans Mueller", lastFiledDate: "2025-01-12", lastFiledBy: "Hans Mueller" },
+  { id: "OBL-011", entityId: "ENT-001", obligationType: "GOVERNANCE", name: "Annual Board Meeting", description: "Required annual meeting of the Board of Directors", authority: "Internal", frequency: "ANNUAL", dueDate: "2026-03-15", nextDueDate: "2026-03-15", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["Board Minutes", "Resolutions"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "Michael Chen", lastFiledDate: "2025-03-15", lastFiledBy: "Michael Chen" },
+  { id: "OBL-012", entityId: "ENT-001", obligationType: "GOVERNANCE", name: "Annual Shareholder Meeting", description: "Required annual general meeting of shareholders", authority: "Internal", frequency: "ANNUAL", dueDate: "2026-05-15", nextDueDate: "2026-05-15", filingStatus: "PENDING", approvalStatus: "NOT_REQUIRED", requiredForms: ["AGM Minutes", "Proxy Statements"], requiresSignature: true, requiresApproval: true, evidenceAttached: false, assignedTo: "Michael Chen", lastFiledDate: "2025-05-15", lastFiledBy: "Michael Chen" },
+];
+
+const policies: Policy[] = [
+  { id: "POL-001", name: "Delegation of Authority", category: "Corporate Governance", description: "Defines signing authority thresholds and approval requirements for contracts, banking, and filings", status: "ACTIVE", version: "3.0", effectiveDate: "2025-01-01", reviewDate: "2026-01-01", owner: "Michael Chen", approvedBy: "John Smith", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009"], requiresAcknowledgement: true, acknowledgementCount: 12, totalApplicable: 14 },
+  { id: "POL-002", name: "Related Party Transactions", category: "Corporate Governance", description: "Guidelines for identifying, approving, and documenting related party transactions", status: "ACTIVE", version: "2.1", effectiveDate: "2024-07-01", reviewDate: "2025-07-01", owner: "Sarah Johnson", approvedBy: "John Smith", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-010", "ENT-011", "ENT-012", "ENT-013", "ENT-014"], requiresAcknowledgement: true, acknowledgementCount: 14, totalApplicable: 14 },
+  { id: "POL-003", name: "Record Retention Policy", category: "Compliance", description: "Defines retention periods for corporate records, filings, and governance documents", status: "ACTIVE", version: "1.5", effectiveDate: "2024-01-01", reviewDate: "2026-01-01", owner: "Michael Chen", approvedBy: "Sarah Johnson", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-010", "ENT-011", "ENT-012", "ENT-013", "ENT-014"], requiresAcknowledgement: false, acknowledgementCount: 0, totalApplicable: 14 },
+  { id: "POL-004", name: "Anti-Bribery and Corruption", category: "Risk & Ethics", description: "Zero tolerance policy for bribery and corrupt practices across all jurisdictions", status: "ACTIVE", version: "2.0", effectiveDate: "2024-06-01", reviewDate: "2025-06-01", owner: "Michael Chen", approvedBy: "John Smith", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-010", "ENT-011", "ENT-012", "ENT-013", "ENT-014"], requiresAcknowledgement: true, acknowledgementCount: 10, totalApplicable: 14 },
+  { id: "POL-005", name: "Intercompany Agreement Governance", category: "Intercompany", description: "Framework for creating, approving, and maintaining intercompany agreements", status: "ACTIVE", version: "1.2", effectiveDate: "2024-09-01", reviewDate: "2025-09-01", owner: "Sarah Johnson", approvedBy: "Michael Chen", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-013"], requiresAcknowledgement: true, acknowledgementCount: 8, totalApplicable: 10 },
+  { id: "POL-006", name: "Dividend Distribution Policy", category: "Capital Governance", description: "Guidelines for declaring and distributing dividends", status: "ACTIVE", version: "1.0", effectiveDate: "2025-01-01", reviewDate: "2026-01-01", owner: "Sarah Johnson", approvedBy: "John Smith", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005"], requiresAcknowledgement: true, acknowledgementCount: 4, totalApplicable: 5 },
+  { id: "POL-007", name: "Whistleblower Policy", category: "Risk & Ethics", description: "Procedures for reporting suspected misconduct or violations", status: "ACTIVE", version: "1.3", effectiveDate: "2024-03-01", reviewDate: "2025-03-01", owner: "Michael Chen", approvedBy: "John Smith", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-010", "ENT-011", "ENT-012", "ENT-013", "ENT-014"], requiresAcknowledgement: true, acknowledgementCount: 11, totalApplicable: 14 },
+  { id: "POL-008", name: "Statutory Filing Policy", category: "Compliance", description: "Standards for timely and accurate statutory filings across jurisdictions", status: "ACTIVE", version: "2.0", effectiveDate: "2025-01-01", reviewDate: "2026-01-01", owner: "External Advisor", approvedBy: "Michael Chen", applicableEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-010", "ENT-011", "ENT-012", "ENT-013", "ENT-014"], requiresAcknowledgement: false, acknowledgementCount: 0, totalApplicable: 14 },
+];
+
+const advisors: ThirdPartyAdvisor[] = [
+  { id: "ADV-001", name: "Baker McKenzie", advisorType: "LEGAL_COUNSEL", companyName: "Baker McKenzie LLP", jurisdiction: "US-DE", email: "acme@bakermckenzie.com", phone: "+1-202-555-0100", engagementStartDate: "2015-03-15", engagementEndDate: null, renewalDate: "2026-03-15", annualFee: 250000, currency: "USD", status: "ACTIVE", assignedEntities: ["ENT-001", "ENT-011", "ENT-012"], servicesProvided: ["Corporate Law", "M&A", "Securities"] },
+  { id: "ADV-002", name: "Deloitte", advisorType: "ACCOUNTANT", companyName: "Deloitte LLP", jurisdiction: "US-DE", email: "acme@deloitte.com", phone: "+1-212-555-0200", engagementStartDate: "2016-01-01", engagementEndDate: null, renewalDate: "2026-01-01", annualFee: 500000, currency: "USD", status: "ACTIVE", assignedEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-004", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009", "ENT-011", "ENT-012", "ENT-013"], servicesProvided: ["Audit", "Tax", "Advisory"] },
+  { id: "ADV-003", name: "Ernst & Young", advisorType: "TAX_ADVISOR", companyName: "Ernst & Young LLP", jurisdiction: "GB", email: "acme@ey.com", phone: "+44-20-555-0300", engagementStartDate: "2017-08-22", engagementEndDate: null, renewalDate: "2026-08-22", annualFee: 180000, currency: "GBP", status: "ACTIVE", assignedEntities: ["ENT-002", "ENT-003", "ENT-004", "ENT-008", "ENT-013"], servicesProvided: ["Tax Compliance", "Transfer Pricing", "Tax Advisory"] },
+  { id: "ADV-004", name: "Corporation Service Company", advisorType: "REGISTERED_AGENT", companyName: "CSC Global", jurisdiction: "US-DE", email: "acme@cscglobal.com", phone: "+1-302-555-0400", engagementStartDate: "2015-03-15", engagementEndDate: null, renewalDate: "2026-03-15", annualFee: 5000, currency: "USD", status: "ACTIVE", assignedEntities: ["ENT-001", "ENT-010", "ENT-011", "ENT-012", "ENT-014"], servicesProvided: ["Registered Agent", "Document Filing", "Compliance Reminders"] },
+  { id: "ADV-005", name: "Vistra", advisorType: "CORPORATE_SECRETARY", companyName: "Vistra Corporate Services", jurisdiction: "SG", email: "acme@vistra.com", phone: "+65-6555-0500", engagementStartDate: "2019-11-05", engagementEndDate: null, renewalDate: "2026-11-05", annualFee: 25000, currency: "SGD", status: "ACTIVE", assignedEntities: ["ENT-005", "ENT-006", "ENT-007", "ENT-009"], servicesProvided: ["Corporate Secretarial", "Registered Office", "Annual Filings"] },
+  { id: "ADV-006", name: "TMF Group", advisorType: "CORPORATE_SECRETARY", companyName: "TMF Group", jurisdiction: "NL", email: "acme@tmf-group.com", phone: "+31-20-555-0600", engagementStartDate: "2019-05-18", engagementEndDate: null, renewalDate: "2026-05-18", annualFee: 35000, currency: "EUR", status: "EXPIRING_SOON", assignedEntities: ["ENT-004", "ENT-008", "ENT-013"], servicesProvided: ["Corporate Secretarial", "Accounting", "Payroll"] },
+];
+
+const risks: ComplianceRisk[] = [
+  { id: "RISK-001", entityId: "ENT-008", jurisdictionCode: "DE", riskType: "Filing Delay", title: "Overdue Annual Filing - Germany", description: "Handelsregister annual filing is overdue by 13 days. Potential late fees and regulatory scrutiny.", severity: "HIGH", likelihood: "LIKELY", impact: "MEDIUM", status: "OPEN", mitigationPlan: "Expedite filing with external advisor. Target completion within 5 business days.", owner: "Hans Mueller", dueDate: "2026-01-31", identifiedDate: "2026-01-13", lastReviewDate: "2026-01-20" },
+  { id: "RISK-002", entityId: "ENT-003", jurisdictionCode: "IE", riskType: "Compliance Gap", title: "CRO Annual Return Overdue", description: "Irish annual return filing deadline missed. Entity at risk of strike-off if not resolved.", severity: "CRITICAL", likelihood: "LIKELY", impact: "HIGH", status: "OPEN", mitigationPlan: "Immediate filing required. Late filing fee applies. Confirm with CRO re: restoration timeline.", owner: "Siobhan O'Brien", dueDate: "2026-01-28", identifiedDate: "2026-01-11", lastReviewDate: "2026-01-20" },
+  { id: "RISK-003", entityId: "ENT-010", jurisdictionCode: "KY", riskType: "Dormancy Risk", title: "Dormant Entity Review Required", description: "Acme Cayman has been dormant for 18 months. Consider dissolution or reactivation.", severity: "MEDIUM", likelihood: "POSSIBLE", impact: "LOW", status: "OPEN", mitigationPlan: "Schedule board review to determine future of entity. If no business purpose, initiate dissolution.", owner: "Michael Chen", dueDate: "2026-03-31", identifiedDate: "2025-12-01", lastReviewDate: "2026-01-15" },
+  { id: "RISK-004", entityId: "ENT-014", jurisdictionCode: "BVI", riskType: "Dormancy Risk", title: "BVI Entity - Consider Dissolution", description: "Acme BVI has no active operations. Maintaining costs without business purpose.", severity: "LOW", likelihood: "POSSIBLE", impact: "LOW", status: "ACCEPTED", mitigationPlan: "Accepted as holding structure. Annual review scheduled.", owner: "Michael Chen", dueDate: "2026-06-30", identifiedDate: "2025-06-01", lastReviewDate: "2026-01-15" },
+  { id: "RISK-005", entityId: null, jurisdictionCode: "DE", riskType: "Regulatory Change", title: "German Supply Chain Due Diligence Act", description: "New requirements for supply chain compliance reporting effective 2026. Acme Germany needs implementation plan.", severity: "HIGH", likelihood: "LIKELY", impact: "HIGH", status: "OPEN", mitigationPlan: "Engage external counsel for gap analysis. Develop implementation roadmap by Q1 2026.", owner: "Hans Mueller", dueDate: "2026-03-31", identifiedDate: "2025-11-01", lastReviewDate: "2026-01-10" },
+  { id: "RISK-006", entityId: "ENT-004", jurisdictionCode: "NL", riskType: "Advisor Expiry", title: "TMF Engagement Expiring", description: "Corporate secretary engagement with TMF Group expiring in Q2. Need to renew or transition.", severity: "MEDIUM", likelihood: "LIKELY", impact: "MEDIUM", status: "OPEN", mitigationPlan: "Initiate renewal discussions. Evaluate alternative providers if fee increase proposed.", owner: "Sarah Johnson", dueDate: "2026-04-01", identifiedDate: "2026-01-05", lastReviewDate: "2026-01-20" },
+];
+
+const aiInsights: AIInsight[] = [
+  { id: "AI-001", type: "RISK", title: "Filing Pattern Anomaly Detected", description: "Germany and Ireland entities showing consistent late filing patterns. Historical data suggests systemic process issues rather than one-off delays.", confidence: 87, impact: "HIGH", affectedEntities: ["ENT-003", "ENT-008"], suggestedAction: "Review local advisor capacity and consider centralized filing coordination.", createdAt: "2026-01-20T14:30:00Z" },
+  { id: "AI-002", type: "PREDICTION", title: "Q1 Filing Cluster Alert", description: "12 statutory filings due in February-March 2026 across 8 jurisdictions. Higher than average concentration suggests resource planning needed.", confidence: 92, impact: "MEDIUM", affectedEntities: ["ENT-001", "ENT-002", "ENT-003", "ENT-005", "ENT-006", "ENT-007", "ENT-008", "ENT-009"], suggestedAction: "Pre-schedule advisor time and internal reviews. Consider staggered preparation.", createdAt: "2026-01-19T10:00:00Z" },
+  { id: "AI-003", type: "OPPORTUNITY", title: "E-Filing Optimization Available", description: "4 jurisdictions now offer electronic filing that Acme is not utilizing. Potential to reduce filing time by 60% and eliminate courier costs.", confidence: 95, impact: "MEDIUM", affectedEntities: ["ENT-003", "ENT-004", "ENT-008", "ENT-013"], suggestedAction: "Enable e-filing with CRO Ireland, KvK Netherlands, Handelsregister Germany, and Luxembourg RCS.", createdAt: "2026-01-18T09:15:00Z" },
+  { id: "AI-004", type: "RECOMMENDATION", title: "Dormant Entity Consolidation", description: "2 dormant entities (Cayman, BVI) cost approximately $35,000 annually to maintain with no active operations.", confidence: 88, impact: "LOW", affectedEntities: ["ENT-010", "ENT-014"], suggestedAction: "Schedule board review for Q2 to evaluate dissolution or purpose confirmation.", createdAt: "2026-01-17T16:45:00Z" },
+  { id: "AI-005", type: "RISK", title: "Policy Acknowledgement Gap", description: "Anti-Bribery policy has 4 entities with pending acknowledgements. Audit risk if not resolved before Q1 close.", confidence: 91, impact: "HIGH", affectedEntities: ["ENT-010", "ENT-013", "ENT-014", "ENT-008"], suggestedAction: "Send reminder to entity directors and escalate to regional leads.", createdAt: "2026-01-16T11:30:00Z" },
+];
+
+const meetings: Meeting[] = [
+  { id: "MTG-001", entityId: "ENT-001", meetingType: "BOARD", title: "Q4 2025 Board Meeting", scheduledDate: "2025-12-15T14:00:00Z", location: "100 Tech Boulevard, San Francisco", quorumRequired: 3, attendeesCount: 4, isQuorumMet: true, minutesApproved: true, agendaItems: ["Q4 Financial Review", "2026 Budget Approval", "Strategic Initiatives Update", "Compliance Report"], actionItems: [], status: "COMPLETED" },
+  { id: "MTG-002", entityId: "ENT-001", meetingType: "BOARD", title: "Q1 2026 Board Meeting", scheduledDate: "2026-03-15T14:00:00Z", location: "100 Tech Boulevard, San Francisco", quorumRequired: 3, attendeesCount: 0, isQuorumMet: false, minutesApproved: false, agendaItems: ["Q1 Financial Review", "Compliance Update", "Risk Assessment", "Capital Allocation"], actionItems: [], status: "SCHEDULED" },
+  { id: "MTG-003", entityId: "ENT-001", meetingType: "ANNUAL_GENERAL", title: "2026 Annual General Meeting", scheduledDate: "2026-05-15T10:00:00Z", location: "100 Tech Boulevard, San Francisco", quorumRequired: 2, attendeesCount: 0, isQuorumMet: false, minutesApproved: false, agendaItems: ["Financial Statements Approval", "Director Elections", "Auditor Appointment", "Dividend Declaration"], actionItems: [], status: "SCHEDULED" },
+  { id: "MTG-004", entityId: "ENT-002", meetingType: "BOARD", title: "UK Holdings Board Meeting", scheduledDate: "2026-02-20T10:00:00Z", location: "10 Finsbury Square, London", quorumRequired: 2, attendeesCount: 0, isQuorumMet: false, minutesApproved: false, agendaItems: ["2025 Financial Review", "Companies House Filing Approval", "Intercompany Matters"], actionItems: [], status: "SCHEDULED" },
+  { id: "MTG-005", entityId: "ENT-005", meetingType: "BOARD", title: "APAC Quarterly Review", scheduledDate: "2026-01-30T09:00:00Z", location: "1 Raffles Place, Singapore", quorumRequired: 2, attendeesCount: 0, isQuorumMet: false, minutesApproved: false, agendaItems: ["Regional Performance", "Compliance Status", "Expansion Plans"], actionItems: [], status: "SCHEDULED" },
+];
+
+const resolutions: Resolution[] = [
+  { id: "RES-001", entityId: "ENT-001", title: "2026 Operating Budget Approval", resolutionType: "BOARD", status: "APPROVED", proposedDate: "2025-12-15", approvedDate: "2025-12-15", executedDate: "2025-12-16", proposedBy: "Sarah Johnson", approvers: ["John Smith", "Sarah Johnson", "Board Member 3", "Board Member 4"], votesFor: 4, votesAgainst: 0, abstentions: 0, documentUrl: "/docs/resolutions/RES-001.pdf", relatedMeetingId: "MTG-001" },
+  { id: "RES-002", entityId: "ENT-001", title: "Q1 2026 Dividend Declaration", resolutionType: "BOARD", status: "DRAFT", proposedDate: "2026-03-15", approvedDate: null, executedDate: null, proposedBy: "Sarah Johnson", approvers: [], votesFor: 0, votesAgainst: 0, abstentions: 0, documentUrl: null, relatedMeetingId: "MTG-002" },
+  { id: "RES-003", entityId: "ENT-001", title: "Officer Appointment - New VP Finance", resolutionType: "BOARD", status: "PENDING", proposedDate: "2026-01-20", approvedDate: null, executedDate: null, proposedBy: "John Smith", approvers: [], votesFor: 0, votesAgainst: 0, abstentions: 0, documentUrl: null, relatedMeetingId: null },
+  { id: "RES-004", entityId: "ENT-002", title: "Intercompany Loan Agreement Approval", resolutionType: "BOARD", status: "APPROVED", proposedDate: "2025-11-10", approvedDate: "2025-11-12", executedDate: "2025-11-15", proposedBy: "Emma Watson", approvers: ["Emma Watson", "John Smith"], votesFor: 2, votesAgainst: 0, abstentions: 0, documentUrl: "/docs/resolutions/RES-004.pdf", relatedMeetingId: null },
+  { id: "RES-005", entityId: "ENT-005", title: "Singapore Subsidiary Formation", resolutionType: "WRITTEN_CONSENT", status: "EXECUTED", proposedDate: "2025-10-01", approvedDate: "2025-10-05", executedDate: "2025-10-10", proposedBy: "Wei Lin", approvers: ["Wei Lin", "John Smith"], votesFor: 2, votesAgainst: 0, abstentions: 0, documentUrl: "/docs/resolutions/RES-005.pdf", relatedMeetingId: null },
+];
+
+const signatories: AuthorizedSignatory[] = [
+  { id: "SIG-001", entityId: "ENT-001", officerId: "OFF-001", officerName: "John Smith", authorityType: "BANKING", signingLimit: null, currency: "USD", requiresCoSigner: false, coSignerRequired: null, effectiveDate: "2015-03-15", expiryDate: null, isActive: true, delegatedBy: null, delegationScope: null },
+  { id: "SIG-002", entityId: "ENT-001", officerId: "OFF-002", officerName: "Sarah Johnson", authorityType: "BANKING", signingLimit: 1000000, currency: "USD", requiresCoSigner: false, coSignerRequired: null, effectiveDate: "2016-06-01", expiryDate: null, isActive: true, delegatedBy: null, delegationScope: null },
+  { id: "SIG-003", entityId: "ENT-001", officerId: "OFF-002", officerName: "Sarah Johnson", authorityType: "CONTRACT", signingLimit: 500000, currency: "USD", requiresCoSigner: false, coSignerRequired: null, effectiveDate: "2016-06-01", expiryDate: null, isActive: true, delegatedBy: null, delegationScope: null },
+  { id: "SIG-004", entityId: "ENT-001", officerId: "OFF-003", officerName: "Michael Chen", authorityType: "CONTRACT", signingLimit: 100000, currency: "USD", requiresCoSigner: true, coSignerRequired: "Sarah Johnson", effectiveDate: "2018-01-15", expiryDate: null, isActive: true, delegatedBy: "Sarah Johnson", delegationScope: "Legal contracts only" },
+  { id: "SIG-005", entityId: "ENT-002", officerId: "OFF-004", officerName: "Emma Watson", authorityType: "BANKING", signingLimit: 500000, currency: "GBP", requiresCoSigner: false, coSignerRequired: null, effectiveDate: "2017-08-22", expiryDate: null, isActive: true, delegatedBy: null, delegationScope: null },
+  { id: "SIG-006", entityId: "ENT-005", officerId: "OFF-007", officerName: "Wei Lin", authorityType: "BANKING", signingLimit: null, currency: "SGD", requiresCoSigner: false, coSignerRequired: null, effectiveDate: "2019-11-05", expiryDate: null, isActive: true, delegatedBy: null, delegationScope: null },
+];
+
+const changes: EntityChange[] = [
+  { id: "CHG-001", entityId: "ENT-001", changeType: "OFFICER_CHANGE", description: "Appointment of new VP Finance", effectiveDate: "2026-02-01", requestedBy: "John Smith", requestedAt: "2026-01-15T10:00:00Z", approvedBy: null, approvedAt: null, status: "PENDING", oldValue: null, newValue: "Jennifer Lee - VP Finance", filingRequired: true, filingCompleted: false, relatedObligationId: null, auditTrail: ["2026-01-15: Request submitted by John Smith", "2026-01-16: Board notification sent"] },
+  { id: "CHG-002", entityId: "ENT-007", changeType: "ADDRESS_CHANGE", description: "Registered office relocation", effectiveDate: "2026-03-01", requestedBy: "External Advisor", requestedAt: "2026-01-10T14:30:00Z", approvedBy: "Sarah Johnson", approvedAt: "2026-01-12T09:00:00Z", status: "APPROVED", oldValue: "Level 30, 25 Martin Place, Sydney NSW 2000", newValue: "Level 40, 50 Bridge Street, Sydney NSW 2000", filingRequired: true, filingCompleted: false, relatedObligationId: null, auditTrail: ["2026-01-10: Request submitted", "2026-01-12: Approved by Sarah Johnson", "2026-01-13: ASIC filing initiated"] },
+  { id: "CHG-003", entityId: "ENT-010", changeType: "DISSOLUTION", description: "Voluntary dissolution of dormant entity", effectiveDate: "2026-06-30", requestedBy: "Michael Chen", requestedAt: "2025-12-20T11:00:00Z", approvedBy: null, approvedAt: null, status: "PENDING", oldValue: "DORMANT", newValue: "DISSOLVED", filingRequired: true, filingCompleted: false, relatedObligationId: null, auditTrail: ["2025-12-20: Dissolution proposal submitted", "2026-01-05: Pending board approval"] },
+];
+
+const snapshots: PeriodSnapshot[] = [
+  { id: "SNAP-2025-12", period: "2025-12", snapshotDate: "2025-12-31T23:59:59Z", entityCount: 14, totalObligations: 45, filedOnTime: 42, filedLate: 2, pending: 1, overallComplianceScore: 93, isLocked: true, lockedBy: "Sarah Johnson", lockedAt: "2026-01-05T10:00:00Z" },
+  { id: "SNAP-2025-11", period: "2025-11", snapshotDate: "2025-11-30T23:59:59Z", entityCount: 14, totalObligations: 38, filedOnTime: 36, filedLate: 2, pending: 0, overallComplianceScore: 95, isLocked: true, lockedBy: "Sarah Johnson", lockedAt: "2025-12-05T10:00:00Z" },
+  { id: "SNAP-2025-10", period: "2025-10", snapshotDate: "2025-10-31T23:59:59Z", entityCount: 14, totalObligations: 40, filedOnTime: 39, filedLate: 1, pending: 0, overallComplianceScore: 98, isLocked: true, lockedBy: "Sarah Johnson", lockedAt: "2025-11-05T10:00:00Z" },
+];
+
+// ================================
+// Export Functions
+// ================================
+
+export function getJurisdictions(): Jurisdiction[] {
+  return jurisdictions;
+}
+
+export function getEntities(): Entity[] {
+  return entities;
+}
+
+export function getEntity(id: string): Entity | undefined {
+  return entities.find(e => e.id === id);
+}
+
+export function getOfficers(entityId?: string): Officer[] {
+  if (entityId) {
+    return officers.filter(o => o.entityId === entityId);
+  }
+  return officers;
+}
+
+export function getObligations(entityId?: string): Obligation[] {
+  if (entityId) {
+    return obligations.filter(o => o.entityId === entityId);
+  }
+  return obligations;
+}
+
+export function getPolicies(): Policy[] {
+  return policies;
+}
+
+export function getAdvisors(): ThirdPartyAdvisor[] {
+  return advisors;
+}
+
+export function getRisks(entityId?: string): ComplianceRisk[] {
+  if (entityId) {
+    return risks.filter(r => r.entityId === entityId || r.entityId === null);
+  }
+  return risks;
+}
+
+export function getAIInsights(): AIInsight[] {
+  return aiInsights;
+}
+
+export function getMeetings(entityId?: string): Meeting[] {
+  if (entityId) {
+    return meetings.filter(m => m.entityId === entityId);
+  }
+  return meetings;
+}
+
+export function getResolutions(entityId?: string): Resolution[] {
+  if (entityId) {
+    return resolutions.filter(r => r.entityId === entityId);
+  }
+  return resolutions;
+}
+
+export function getSignatories(entityId?: string): AuthorizedSignatory[] {
+  if (entityId) {
+    return signatories.filter(s => s.entityId === entityId);
+  }
+  return signatories;
+}
+
+export function getChanges(entityId?: string): EntityChange[] {
+  if (entityId) {
+    return changes.filter(c => c.entityId === entityId);
+  }
+  return changes;
+}
+
+export function getSnapshots(): PeriodSnapshot[] {
+  return snapshots;
+}
+
+export function getComplianceMetrics(): ComplianceMetrics {
+  const activeEntities = entities.filter(e => e.status === "ACTIVE");
+  const atRiskEntities = activeEntities.filter(e => e.healthScore < 80).length;
+  const overdueObligations = obligations.filter(o => o.filingStatus === "OVERDUE").length;
+  const upcomingDeadlines = obligations.filter(o => {
+    const dueDate = new Date(o.dueDate);
+    const now = new Date();
+    const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDiff >= 0 && daysDiff <= 30 && o.filingStatus === "PENDING";
+  }).length;
+  
+  const avgHealthScore = Math.round(
+    activeEntities.reduce((sum, e) => sum + e.healthScore, 0) / activeEntities.length
+  );
+  
+  return {
+    healthScore: avgHealthScore,
+    entitiesAtRisk: atRiskEntities,
+    upcomingDeadlines,
+    overdueObligations,
+    auditReadiness: 89,
+    savingsGenerated: 127500,
+  };
+}
+
+export function getJurisdictionHeatmap(): JurisdictionHeatmapCell[] {
+  const jurisdictionMap = new Map<string, JurisdictionHeatmapCell>();
+  
+  for (const entity of entities) {
+    const jurisdiction = jurisdictions.find(j => j.code === entity.jurisdictionCode);
+    if (!jurisdiction) continue;
+    
+    const entityObligations = obligations.filter(o => o.entityId === entity.id);
+    const overdueCount = entityObligations.filter(o => o.filingStatus === "OVERDUE").length;
+    const upcomingCount = entityObligations.filter(o => {
+      const dueDate = new Date(o.dueDate);
+      const now = new Date();
+      const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return daysDiff >= 0 && daysDiff <= 30 && o.filingStatus === "PENDING";
+    }).length;
+    
+    if (jurisdictionMap.has(jurisdiction.code)) {
+      const existing = jurisdictionMap.get(jurisdiction.code)!;
+      existing.entityCount += 1;
+      existing.healthScore = Math.round((existing.healthScore * (existing.entityCount - 1) + entity.healthScore) / existing.entityCount);
+      existing.overdueCount += overdueCount;
+      existing.upcomingCount += upcomingCount;
+    } else {
+      jurisdictionMap.set(jurisdiction.code, {
+        jurisdictionCode: jurisdiction.code,
+        jurisdictionName: jurisdiction.name,
+        entityCount: 1,
+        healthScore: entity.healthScore,
+        riskLevel: jurisdiction.riskLevel,
+        overdueCount,
+        upcomingCount,
+      });
+    }
+  }
+  
+  return Array.from(jurisdictionMap.values());
+}
+
+export function getTimeline(days: number = 90): TimelineItem[] {
+  const now = new Date();
+  const items: TimelineItem[] = [];
+  
+  for (const obligation of obligations) {
+    const dueDate = new Date(obligation.dueDate);
+    const daysDiff = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff >= -30 && daysDiff <= days) {
+      const entity = entities.find(e => e.id === obligation.entityId);
+      
+      let priority: TimelineItem["priority"] = "LOW";
+      if (obligation.filingStatus === "OVERDUE") priority = "CRITICAL";
+      else if (daysDiff <= 7) priority = "HIGH";
+      else if (daysDiff <= 14) priority = "MEDIUM";
+      
+      items.push({
+        id: obligation.id,
+        entityId: obligation.entityId,
+        entityName: entity?.name || "Unknown",
+        obligationType: obligation.obligationType,
+        title: obligation.name,
+        dueDate: obligation.dueDate,
+        daysUntilDue: daysDiff,
+        status: obligation.filingStatus,
+        priority,
+        assignedTo: obligation.assignedTo,
+      });
+    }
+  }
+  
+  return items.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+}

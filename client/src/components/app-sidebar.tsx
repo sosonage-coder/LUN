@@ -22,7 +22,16 @@ import {
   Users,
   FileCheck,
   CalendarDays,
-  Loader2
+  Loader2,
+  Globe,
+  Gavel,
+  UserCheck,
+  AlertTriangle,
+  BookOpen,
+  Briefcase,
+  Sparkles,
+  Activity,
+  Target,
 } from "lucide-react";
 import {
   Sidebar,
@@ -171,10 +180,25 @@ const systemItems = [
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
+const oneComplianceNav = [
+  { title: "Dashboard", url: "/compliance", icon: LayoutDashboard },
+  { title: "Entities", url: "/compliance/entities", icon: Building2 },
+  { title: "Obligations", url: "/compliance/obligations", icon: ClipboardCheck },
+  { title: "Governance", url: "/compliance/governance", icon: Gavel },
+  { title: "Authority", url: "/compliance/authority", icon: UserCheck },
+  { title: "Risks", url: "/compliance/risks", icon: AlertTriangle },
+  { title: "Policies", url: "/compliance/policies", icon: BookOpen },
+  { title: "Advisors", url: "/compliance/advisors", icon: Briefcase },
+  { title: "Audit Readiness", url: "/compliance/audit", icon: Shield },
+  { title: "AI Insights", url: "/compliance/insights", icon: Sparkles },
+  { title: "ROI Metrics", url: "/compliance/roi", icon: Target },
+];
+
 const productInfo = {
   "schedule-studio": { name: "Schedule Studio", icon: Calculator, description: "Cost Allocation" },
   "oneclose": { name: "OneClose", icon: Shield, description: "Close Management" },
   "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Account Reconciliation" },
+  "onecompliance": { name: "One Compliance", icon: Globe, description: "Entity Governance" },
   "policies": { name: "Policies", icon: FileText, description: "Coming Soon" },
   "walkthroughs": { name: "Walkthroughs", icon: ClipboardCheck, description: "Coming Soon" },
   "reports": { name: "Reports", icon: FileText, description: "Coming Soon" },
@@ -476,6 +500,34 @@ export function AppSidebar() {
     </>
   );
 
+  const renderOneCompliance = () => (
+    <SidebarGroup>
+      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {oneComplianceNav.map((item) => {
+            const isActive = location === item.url || 
+              (item.url !== "/compliance" && location.startsWith(item.url));
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={isActive}
+                  data-testid={`nav-compliance-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                >
+                  <Link href={item.url}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+
   const renderComingSoon = () => (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -508,7 +560,8 @@ export function AppSidebar() {
         {activeProduct === "schedule-studio" && renderScheduleStudio()}
         {activeProduct === "oneclose" && renderOneClose()}
         {activeProduct === "reconciliations" && renderReconciliations()}
-        {!["schedule-studio", "oneclose", "reconciliations"].includes(activeProduct) && renderComingSoon()}
+        {activeProduct === "onecompliance" && renderOneCompliance()}
+        {!["schedule-studio", "oneclose", "reconciliations", "onecompliance"].includes(activeProduct) && renderComingSoon()}
         
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>

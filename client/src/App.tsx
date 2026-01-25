@@ -55,6 +55,7 @@ import CloseControlCertificationPage from "@/pages/close-control-certification";
 import MyTasksPage from "@/pages/my-tasks";
 import ReconciliationTemplatesPage from "@/pages/reconciliation-templates";
 import ReconciliationWorkspacePage from "@/pages/reconciliation-workspace";
+import OneCompliancePage from "@/pages/one-compliance";
 
 function Router() {
   return (
@@ -63,6 +64,8 @@ function Router() {
       <Route path="/reconciliations" component={ReconciliationsPage} />
       <Route path="/reconciliations/templates" component={ReconciliationTemplatesPage} />
       <Route path="/reconciliations/workspace/:id" component={ReconciliationWorkspacePage} />
+      <Route path="/compliance" component={OneCompliancePage} />
+      <Route path="/compliance/:section" component={OneCompliancePage} />
       <Route path="/policies" component={PoliciesPage} />
       <Route path="/walkthroughs" component={WalkthroughsPage} />
       <Route path="/reports" component={ReportsPage} />

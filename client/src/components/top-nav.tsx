@@ -24,6 +24,7 @@ import {
   BarChart3,
   Settings,
   Check,
+  Globe,
 } from "lucide-react";
 import { useProduct, ProductId } from "@/contexts/product-context";
 
@@ -59,7 +60,15 @@ const products: Product[] = [
     icon: FileCheck,
     href: "/reconciliations",
     description: "Account reconciliation workflows",
-    available: false,
+    available: true,
+  },
+  {
+    id: "onecompliance",
+    name: "One Compliance",
+    icon: Globe,
+    href: "/compliance",
+    description: "Entity governance & compliance",
+    available: true,
   },
   {
     id: "policies",
