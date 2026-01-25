@@ -45,6 +45,7 @@ import {
   ArrowDownUp,
   Table2,
   Edit3,
+  FolderOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -630,6 +631,7 @@ export function AppSidebar() {
   
   // Working Papers & Data section
   const workingPapersNav = [
+    { title: "Templates", url: "/nettool/templates", icon: FolderOpen },
     { title: "TB Adjustments", url: "/nettool/tb-adjustments-workspace", icon: Edit3 },
     { title: "Final TB", url: "/nettool/fs/trial-balance", icon: Calculator },
     { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
@@ -656,6 +658,7 @@ export function AppSidebar() {
   const [wpExpanded, setWpExpanded] = useState(
     location.includes("trial-balance") || 
     location.includes("tb-adjustments-workspace") ||
+    location.includes("templates") ||
     location.includes("working-papers") || 
     location.includes("disclosures") || 
     location.includes("schedules") || 

@@ -39,6 +39,9 @@ import {
   PlusCircle,
   MinusCircle,
   LayoutDashboard,
+  Edit,
+  CheckCircle,
+  Table2,
 } from "lucide-react";
 import {
   sampleNotes,
@@ -126,6 +129,15 @@ export default function NetToolPage() {
   
   // Final TB View state
   const [finalTBLines] = useState<FinalTBLine[]>(sampleFinalTBView.lines);
+  
+  // Template Repository state
+  const [templates, setTemplates] = useState<DisclosureTemplate[]>(sampleTemplates);
+  const [templateTab, setTemplateTab] = useState<"disclosure" | "working-paper" | "reconciliation" | "close-control">("disclosure");
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<DisclosureTemplate | null>(null);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateLayout, setNewTemplateLayout] = useState<ScheduleLayoutType>("ROLLFORWARD");
+  const [newTemplateFramework, setNewTemplateFramework] = useState<"IFRS" | "US_GAAP" | "BOTH">("BOTH");
   
   // Print/Export Engine state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -3106,6 +3118,319 @@ export default function NetToolPage() {
     </div>
   );
 
+  // Template Repository handlers
+  const handleAddTemplate = () => {
+    setEditingTemplate(null);
+    setNewTemplateName("");
+    setNewTemplateLayout("ROLLFORWARD");
+    setNewTemplateFramework("BOTH");
+    setShowTemplateDialog(true);
+  };
+
+  const handleEditTemplate = (template: DisclosureTemplate) => {
+    setEditingTemplate(template);
+    setNewTemplateName(template.templateName);
+    setNewTemplateLayout(template.layoutType);
+    setNewTemplateFramework(template.framework);
+    setShowTemplateDialog(true);
+  };
+
+  const handleSaveTemplate = () => {
+    if (!newTemplateName.trim()) return;
+    
+    if (editingTemplate) {
+      setTemplates(prev => prev.map(t => 
+        t.templateId === editingTemplate.templateId 
+          ? { ...t, templateName: newTemplateName, layoutType: newTemplateLayout, framework: newTemplateFramework }
+          : t
+      ));
+    } else {
+      const newTemplate: DisclosureTemplate = {
+        templateId: `tmpl-${Date.now()}`,
+        templateName: newTemplateName,
+        layoutType: newTemplateLayout,
+        framework: newTemplateFramework,
+        defaultColumns: [],
+        defaultRows: [],
+        defaultTextBlocks: [],
+        hiddenColumns: [],
+        createdAt: new Date().toISOString(),
+      };
+      setTemplates(prev => [...prev, newTemplate]);
+    }
+    setShowTemplateDialog(false);
+    setEditingTemplate(null);
+    setNewTemplateName("");
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    setTemplates(prev => prev.filter(t => t.templateId !== templateId));
+  };
+
+  const renderTemplateRepository = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Template Repository</h1>
+          <p className="text-sm text-muted-foreground">Manage disclosure, working paper, reconciliation, and close control templates</p>
+        </div>
+        <Button onClick={handleAddTemplate} data-testid="button-add-template">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Template
+        </Button>
+      </div>
+
+      <Tabs value={templateTab} onValueChange={(v) => setTemplateTab(v as typeof templateTab)}>
+        <TabsList data-testid="tabs-template-types">
+          <TabsTrigger value="disclosure" data-testid="tab-disclosure">Disclosure Templates</TabsTrigger>
+          <TabsTrigger value="working-paper" data-testid="tab-working-paper">Working Paper Templates</TabsTrigger>
+          <TabsTrigger value="reconciliation" data-testid="tab-reconciliation">Reconciliation Templates</TabsTrigger>
+          <TabsTrigger value="close-control" data-testid="tab-close-control">Close Control Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="disclosure" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Disclosure Templates
+              </CardTitle>
+              <CardDescription>Templates for financial statement disclosure schedules and notes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Template Name</TableHead>
+                    <TableHead>Layout Type</TableHead>
+                    <TableHead>Framework</TableHead>
+                    <TableHead>Columns</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {templates.map((template) => (
+                    <TableRow key={template.templateId} data-testid={`row-template-${template.templateId}`}>
+                      <TableCell className="font-medium">{template.templateName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{getLayoutTypeLabel(template.layoutType)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={template.framework === "BOTH" ? "default" : "secondary"}>
+                          {getFrameworkLabel(template.framework)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{template.defaultColumns.length}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(template.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditTemplate(template)}
+                            data-testid={`button-edit-template-${template.templateId}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleDeleteTemplate(template.templateId)}
+                            data-testid={`button-delete-template-${template.templateId}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {templates.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No disclosure templates found. Click "Add Template" to create one.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="working-paper" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Table2 className="h-5 w-5" />
+                Working Paper Templates
+              </CardTitle>
+              <CardDescription>Templates for rollforward, aging, and custom working papers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {["Rollforward", "Aging Schedule", "Linear Analysis", "Custom Grid"].map((type, idx) => (
+                  <Card key={type} className="hover-elevate cursor-pointer" data-testid={`card-wp-template-${idx}`}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{type}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {type === "Rollforward" && "Track opening to closing balance movements"}
+                        {type === "Aging Schedule" && "Analyze receivables/payables by age bucket"}
+                        {type === "Linear Analysis" && "Simple columnar analysis worksheets"}
+                        {type === "Custom Grid" && "Flexible grid with custom columns and formulas"}
+                      </p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Badge variant="outline">System</Badge>
+                        <span className="text-xs text-muted-foreground">Default template</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reconciliation" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                Reconciliation Templates
+              </CardTitle>
+              <CardDescription>Templates for balance sheet account reconciliations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { name: "Cash Reconciliation", desc: "Bank to book reconciliation with outstanding items", type: "CASH" },
+                  { name: "Prepaid Schedule", desc: "Anchored to Schedule Studio prepaid schedules", type: "PREPAID" },
+                  { name: "Accrual 12M Rollforward", desc: "Monthly accrual tracking with 12-month view", type: "ACCRUAL" },
+                  { name: "Fixed Asset Rollforward", desc: "Asset additions, disposals, and depreciation", type: "FIXED_ASSET" },
+                  { name: "Intercompany Recon", desc: "IC balance matching and elimination entries", type: "INTERCOMPANY" },
+                ].map((template, idx) => (
+                  <Card key={template.type} className="hover-elevate cursor-pointer" data-testid={`card-recon-template-${idx}`}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{template.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{template.desc}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Badge variant="secondary">{template.type}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="close-control" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Close Control Templates
+              </CardTitle>
+              <CardDescription>Checklist and task templates for period close management</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { name: "Month-End Close Checklist", tasks: 24, category: "Monthly Close" },
+                  { name: "Quarter-End Close Checklist", tasks: 42, category: "Quarterly Close" },
+                  { name: "Year-End Close Checklist", tasks: 68, category: "Annual Close" },
+                  { name: "Consolidation Tasks", tasks: 18, category: "Consolidation" },
+                  { name: "Intercompany Elimination", tasks: 12, category: "Eliminations" },
+                  { name: "External Audit Prep", tasks: 32, category: "Audit" },
+                ].map((template, idx) => (
+                  <Card key={template.name} className="hover-elevate cursor-pointer" data-testid={`card-close-template-${idx}`}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        <Badge>{template.tasks} tasks</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{template.category}</Badge>
+                        <span className="text-xs text-muted-foreground">System template</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingTemplate ? "Edit Template" : "Create New Template"}</DialogTitle>
+            <DialogDescription>
+              {editingTemplate ? "Update template properties" : "Add a new template to the repository"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Template Name</label>
+              <Input 
+                placeholder="e.g., Revenue Recognition Rollforward" 
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                data-testid="input-template-name"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Layout Type</label>
+              <Select value={newTemplateLayout} onValueChange={(v) => setNewTemplateLayout(v as ScheduleLayoutType)}>
+                <SelectTrigger data-testid="select-template-layout">
+                  <SelectValue placeholder="Select layout" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ROLLFORWARD">Rollforward</SelectItem>
+                  <SelectItem value="MOVEMENT_BY_CATEGORY">Movement by Category</SelectItem>
+                  <SelectItem value="TIMING_MATURITY">Timing / Maturity</SelectItem>
+                  <SelectItem value="GROSS_TO_NET">Gross to Net</SelectItem>
+                  <SelectItem value="COMPOSITION">Composition</SelectItem>
+                  <SelectItem value="RECONCILIATION">Reconciliation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Framework</label>
+              <Select value={newTemplateFramework} onValueChange={(v) => setNewTemplateFramework(v as "IFRS" | "US_GAAP" | "BOTH")}>
+                <SelectTrigger data-testid="select-template-framework">
+                  <SelectValue placeholder="Select framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BOTH">IFRS / US GAAP</SelectItem>
+                  <SelectItem value="IFRS">IFRS Only</SelectItem>
+                  <SelectItem value="US_GAAP">US GAAP Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateDialog(false)} data-testid="button-cancel-template">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTemplate} data-testid="button-save-template">
+              {editingTemplate ? "Save Changes" : "Create Template"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
   const renderContent = () => {
     switch (section) {
       case "disclosures":
@@ -3138,6 +3463,8 @@ export default function NetToolPage() {
         return renderTBAdjustmentsWorkspace();
       case "fs-trial-balance":
         return renderTrialBalance();
+      case "templates":
+        return renderTemplateRepository();
       case "working-papers":
         return renderWorkingPapers();
       case "notes-basis-of-preparation":
