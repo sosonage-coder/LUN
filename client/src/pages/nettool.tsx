@@ -69,8 +69,10 @@ import {
   sampleBasisOfPreparation,
   sampleAccountingPolicies,
   sampleMDA,
+  sampleTBAdjustmentsWorkspace,
+  sampleFinalTBView,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EyeOff } from "lucide-react";
 
@@ -111,6 +113,19 @@ export default function NetToolPage() {
   // Working Papers state
   const [workingPapers, setWorkingPapers] = useState<WorkingPaper[]>(sampleWorkingPapers);
   const [selectedWorkingPaper, setSelectedWorkingPaper] = useState<WorkingPaper | null>(null);
+  
+  // TB Adjustments Workspace state
+  const [adjLines, setAdjLines] = useState<TBAdjustmentAccountLine[]>(sampleTBAdjustmentsWorkspace.lines);
+  const [adjRJEColumns] = useState<TBAdjustmentColumn[]>(sampleTBAdjustmentsWorkspace.rjeColumns);
+  const [adjAJEColumns] = useState<TBAdjustmentColumn[]>(sampleTBAdjustmentsWorkspace.ajeColumns);
+  const [adjEntries] = useState<TBAdjustmentEntry[]>(sampleTBAdjustmentsWorkspace.entries);
+  const [editingAdjCell, setEditingAdjCell] = useState<{ lineId: string; columnId: string } | null>(null);
+  const [editingAdjFsCategory, setEditingAdjFsCategory] = useState<string | null>(null);
+  const [showAddAdjEntryDialog, setShowAddAdjEntryDialog] = useState(false);
+  const [selectedEntryForDetail, setSelectedEntryForDetail] = useState<TBAdjustmentEntry | null>(null);
+  
+  // Final TB View state
+  const [finalTBLines] = useState<FinalTBLine[]>(sampleFinalTBView.lines);
   
   // Print/Export Engine state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -2184,35 +2199,438 @@ export default function NetToolPage() {
     );
   };
 
-  const renderTrialBalance = () => {
-    const totals = calculateTBTotals();
-    const isBalanced = Math.abs(totals.totalClosingBalance) < 0.01;
-    
-    // Get adjustment columns (MOVEMENT, ADJUSTMENT, USER) - these show net amounts
-    const adjustmentColumns = tbColumns.filter(c => 
-      c.columnType === "MOVEMENT" || c.columnType === "ADJUSTMENT" || c.columnType === "USER"
-    );
-    const visibleAdjColumns = adjustmentColumns.filter(c => c.isVisible);
-    const hasNetMoveCol = tbColumns.some(c => c.columnType === "NET_MOVEMENT");
-
-    // Format net amount (positive = DR, negative = CR)
+  // TB Adjustments Workspace - where all adjustments are made
+  const renderTBAdjustmentsWorkspace = () => {
     const formatNetAmount = (amount: number): string => {
       if (amount === 0) return "-";
       const formatted = formatCurrency(Math.abs(amount));
       return amount < 0 ? `(${formatted})` : formatted;
     };
 
+    const calculateAdjTotals = () => {
+      let totalInitial = 0;
+      let totalFinal = 0;
+      let totalRJE = 0;
+      let totalAJE = 0;
+      let totalNetMove = 0;
+      
+      adjLines.forEach(line => {
+        totalInitial += line.initialBalance;
+        totalFinal += line.finalBalance;
+        totalRJE += line.totalRJE;
+        totalAJE += line.totalAJE;
+        totalNetMove += line.netMovement;
+      });
+      
+      return { totalInitial, totalFinal, totalRJE, totalAJE, totalNetMove };
+    };
+
+    const adjTotals = calculateAdjTotals();
+    const isBalanced = Math.abs(adjTotals.totalFinal) < 0.01;
+
+    const handleAdjFsCategoryUpdate = (lineId: string, category: FSCategory | null) => {
+      setAdjLines(lines => lines.map(l => 
+        l.lineId === lineId ? { ...l, fsCategory: category } : l
+      ));
+      setEditingAdjFsCategory(null);
+    };
+
+    const handleAdjFootnoteUpdate = (lineId: string, footnoteIds: string[]) => {
+      setAdjLines(lines => lines.map(l => 
+        l.lineId === lineId ? { ...l, footnoteIds } : l
+      ));
+    };
+
+    const getEntryStatusBadge = (status: TBAdjustmentEntry["status"]) => {
+      switch (status) {
+        case "APPROVED":
+          return <Badge variant="default" data-testid="badge-entry-approved"><CheckCircle2 className="w-3 h-3 mr-1" />Approved</Badge>;
+        case "PENDING_REVIEW":
+          return <Badge variant="secondary" data-testid="badge-entry-pending"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
+        case "DRAFT":
+          return <Badge variant="outline" data-testid="badge-entry-draft"><Edit3 className="w-3 h-3 mr-1" />Draft</Badge>;
+        case "REJECTED":
+          return <Badge variant="destructive" data-testid="badge-entry-rejected"><AlertCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+        default:
+          return <Badge variant="outline">{status}</Badge>;
+      }
+    };
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold" data-testid="text-tb-title">Trial Balance</h1>
-            <p className="text-muted-foreground">{sampleTBWorkspace.entityName} - {sampleTBWorkspace.periodLabel}</p>
+            <h1 className="text-2xl font-semibold" data-testid="text-adj-ws-title">TB Adjustments Workspace</h1>
+            <p className="text-muted-foreground">{sampleTBAdjustmentsWorkspace.entityName} - {sampleTBAdjustmentsWorkspace.periodLabel}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isBalanced ? (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" data-testid="badge-adj-balanced">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Balanced
+              </Badge>
+            ) : (
+              <Badge variant="destructive" data-testid="badge-adj-unbalanced">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Out of Balance
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowAddAdjEntryDialog(true)} data-testid="button-add-adjustment">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Entry
+            </Button>
+          </div>
+        </div>
+
+        {/* Adjustment Entries Summary */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-lg">Adjustment Entries</CardTitle>
+                <CardDescription>Reclassification (RJE) and Adjusting (AJE) Journal Entries</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-blue-600 dark:text-blue-400" data-testid="badge-rje-count">
+                  RJE: {adjEntries.filter(e => e.entryType === "RJE").length}
+                </Badge>
+                <Badge variant="outline" className="text-purple-600 dark:text-purple-400" data-testid="badge-aje-count">
+                  AJE: {adjEntries.filter(e => e.entryType === "AJE").length}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {adjEntries.map(entry => (
+                <div 
+                  key={entry.entryId} 
+                  className="p-3 border rounded-md hover-elevate cursor-pointer"
+                  onClick={() => setSelectedEntryForDetail(entry)}
+                  data-testid={`card-entry-${entry.entryLabel}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant={entry.entryType === "RJE" ? "secondary" : "default"} data-testid={`badge-type-${entry.entryLabel}`}>
+                      {entry.entryLabel}
+                    </Badge>
+                    {getEntryStatusBadge(entry.status)}
+                  </div>
+                  <p className="text-sm font-medium truncate">{entry.description}</p>
+                  <p className="text-sm font-mono text-muted-foreground">{formatCurrency(entry.amount)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Ref: {entry.reference}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Main TB Adjustments Grid */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-lg">Trial Balance Adjustments</CardTitle>
+                <CardDescription>Initial TB with RJE/AJE adjustments, FS Category & Footnote tagging</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[600px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
+                    <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
+                    <TableHead className="w-32">FS Category</TableHead>
+                    <TableHead className="w-28">Footnote</TableHead>
+                    <TableHead className="text-center w-28 bg-slate-100 dark:bg-slate-800">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">Initial TB</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    {/* RJE Columns */}
+                    {adjRJEColumns.filter(c => c.isVisible).map(col => (
+                      <TableHead key={col.columnId} className="text-center w-24 bg-blue-50 dark:bg-blue-950">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-blue-700 dark:text-blue-300">{col.columnLabel}</span>
+                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
+                        </div>
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-center w-24 bg-blue-100 dark:bg-blue-900">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">Total RJE</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    {/* AJE Columns */}
+                    {adjAJEColumns.filter(c => c.isVisible).map(col => (
+                      <TableHead key={col.columnId} className="text-center w-24 bg-purple-50 dark:bg-purple-950">
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-purple-700 dark:text-purple-300">{col.columnLabel}</span>
+                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
+                        </div>
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-center w-24 bg-purple-100 dark:bg-purple-900">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Total AJE</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-24 bg-amber-100 dark:bg-amber-900">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">Net Move</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-28 bg-green-100 dark:bg-green-900">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">Final Balance</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adjLines.map(line => (
+                    <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-adj-${line.accountCode}`}>
+                      <TableCell className="font-mono text-sm sticky left-0 bg-background z-10" data-testid={`cell-adj-code-${line.accountCode}`}>
+                        {line.accountCode}
+                      </TableCell>
+                      <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
+                      {/* FS Category */}
+                      <TableCell>
+                        {editingAdjFsCategory === line.lineId ? (
+                          <Select
+                            value={line.fsCategory || ""}
+                            onValueChange={(value) => handleAdjFsCategoryUpdate(line.lineId, value === "none" ? null : value as FSCategory)}
+                          >
+                            <SelectTrigger className="h-7 text-xs" data-testid={`select-adj-fs-${line.accountCode}`}>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {Object.entries(fsCategoryLabels).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs cursor-pointer ${getFsCategoryColor(line.fsCategory)}`}
+                            onClick={() => setEditingAdjFsCategory(line.lineId)}
+                            data-testid={`badge-adj-fs-${line.accountCode}`}
+                          >
+                            {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "Tag"}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      {/* Footnote Tag */}
+                      <TableCell>
+                        <Select
+                          value={line.footnoteIds[0] || "none"}
+                          onValueChange={(value) => handleAdjFootnoteUpdate(line.lineId, value === "none" ? [] : [value])}
+                        >
+                          <SelectTrigger className="h-7 text-xs" data-testid={`select-adj-fn-${line.accountCode}`}>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {sampleTBAdjustmentsWorkspace.footnotes.map((fn) => (
+                              <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      {/* Initial TB Balance */}
+                      <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {formatNetAmount(line.initialBalance)}
+                      </TableCell>
+                      {/* RJE Columns */}
+                      {adjRJEColumns.filter(c => c.isVisible).map(col => {
+                        const amount = line.adjustments[col.columnId] || 0;
+                        return (
+                          <TableCell key={col.columnId} className={`text-right font-mono text-sm bg-blue-50/50 dark:bg-blue-950/50 ${amount < 0 ? "text-red-600 dark:text-red-400" : amount > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                            {formatNetAmount(amount)}
+                          </TableCell>
+                        );
+                      })}
+                      {/* Total RJE */}
+                      <TableCell className={`text-right font-mono text-sm bg-blue-100/50 dark:bg-blue-900/50 font-semibold ${line.totalRJE < 0 ? "text-red-600 dark:text-red-400" : line.totalRJE > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                        {formatNetAmount(line.totalRJE)}
+                      </TableCell>
+                      {/* AJE Columns */}
+                      {adjAJEColumns.filter(c => c.isVisible).map(col => {
+                        const amount = line.adjustments[col.columnId] || 0;
+                        return (
+                          <TableCell key={col.columnId} className={`text-right font-mono text-sm bg-purple-50/50 dark:bg-purple-950/50 ${amount < 0 ? "text-red-600 dark:text-red-400" : amount > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
+                            {formatNetAmount(amount)}
+                          </TableCell>
+                        );
+                      })}
+                      {/* Total AJE */}
+                      <TableCell className={`text-right font-mono text-sm bg-purple-100/50 dark:bg-purple-900/50 font-semibold ${line.totalAJE < 0 ? "text-red-600 dark:text-red-400" : line.totalAJE > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
+                        {formatNetAmount(line.totalAJE)}
+                      </TableCell>
+                      {/* Net Movement */}
+                      <TableCell className={`text-right font-mono text-sm bg-amber-50 dark:bg-amber-950 font-semibold ${line.netMovement < 0 ? "text-red-600 dark:text-red-400" : line.netMovement > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                        {formatNetAmount(line.netMovement)}
+                      </TableCell>
+                      {/* Final Balance */}
+                      <TableCell className={`text-right font-mono text-sm bg-green-50 dark:bg-green-950 font-semibold ${line.finalBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {formatNetAmount(line.finalBalance)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Totals Row */}
+                  <TableRow className="bg-muted font-bold border-t-2">
+                    <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className={`text-right font-mono ${adjTotals.totalInitial < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-adj-initial-total">
+                      {formatNetAmount(adjTotals.totalInitial)}
+                    </TableCell>
+                    {adjRJEColumns.filter(c => c.isVisible).map(col => {
+                      const colTotal = adjLines.reduce((sum, line) => sum + (line.adjustments[col.columnId] || 0), 0);
+                      return (
+                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : colTotal > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                          {formatNetAmount(colTotal)}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className={`text-right font-mono bg-blue-100/50 dark:bg-blue-900/50 ${adjTotals.totalRJE < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalRJE > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                      {formatNetAmount(adjTotals.totalRJE)}
+                    </TableCell>
+                    {adjAJEColumns.filter(c => c.isVisible).map(col => {
+                      const colTotal = adjLines.reduce((sum, line) => sum + (line.adjustments[col.columnId] || 0), 0);
+                      return (
+                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : colTotal > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
+                          {formatNetAmount(colTotal)}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className={`text-right font-mono bg-purple-100/50 dark:bg-purple-900/50 ${adjTotals.totalAJE < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalAJE > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
+                      {formatNetAmount(adjTotals.totalAJE)}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono bg-amber-100/50 dark:bg-amber-900/50 ${adjTotals.totalNetMove < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalNetMove > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+                      {formatNetAmount(adjTotals.totalNetMove)}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono bg-green-100/50 dark:bg-green-900/50 ${adjTotals.totalFinal < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-adj-final-total">
+                      {formatNetAmount(adjTotals.totalFinal)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Entry Detail Sheet */}
+        <Sheet open={!!selectedEntryForDetail} onOpenChange={() => setSelectedEntryForDetail(null)}>
+          <SheetContent className="w-[400px] sm:w-[540px]">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                {selectedEntryForDetail && (
+                  <>
+                    <Badge variant={selectedEntryForDetail.entryType === "RJE" ? "secondary" : "default"}>
+                      {selectedEntryForDetail.entryLabel}
+                    </Badge>
+                    {getEntryStatusBadge(selectedEntryForDetail.status)}
+                  </>
+                )}
+              </SheetTitle>
+              <SheetDescription>{selectedEntryForDetail?.description}</SheetDescription>
+            </SheetHeader>
+            {selectedEntryForDetail && (
+              <div className="py-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Amount</span>
+                    <p className="font-mono font-semibold text-lg">{formatCurrency(selectedEntryForDetail.amount)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reference</span>
+                    <p className="font-medium">{selectedEntryForDetail.reference || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Debit Account</span>
+                    <p className="font-mono">{selectedEntryForDetail.debitAccountId || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Credit Account</span>
+                    <p className="font-mono">{selectedEntryForDetail.creditAccountId || "N/A"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Prepared By</span>
+                    <p className="font-medium">{selectedEntryForDetail.preparedBy}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Reviewed By</span>
+                    <p className="font-medium">{selectedEntryForDetail.reviewedBy || "Pending"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Created</span>
+                    <p className="font-medium">{new Date(selectedEntryForDetail.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Approved</span>
+                    <p className="font-medium">{selectedEntryForDetail.approvedAt ? new Date(selectedEntryForDetail.approvedAt).toLocaleDateString() : "Pending"}</p>
+                  </div>
+                </div>
+                <div className="pt-4 border-t flex gap-2">
+                  <Button variant="outline" size="sm" data-testid="button-edit-entry">
+                    <Edit3 className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button variant="outline" size="sm" data-testid="button-view-wp">
+                    <FileSpreadsheet className="w-4 h-4 mr-1" />
+                    View Working Paper
+                  </Button>
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+      </div>
+    );
+  };
+
+  // Final TB View - Read-only comparative view (Prior Year vs Current Year)
+  const renderTrialBalance = () => {
+    const formatNetAmount = (amount: number): string => {
+      if (amount === 0) return "-";
+      const formatted = formatCurrency(Math.abs(amount));
+      return amount < 0 ? `(${formatted})` : formatted;
+    };
+
+    const totalPrior = finalTBLines.reduce((sum, l) => sum + l.priorYearClosing, 0);
+    const totalCurrent = finalTBLines.reduce((sum, l) => sum + l.currentYearFinal, 0);
+    const isBalanced = Math.abs(totalCurrent) < 0.01;
+
+    const getVarianceColor = (variance: number, variancePercent: number | null): string => {
+      if (variance === 0) return "";
+      if (Math.abs(variancePercent || 0) > 25) return "text-amber-600 dark:text-amber-400";
+      return "";
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold" data-testid="text-tb-title">Final Trial Balance</h1>
+            <p className="text-muted-foreground">{sampleFinalTBView.entityName} - Comparative View</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-muted-foreground" data-testid="badge-tb-readonly">
               <Lock className="w-3 h-3 mr-1" />
-              Opening Locked
+              Read Only
+            </Badge>
+            <Badge variant="secondary" data-testid="badge-tb-lookup">
+              <FileSpreadsheet className="w-3 h-3 mr-1" />
+              Lookup from Adjustments WS
             </Badge>
             {isBalanced ? (
               <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" data-testid="badge-tb-balanced">
@@ -2232,37 +2650,17 @@ export default function NetToolPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <CardTitle className="text-lg">Trial Balance Workspace</CardTitle>
-                <CardDescription>Manage GL accounts, add adjustments, and tag for FS/Footnotes</CardDescription>
+                <CardTitle className="text-lg">Prior Year vs Current Year Comparison</CardTitle>
+                <CardDescription>Read-only view - Current Year Final is linked from TB Adjustments Workspace</CardDescription>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Column visibility toggles */}
-                {adjustmentColumns.length > 0 && (
-                  <div className="flex items-center gap-1 border rounded-md p-1">
-                    <span className="text-xs text-muted-foreground px-1">Show:</span>
-                    {adjustmentColumns.map(col => (
-                      <Button
-                        key={col.columnId}
-                        variant={col.isVisible ? "secondary" : "ghost"}
-                        size="sm"
-                        className="h-6 text-xs px-2"
-                        onClick={() => toggleColumnVisibility(col.columnId)}
-                        data-testid={`toggle-col-${col.columnId}`}
-                      >
-                        {col.isVisible ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
-                        {col.columnLabel}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-                <Button variant="outline" size="sm" onClick={() => setShowAddColumnDialog(true)} data-testid="button-add-column">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Column
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowAddRowDialog(true)} data-testid="button-add-row">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Row
-                </Button>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" data-testid="badge-prior-period">
+                  {sampleFinalTBView.priorPeriodLabel}
+                </Badge>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                <Badge variant="default" data-testid="badge-current-period">
+                  {sampleFinalTBView.currentPeriodLabel}
+                </Badge>
               </div>
             </div>
           </CardHeader>
@@ -2274,218 +2672,71 @@ export default function NetToolPage() {
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
-                    <TableHead className="w-28">Footnote</TableHead>
-                    <TableHead className="w-40">Footnote Description</TableHead>
-                    <TableHead className="text-center w-28">
+                    <TableHead className="text-center w-32 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
-                        <span className="text-xs text-muted-foreground">Opening</span>
-                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                        <span className="text-xs font-semibold">{sampleFinalTBView.priorPeriodLabel}</span>
+                        <span className="text-[10px] text-muted-foreground">Closing</span>
                       </div>
                     </TableHead>
-                    {/* Visible adjustment columns - single net column each */}
-                    {visibleAdjColumns.map(col => (
-                      <TableHead key={col.columnId} className="text-center w-24">
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs">{col.columnLabel}</span>
-                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
-                        </div>
-                      </TableHead>
-                    ))}
-                    {/* Net Movement column */}
-                    {hasNetMoveCol && (
-                      <TableHead className="text-center w-24 bg-accent/30">
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs font-semibold">Net Move</span>
-                          <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
-                        </div>
-                      </TableHead>
-                    )}
+                    <TableHead className="text-center w-32 bg-green-100 dark:bg-green-900">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">{sampleFinalTBView.currentPeriodLabel}</span>
+                        <span className="text-[10px] text-muted-foreground">Final</span>
+                      </div>
+                    </TableHead>
                     <TableHead className="text-center w-28">
                       <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold">Closing</span>
-                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                        <span className="text-xs font-semibold">Variance</span>
+                        <span className="text-[10px] text-muted-foreground">Amount</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-20">
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">%</span>
                       </div>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tbLines.map(line => {
-                    const netMovement = calculateNetMovement(line);
-                    const lineFootnotes = tbFootnotes.filter(fn => line.footnoteIds.includes(fn.footnoteId));
-                    
-                    return (
-                      <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-tb-${line.accountCode}`}>
-                        <TableCell 
-                          className="font-mono text-sm sticky left-0 bg-background z-10 cursor-pointer hover:text-primary hover:underline"
-                          onClick={() => setSelectedLineForSplit(line)}
-                          data-testid={`cell-account-code-${line.accountCode}`}
-                        >
-                          {line.accountCode}
-                          {splitDeclarations.some(s => s.accountId === line.accountId && !s.isComplete) && (
-                            <AlertCircle className="w-3 h-3 inline ml-1 text-amber-500" />
-                          )}
-                        </TableCell>
-                        <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
-                        {/* FS Category */}
-                        <TableCell>
-                          {editingFsCategory === line.lineId ? (
-                            <Select
-                              value={line.fsCategory || ""}
-                              onValueChange={(value) => handleFsCategoryUpdate(line.lineId, value === "none" ? null : value as FSCategory)}
-                            >
-                              <SelectTrigger className="h-7 text-xs" data-testid={`select-fs-category-${line.accountCode}`}>
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                {Object.entries(fsCategoryLabels).map(([key, label]) => (
-                                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs cursor-pointer ${getFsCategoryColor(line.fsCategory)}`}
-                              onClick={() => setEditingFsCategory(line.lineId)}
-                              data-testid={`badge-fs-category-${line.accountCode}`}
-                            >
-                              {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "Tag"}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        {/* Footnote Tag - Dropdown */}
-                        <TableCell>
-                          <Select
-                            value={line.footnoteIds[0] || "none"}
-                            onValueChange={(value) => handleFootnoteUpdate(line.lineId, value === "none" ? [] : [value])}
-                          >
-                            <SelectTrigger className="h-7 text-xs" data-testid={`select-footnote-${line.accountCode}`}>
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              {tbFootnotes.map((fn) => (
-                                <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        {/* Footnote Description - Dropdown with footnote titles */}
-                        <TableCell>
-                          <Select
-                            value={line.footnoteDescription || "gl-name"}
-                            onValueChange={(value) => handleFootnoteDescriptionUpdate(line.lineId, value === "gl-name" ? null : value)}
-                          >
-                            <SelectTrigger className="h-7 text-xs" data-testid={`select-fn-desc-${line.accountCode}`}>
-                              <SelectValue placeholder="Select description" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="gl-name">Use GL Name</SelectItem>
-                              {tbFootnotes.map((fn) => (
-                                <SelectItem key={fn.footnoteId} value={fn.footnoteTitle}>{fn.footnoteTitle}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        {/* Opening Balance - Single column, net amount (locked) */}
-                        <TableCell className={`text-right font-mono text-sm bg-muted/20 ${line.openingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                          {formatNetAmount(line.openingBalance)}
-                        </TableCell>
-                        {/* Adjustment Columns - Net Amount (editable) */}
-                        {visibleAdjColumns.map(col => {
-                          const amount = (line.amounts[col.columnId] as number) || 0;
-                          return (
-                            <TableCell key={col.columnId} className="text-right font-mono text-sm">
-                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId ? (
-                                <Input
-                                  type="number"
-                                  className="h-6 w-20 text-right text-xs"
-                                  defaultValue={amount}
-                                  autoFocus
-                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, parseFloat(e.target.value) || 0)}
-                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, parseFloat((e.target as HTMLInputElement).value) || 0)}
-                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}`}
-                                />
-                              ) : (
-                                <span 
-                                  className={`cursor-pointer hover:bg-muted rounded px-1 ${amount < 0 ? "text-red-600 dark:text-red-400" : ""}`}
-                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId })}
-                                >
-                                  {formatNetAmount(amount)}
-                                </span>
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                        {/* Net Movement - Calculated */}
-                        {hasNetMoveCol && (
-                          <TableCell className={`text-right font-mono text-sm bg-accent/30 font-semibold ${netMovement < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                            {formatNetAmount(netMovement)}
-                          </TableCell>
-                        )}
-                        {/* Closing Balance - Single column, net amount (calculated) - with Cross-Reference Trail */}
-                        <TableCell className={`text-right font-mono text-sm font-semibold bg-primary/5 ${line.closingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help underline decoration-dotted decoration-muted-foreground/50" data-testid={`trail-closing-${line.accountCode}`}>
-                                {formatNetAmount(line.closingBalance)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="w-72 p-3" data-testid={`tooltip-trail-${line.accountCode}`}>
-                              <div className="space-y-2">
-                                <p className="font-semibold text-xs text-muted-foreground mb-2">Source Trail</p>
-                                {getReferenceTrail(line).map((node, idx) => (
-                                  <div key={idx} className="flex items-center gap-2 text-sm">
-                                    <div className={`w-2 h-2 rounded-full ${
-                                      node.nodeType === "GL" ? "bg-blue-500" :
-                                      node.nodeType === "SPLIT" ? "bg-amber-500" :
-                                      node.nodeType === "WP" ? "bg-purple-500" :
-                                      "bg-green-500"
-                                    }`} />
-                                    <span className="flex-1">{node.label}</span>
-                                    {node.amount !== undefined && (
-                                      <span className={`font-mono text-xs ${node.amount < 0 ? "text-red-500" : ""}`}>
-                                        {formatNetAmount(node.amount)}
-                                      </span>
-                                    )}
-                                    {idx < getReferenceTrail(line).length - 1 && (
-                                      <ChevronRight className="w-3 h-3 text-muted-foreground absolute right-2" />
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {finalTBLines.map(line => (
+                    <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-ftb-${line.accountCode}`}>
+                      <TableCell className="font-mono text-sm sticky left-0 bg-background z-10" data-testid={`cell-ftb-code-${line.accountCode}`}>
+                        {line.accountCode}
+                      </TableCell>
+                      <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs ${getFsCategoryColor(line.fsCategory)}`}>
+                          {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "-"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.priorYearClosing < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {formatNetAmount(line.priorYearClosing)}
+                      </TableCell>
+                      <TableCell className={`text-right font-mono text-sm font-semibold bg-green-50 dark:bg-green-950 ${line.currentYearFinal < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {formatNetAmount(line.currentYearFinal)}
+                      </TableCell>
+                      <TableCell className={`text-right font-mono text-sm ${getVarianceColor(line.variance, line.variancePercent)} ${line.variance < 0 ? "text-red-600 dark:text-red-400" : line.variance > 0 ? "text-green-600 dark:text-green-400" : ""}`}>
+                        {line.variance === 0 ? "-" : formatNetAmount(line.variance)}
+                      </TableCell>
+                      <TableCell className={`text-right font-mono text-sm ${getVarianceColor(line.variance, line.variancePercent)}`}>
+                        {line.variancePercent === null || line.variancePercent === 0 ? "-" : `${line.variancePercent.toFixed(1)}%`}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
                     <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell className={`text-right font-mono ${totals.totalOpeningBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-tb-opening-total">
-                      {formatNetAmount(totals.totalOpeningBalance)}
+                    <TableCell className={`text-right font-mono bg-slate-100 dark:bg-slate-800 ${totalPrior < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-ftb-prior-total">
+                      {formatNetAmount(totalPrior)}
                     </TableCell>
-                    {visibleAdjColumns.map(col => {
-                      const colTotal = tbLines.reduce((sum, line) => sum + ((line.amounts[col.columnId] as number) || 0), 0);
-                      return (
-                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                          {formatNetAmount(colTotal)}
-                        </TableCell>
-                      );
-                    })}
-                    {hasNetMoveCol && (
-                      <TableCell className="text-right font-mono bg-accent/30">
-                        {formatNetAmount(tbLines.reduce((sum, line) => sum + calculateNetMovement(line), 0))}
-                      </TableCell>
-                    )}
-                    <TableCell className={`text-right font-mono bg-primary/10 ${totals.totalClosingBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-tb-closing-total">
-                      {formatNetAmount(totals.totalClosingBalance)}
+                    <TableCell className={`text-right font-mono bg-green-100 dark:bg-green-900 ${totalCurrent < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-ftb-current-total">
+                      {formatNetAmount(totalCurrent)}
                     </TableCell>
+                    <TableCell className={`text-right font-mono ${(totalCurrent - totalPrior) < 0 ? "text-red-600 dark:text-red-400" : (totalCurrent - totalPrior) > 0 ? "text-green-600 dark:text-green-400" : ""}`}>
+                      {formatNetAmount(totalCurrent - totalPrior)}
+                    </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -2493,17 +2744,17 @@ export default function NetToolPage() {
           </CardContent>
         </Card>
 
-        {/* FS Category Summary */}
+        {/* FS Category Summary - Read Only */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Financial Statement Category Summary</CardTitle>
-            <CardDescription>Auto-population mapping for financial statements</CardDescription>
+            <CardDescription>Current year balances by FS category (from Adjustments Workspace)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Object.entries(fsCategoryLabels).slice(0, 8).map(([key, label]) => {
-                const categoryLines = tbLines.filter(l => l.fsCategory === key);
-                const netAmount = categoryLines.reduce((sum, l) => sum + l.closingBalance, 0);
+                const categoryLines = finalTBLines.filter(l => l.fsCategory === key);
+                const netAmount = categoryLines.reduce((sum, l) => sum + l.currentYearFinal, 0);
                 
                 return (
                   <div key={key} className="p-3 border rounded-md">
@@ -2521,205 +2772,21 @@ export default function NetToolPage() {
           </CardContent>
         </Card>
 
-        {/* Add Column Dialog */}
-        <Dialog open={showAddColumnDialog} onOpenChange={setShowAddColumnDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Adjustment Column</DialogTitle>
-              <DialogDescription>Add a new adjustment column (net amount: DR positive, CR negative)</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+        {/* Note about data source */}
+        <Card className="bg-muted/30">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <FileSpreadsheet className="w-5 h-5 text-muted-foreground mt-0.5" />
               <div>
-                <label className="text-sm font-medium">Column Label</label>
-                <Input 
-                  placeholder="e.g., Tax Adjustments" 
-                  value={newColumnLabel}
-                  onChange={(e) => setNewColumnLabel(e.target.value)}
-                  data-testid="input-new-column-label"
-                />
+                <p className="text-sm font-medium">Data Source</p>
+                <p className="text-sm text-muted-foreground">
+                  Current Year Final balances are calculated in the TB Adjustments Workspace where RJE/AJE entries, 
+                  FS Category tagging, and Footnote tagging are managed. This view is read-only for comparison purposes.
+                </p>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddColumnDialog(false)}>Cancel</Button>
-              <Button onClick={handleAddColumn} data-testid="button-confirm-add-column">Add Column</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Row Dialog */}
-        <Dialog open={showAddRowDialog} onOpenChange={setShowAddRowDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Account Row</DialogTitle>
-              <DialogDescription>Add a new GL account to the trial balance</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <label className="text-sm font-medium">Account Code</label>
-                <Input 
-                  placeholder="e.g., 1400" 
-                  value={newRowAccountCode}
-                  onChange={(e) => setNewRowAccountCode(e.target.value)}
-                  data-testid="input-new-row-code"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Account Name</label>
-                <Input 
-                  placeholder="e.g., Other Receivables" 
-                  value={newRowAccountName}
-                  onChange={(e) => setNewRowAccountName(e.target.value)}
-                  data-testid="input-new-row-name"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddRowDialog(false)}>Cancel</Button>
-              <Button onClick={handleAddRow} data-testid="button-confirm-add-row">Add Account</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Split Declaration Panel (Right Drawer) */}
-        <Sheet open={selectedLineForSplit !== null} onOpenChange={(open) => !open && setSelectedLineForSplit(null)}>
-          <SheetContent className="w-[500px] sm:w-[600px] overflow-y-auto" data-testid="panel-split-declaration">
-            {selectedLineForSplit && (
-              <>
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5" />
-                    Split Declaration
-                  </SheetTitle>
-                  <SheetDescription>
-                    GL Account: {selectedLineForSplit.accountCode} - {selectedLineForSplit.accountName}
-                  </SheetDescription>
-                </SheetHeader>
-                
-                {(() => {
-                  const existingSplit = splitDeclarations.find(s => s.accountId === selectedLineForSplit.accountId);
-                  const tbBalance = selectedLineForSplit.closingBalance;
-                  const totalAssigned = existingSplit?.totalAssigned || 0;
-                  const totalUnassigned = tbBalance - totalAssigned;
-                  const isComplete = Math.abs(totalUnassigned) < 0.01;
-                  
-                  return (
-                    <div className="mt-6 space-y-6">
-                      {/* Split Summary Section */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm">Balance Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="text-center p-3 rounded-md bg-muted">
-                              <div className="text-xs text-muted-foreground mb-1">Trial Balance</div>
-                              <div className={`font-mono font-semibold ${tbBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-split-tb-balance">
-                                {tbBalance < 0 ? `(${formatCurrency(Math.abs(tbBalance))})` : formatCurrency(tbBalance)}
-                              </div>
-                            </div>
-                            <div className="text-center p-3 rounded-md bg-green-50 dark:bg-green-900/20">
-                              <div className="text-xs text-muted-foreground mb-1">Assigned</div>
-                              <div className={`font-mono font-semibold text-green-600 dark:text-green-400`} data-testid="text-split-assigned">
-                                {totalAssigned < 0 ? `(${formatCurrency(Math.abs(totalAssigned))})` : formatCurrency(totalAssigned)}
-                              </div>
-                            </div>
-                            <div className={`text-center p-3 rounded-md ${isComplete ? "bg-green-50 dark:bg-green-900/20" : "bg-amber-50 dark:bg-amber-900/20"}`}>
-                              <div className="text-xs text-muted-foreground mb-1">Unassigned</div>
-                              <div className={`font-mono font-semibold ${isComplete ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`} data-testid="text-split-unassigned">
-                                {totalUnassigned < 0 ? `(${formatCurrency(Math.abs(totalUnassigned))})` : formatCurrency(totalUnassigned)}
-                                {!isComplete && <AlertCircle className="w-3 h-3 inline ml-1" />}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex justify-center">
-                            {isComplete ? (
-                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Complete
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-amber-500 text-amber-600">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Incomplete - Balance not fully assigned
-                              </Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Split Components Table */}
-                      <Card>
-                        <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                          <CardTitle className="text-sm">Split Components</CardTitle>
-                          <Button size="sm" variant="outline" data-testid="button-add-split-component">
-                            <Plus className="w-4 h-4 mr-1" />
-                            Add Component
-                          </Button>
-                        </CardHeader>
-                        <CardContent>
-                          {existingSplit && existingSplit.components.length > 0 ? (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Component</TableHead>
-                                  <TableHead className="text-right">Amount</TableHead>
-                                  <TableHead>Source</TableHead>
-                                  <TableHead>Basis</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {existingSplit.components.map((comp) => (
-                                  <TableRow key={comp.componentId} data-testid={`row-split-${comp.componentId}`}>
-                                    <TableCell className="font-medium text-sm">{comp.componentName}</TableCell>
-                                    <TableCell className={`text-right font-mono ${comp.amount < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
-                                      {comp.amount < 0 ? `(${formatCurrency(Math.abs(comp.amount))})` : formatCurrency(comp.amount)}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className="text-xs">
-                                        {comp.sourceType === "DECLARED" && "Declared"}
-                                        {comp.sourceType === "GL_BACKED" && "GL-Backed"}
-                                        {comp.sourceType === "CALCULATED" && "Calculated"}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate" title={comp.basis}>
-                                      {comp.basis}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          ) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <FileSpreadsheet className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No split components declared</p>
-                              <p className="text-xs mt-1">Add components to break down this GL balance</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      {/* Split Rules */}
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-muted-foreground" />
-                            Split Rules
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-xs text-muted-foreground space-y-2">
-                          <p>• Total splits must equal GL balance</p>
-                          <p>• Declared splits require name and explanation</p>
-                          <p>• No proportional or automated allocations</p>
-                          <p>• Declared splits are period-locked after close</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-          </SheetContent>
-        </Sheet>
+          </CardContent>
+        </Card>
       </div>
     );
   };
@@ -3067,6 +3134,8 @@ export default function NetToolPage() {
         return renderEquityStatement();
       case "fs-cash-flow":
         return renderCashFlowStatement();
+      case "tb-adjustments-workspace":
+        return renderTBAdjustmentsWorkspace();
       case "fs-trial-balance":
         return renderTrialBalance();
       case "working-papers":

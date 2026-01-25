@@ -44,6 +44,7 @@ import {
   Scale,
   ArrowDownUp,
   Table2,
+  Edit3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -629,7 +630,8 @@ export function AppSidebar() {
   
   // Working Papers & Data section
   const workingPapersNav = [
-    { title: "Trial Balance", url: "/nettool/fs/trial-balance", icon: Calculator },
+    { title: "TB Adjustments", url: "/nettool/tb-adjustments-workspace", icon: Edit3 },
+    { title: "Final TB", url: "/nettool/fs/trial-balance", icon: Calculator },
     { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
     { title: "Disclosures", url: "/nettool/disclosures", icon: FileText },
     { title: "Schedules", url: "/nettool/schedules", icon: FileSpreadsheet },
@@ -653,6 +655,7 @@ export function AppSidebar() {
   const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs") && !location.includes("trial-balance"));
   const [wpExpanded, setWpExpanded] = useState(
     location.includes("trial-balance") || 
+    location.includes("tb-adjustments-workspace") ||
     location.includes("working-papers") || 
     location.includes("disclosures") || 
     location.includes("schedules") || 
