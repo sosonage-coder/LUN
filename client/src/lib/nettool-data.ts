@@ -12,6 +12,10 @@ import type {
   StatementLineItem,
   ScheduleLayoutType,
   TBFootnote,
+  FSComprehensiveIncome,
+  FSBasisOfPreparation,
+  AccountingPolicy,
+  MDADocument,
 } from "@shared/schema";
 
 // Sample Periods
@@ -1173,4 +1177,256 @@ export const fsCategoryLabels: Record<FSCategory, string> = {
   CASH_OPERATING: "Cash - Operating",
   CASH_INVESTING: "Cash - Investing",
   CASH_FINANCING: "Cash - Financing",
+};
+
+// Statement of Comprehensive Income
+export const sampleComprehensiveIncome: FSComprehensiveIncome = {
+  periodId: "FY2024",
+  currentPeriodLabel: "Year Ended Dec 31, 2024",
+  priorPeriodLabel: "Year Ended Dec 31, 2023",
+  netIncome: { current: 825000, prior: 555000 },
+  ociItems: [
+    {
+      itemId: "oci-fx",
+      label: "Foreign currency translation adjustments",
+      isReclassifiable: true,
+      current: 15000,
+      prior: -25000,
+      noteRef: "note-oci",
+    },
+    {
+      itemId: "oci-hedge",
+      label: "Unrealized gain (loss) on cash flow hedges",
+      isReclassifiable: true,
+      current: -5000,
+      prior: 10000,
+      noteRef: "note-oci",
+    },
+    {
+      itemId: "oci-pension",
+      label: "Actuarial gain (loss) on defined benefit plans",
+      isReclassifiable: false,
+      current: -10000,
+      prior: -15000,
+      noteRef: "note-pension",
+    },
+    {
+      itemId: "oci-revaluation",
+      label: "Revaluation surplus on land and buildings",
+      isReclassifiable: false,
+      current: 0,
+      prior: 30000,
+      noteRef: "note-ppe",
+    },
+  ],
+  totalOCI: { current: 0, prior: 0 },
+  totalComprehensiveIncome: { current: 825000, prior: 555000 },
+};
+
+// Basis of Preparation
+export const sampleBasisOfPreparation: FSBasisOfPreparation = {
+  periodId: "FY2024",
+  reportingFramework: "US_GAAP",
+  frameworkStatement: "These consolidated financial statements have been prepared in accordance with accounting principles generally accepted in the United States of America (US GAAP).",
+  measurementBasis: "The financial statements have been prepared under the historical cost convention, except for certain financial instruments measured at fair value as disclosed in the accounting policies.",
+  functionalCurrency: "USD",
+  presentationCurrency: "USD",
+  goingConcern: {
+    status: "CONFIRMED",
+    statement: "Management has assessed the Company's ability to continue as a going concern and is satisfied that the Company has the resources to continue in business for the foreseeable future. Accordingly, the financial statements have been prepared on a going concern basis.",
+  },
+  consolidationStatement: "The consolidated financial statements include the accounts of Acme Corporation Inc. and its wholly-owned subsidiaries. All intercompany transactions and balances have been eliminated in consolidation.",
+  comparativeStatement: "Comparative figures for the prior year have been presented. Certain prior year amounts have been reclassified to conform to the current year presentation.",
+  roundingPolicy: "Amounts in the financial statements are presented in US dollars and rounded to the nearest dollar unless otherwise indicated.",
+  isLocked: false,
+  updatedAt: "2024-12-20T14:00:00Z",
+  updatedBy: "Controller",
+};
+
+// Accounting Policies Library
+export const sampleAccountingPolicies: AccountingPolicy[] = [
+  {
+    policyId: "pol-revenue",
+    policyName: "Revenue Recognition",
+    category: "Revenue",
+    policyText: `Revenue is recognized when control of promised goods or services is transferred to customers in an amount that reflects the consideration expected to be entitled in exchange for those goods or services.
+
+The Company's revenue is derived primarily from software license sales, subscription services, and professional services. For each revenue stream:
+
+**Software Licenses:** Revenue from perpetual software licenses is recognized at the point in time when the software is delivered and the customer has the right to use the software.
+
+**Subscription Services:** Revenue from subscription services is recognized ratably over the subscription period as the services are provided.
+
+**Professional Services:** Revenue from professional services is recognized as services are rendered, typically using an input method based on hours incurred.`,
+    effectiveFrom: "2024-01-01",
+    version: 2,
+    status: "ACTIVE",
+    linkedNotes: ["note-revenue"],
+    isBoilerplate: false,
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-15T10:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-ppe",
+    policyName: "Property, Plant & Equipment",
+    category: "Assets",
+    policyText: `Property, plant and equipment are stated at cost less accumulated depreciation and accumulated impairment losses. Cost includes expenditure that is directly attributable to the acquisition of the asset.
+
+Depreciation is calculated using the straight-line method over the estimated useful lives of the assets:
+- Buildings: 25-40 years
+- Machinery & Equipment: 5-10 years
+- Furniture & Fixtures: 5-7 years
+- Computer Equipment: 3-5 years
+- Leasehold Improvements: Lesser of useful life or lease term
+
+Residual values and useful lives are reviewed, and adjusted if appropriate, at each balance sheet date. An asset's carrying amount is written down immediately to its recoverable amount if the asset's carrying amount is greater than its estimated recoverable amount.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-ppe"],
+    isBoilerplate: true,
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-leases",
+    policyName: "Leases",
+    category: "Leases",
+    policyText: `The Company determines if an arrangement is a lease at inception. Right-of-use assets and lease liabilities are recognized at the lease commencement date based on the present value of future lease payments over the lease term.
+
+**Right-of-use assets:** Right-of-use assets are measured at the present value of future lease payments, adjusted for any lease payments made at or before the commencement date, plus any initial direct costs incurred.
+
+**Lease liabilities:** Lease liabilities are measured at the present value of future lease payments discounted using the Company's incremental borrowing rate.
+
+The Company has elected not to recognize right-of-use assets and lease liabilities for short-term leases (leases with a term of 12 months or less) and leases of low-value assets.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-leases"],
+    isBoilerplate: true,
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-inventory",
+    policyName: "Inventory",
+    category: "Assets",
+    policyText: `Inventories are stated at the lower of cost or net realizable value. Cost is determined using the first-in, first-out (FIFO) method.
+
+Net realizable value is the estimated selling price in the ordinary course of business less the estimated costs of completion and the estimated costs necessary to make the sale.
+
+When inventories are sold, the carrying amount is recognized as an expense in the period in which the related revenue is recognized.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-inventory"],
+    isBoilerplate: true,
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-tax",
+    policyName: "Income Taxes",
+    category: "Taxes",
+    policyText: `The Company accounts for income taxes using the asset and liability method. Deferred tax assets and liabilities are recognized for the future tax consequences attributable to differences between the financial statement carrying amounts of existing assets and liabilities and their respective tax bases.
+
+Deferred tax assets and liabilities are measured using enacted tax rates expected to apply to taxable income in the years in which those temporary differences are expected to be recovered or settled.
+
+A valuation allowance is established when it is more likely than not that some or all of the deferred tax assets will not be realized.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-tax"],
+    isBoilerplate: true,
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+];
+
+// MD&A Document
+export const sampleMDA: MDADocument = {
+  periodId: "FY2024",
+  documentTitle: "Management Discussion & Analysis - Fiscal Year 2024",
+  sections: [
+    {
+      sectionId: "mda-overview",
+      sectionTitle: "Business Overview",
+      orderIndex: 0,
+      narrativeText: `Acme Corporation Inc. is a leading provider of enterprise software solutions, serving customers across North America, Europe, and Asia Pacific. During fiscal year 2024, the Company continued to execute on its strategic growth initiatives while maintaining operational discipline.
+
+The Company operates primarily in two business segments:
+- **Enterprise Software:** Providing core business management solutions
+- **Cloud Services:** Offering subscription-based cloud hosting and support services`,
+      linkedFsLines: [],
+      linkedNotes: [],
+      status: "APPROVED",
+      lastUpdated: "2024-12-20T10:00:00Z",
+      updatedBy: "CFO",
+    },
+    {
+      sectionId: "mda-results",
+      sectionTitle: "Results of Operations",
+      orderIndex: 1,
+      narrativeText: `**Revenue:** Total revenue increased by 10.1% to $12.5 million in fiscal 2024 compared to $11.35 million in fiscal 2023. This growth was primarily driven by strong performance in our subscription services segment and increased software license sales.
+
+**Gross Profit:** Gross profit increased to $5.0 million (40.0% gross margin) compared to $4.4 million (38.8% gross margin) in the prior year. The improvement in gross margin reflects ongoing optimization of our service delivery costs and favorable product mix.
+
+**Operating Expenses:** Operating expenses increased by 7.7% to $3.83 million, primarily due to increased investment in research and development activities and higher personnel costs to support growth initiatives.
+
+**Net Income:** Net income increased by 48.6% to $825,000 compared to $555,000 in fiscal 2023, reflecting both top-line growth and improved operational efficiency.`,
+      linkedFsLines: ["is-revenue", "is-gross", "is-net"],
+      linkedNotes: ["note-revenue"],
+      status: "APPROVED",
+      lastUpdated: "2024-12-20T10:00:00Z",
+      updatedBy: "CFO",
+    },
+    {
+      sectionId: "mda-liquidity",
+      sectionTitle: "Liquidity and Capital Resources",
+      orderIndex: 2,
+      narrativeText: `**Cash Position:** As of December 31, 2024, the Company had cash and cash equivalents of $2.85 million, an increase from $2.45 million at the prior year end.
+
+**Operating Cash Flow:** Net cash provided by operating activities was $1.2 million, driven by strong net income and effective working capital management.
+
+**Investing Activities:** Capital expenditures totaled $320,000 during the year, primarily for technology infrastructure upgrades and equipment purchases.
+
+**Financing Activities:** The Company made scheduled debt repayments of $500,000 and paid dividends of $175,000 to shareholders.
+
+**Debt Levels:** Total debt decreased to $3.7 million from $4.2 million as the Company continues to deleverage its balance sheet.
+
+Management believes that current cash resources and cash flows from operations will be sufficient to meet the Company's working capital and capital expenditure requirements for the next twelve months.`,
+      linkedFsLines: ["bs-cash", "cf-operating-total", "bs-lt-debt"],
+      linkedNotes: ["note-cash", "note-debt"],
+      status: "REVIEWED",
+      lastUpdated: "2024-12-19T15:00:00Z",
+      updatedBy: "Controller",
+    },
+    {
+      sectionId: "mda-outlook",
+      sectionTitle: "Outlook",
+      orderIndex: 3,
+      narrativeText: `Looking ahead to fiscal 2025, management remains cautiously optimistic about the Company's growth prospects. Key strategic priorities include:
+
+- Continued investment in cloud services capabilities
+- Expansion of our customer base in the mid-market segment
+- Development of next-generation product features
+- Maintaining operational efficiency while scaling the business
+
+Management expects revenue growth in the range of 8-12% for fiscal 2025, with continued improvement in profitability.`,
+      linkedFsLines: [],
+      linkedNotes: [],
+      status: "DRAFT",
+      lastUpdated: "2024-12-22T09:00:00Z",
+      updatedBy: "CFO",
+    },
+  ],
+  status: "REVIEWED",
+  isLocked: false,
+  updatedAt: "2024-12-20T10:00:00Z",
+  updatedBy: "CFO",
 };

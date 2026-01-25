@@ -75,6 +75,7 @@ function Router() {
       <Route path="/close-tasks" component={CloseTasksPage} />
       <Route path="/nettool" component={NetToolPage} />
       <Route path="/nettool/fs/:fsSection" component={NetToolPage} />
+      <Route path="/nettool/notes/:notesSection" component={NetToolPage} />
       <Route path="/nettool/:section" component={NetToolPage} />
       <Route path="/close-control" component={CloseControlDashboard} />
       <Route path="/close-control/templates" component={CloseControlTemplatesPage} />

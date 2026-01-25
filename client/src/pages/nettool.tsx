@@ -65,15 +65,24 @@ import {
   sampleTBFootnotes,
   sampleSplitDeclarations,
   sampleWorkingPapers,
+  sampleComprehensiveIncome,
+  sampleBasisOfPreparation,
+  sampleAccountingPolicies,
+  sampleMDA,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection } from "@shared/schema";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EyeOff } from "lucide-react";
 
 export default function NetToolPage() {
   const [, params] = useRoute("/nettool/:section");
   const [, fsParams] = useRoute("/nettool/fs/:fsSection");
-  const section = fsParams?.fsSection ? `fs-${fsParams.fsSection}` : (params?.section || "dashboard");
+  const [, notesParams] = useRoute("/nettool/notes/:notesSection");
+  const section = fsParams?.fsSection 
+    ? `fs-${fsParams.fsSection}` 
+    : notesParams?.notesSection 
+      ? `notes-${notesParams.notesSection}` 
+      : (params?.section || "dashboard");
   
   const [selectedNote, setSelectedNote] = useState<DisclosureNote | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<DisclosureSchedule | null>(null);
@@ -1347,6 +1356,110 @@ export default function NetToolPage() {
     </div>
   );
 
+  // Calculate OCI totals
+  const reclassifiableOCI = sampleComprehensiveIncome.ociItems.filter(i => i.isReclassifiable);
+  const nonReclassifiableOCI = sampleComprehensiveIncome.ociItems.filter(i => !i.isReclassifiable);
+  const totalReclassifiableCurrent = reclassifiableOCI.reduce((sum, i) => sum + i.current, 0);
+  const totalReclassifiablePrior = reclassifiableOCI.reduce((sum, i) => sum + i.prior, 0);
+  const totalNonReclassifiableCurrent = nonReclassifiableOCI.reduce((sum, i) => sum + i.current, 0);
+  const totalNonReclassifiablePrior = nonReclassifiableOCI.reduce((sum, i) => sum + i.prior, 0);
+  const totalOCICurrent = totalReclassifiableCurrent + totalNonReclassifiableCurrent;
+  const totalOCIPrior = totalReclassifiablePrior + totalNonReclassifiablePrior;
+  const totalCompIncCurrent = sampleComprehensiveIncome.netIncome.current + totalOCICurrent;
+  const totalCompIncPrior = sampleComprehensiveIncome.netIncome.prior + totalOCIPrior;
+
+  const renderComprehensiveIncome = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-comprehensive-income-title">Statement of Comprehensive Income</h1>
+          <p className="text-muted-foreground">Net income and other comprehensive income</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          <Lock className="h-3 w-3 mr-1" />
+          System-Calculated
+        </Badge>
+      </div>
+
+      <Card>
+        <CardContent className="p-0 pt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50%]">Line Item</TableHead>
+                <TableHead className="text-right">{sampleComprehensiveIncome.currentPeriodLabel}</TableHead>
+                <TableHead className="text-right">{sampleComprehensiveIncome.priorPeriodLabel}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="font-semibold bg-muted/30">
+                <TableCell>Net income</TableCell>
+                <TableCell className="text-right font-mono">{formatCurrency(sampleComprehensiveIncome.netIncome.current)}</TableCell>
+                <TableCell className="text-right font-mono text-muted-foreground">{formatCurrency(sampleComprehensiveIncome.netIncome.prior)}</TableCell>
+              </TableRow>
+              
+              <TableRow className="bg-muted/20">
+                <TableCell colSpan={3} className="font-semibold">Other comprehensive income (loss):</TableCell>
+              </TableRow>
+              
+              <TableRow className="bg-muted/10">
+                <TableCell className="pl-4 italic text-sm text-muted-foreground">Items that may be reclassified to profit or loss:</TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+              
+              {reclassifiableOCI.map((item) => (
+                <TableRow key={item.itemId}>
+                  <TableCell className="pl-8">{item.label}</TableCell>
+                  <TableCell className={`text-right font-mono ${item.current < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                    {formatCurrency(item.current)}
+                  </TableCell>
+                  <TableCell className={`text-right font-mono text-muted-foreground ${item.prior < 0 ? "text-red-400" : ""}`}>
+                    {formatCurrency(item.prior)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              
+              <TableRow className="bg-muted/10">
+                <TableCell className="pl-4 italic text-sm text-muted-foreground">Items that will not be reclassified to profit or loss:</TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+              </TableRow>
+              
+              {nonReclassifiableOCI.map((item) => (
+                <TableRow key={item.itemId}>
+                  <TableCell className="pl-8">{item.label}</TableCell>
+                  <TableCell className={`text-right font-mono ${item.current < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                    {formatCurrency(item.current)}
+                  </TableCell>
+                  <TableCell className={`text-right font-mono text-muted-foreground ${item.prior < 0 ? "text-red-400" : ""}`}>
+                    {formatCurrency(item.prior)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              
+              <TableRow className="font-semibold border-t">
+                <TableCell className="pl-4">Total other comprehensive income (loss)</TableCell>
+                <TableCell className={`text-right font-mono ${totalOCICurrent < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                  {formatCurrency(totalOCICurrent)}
+                </TableCell>
+                <TableCell className={`text-right font-mono text-muted-foreground ${totalOCIPrior < 0 ? "text-red-400" : ""}`}>
+                  {formatCurrency(totalOCIPrior)}
+                </TableCell>
+              </TableRow>
+              
+              <TableRow className="font-bold bg-muted/50 border-t-2">
+                <TableCell>Total comprehensive income</TableCell>
+                <TableCell className="text-right font-mono text-green-600">{formatCurrency(totalCompIncCurrent)}</TableCell>
+                <TableCell className="text-right font-mono text-muted-foreground">{formatCurrency(totalCompIncPrior)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderEquityStatement = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -2611,6 +2724,321 @@ export default function NetToolPage() {
     );
   };
 
+  const renderBasisOfPreparation = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-basis-of-preparation-title">Basis of Preparation</h1>
+          <p className="text-muted-foreground">Reporting framework and measurement basis</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">
+            {sampleBasisOfPreparation.isLocked ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
+            {sampleBasisOfPreparation.isLocked ? "Locked" : "Editable"}
+          </Badge>
+          <Button size="sm" variant="outline" data-testid="button-edit-basis">
+            <Edit3 className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Reporting Framework</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Framework</p>
+              <Badge variant="secondary" className="text-sm">
+                {sampleBasisOfPreparation.reportingFramework === "US_GAAP" ? "US GAAP" : 
+                 sampleBasisOfPreparation.reportingFramework === "IFRS" ? "IFRS" : "Local GAAP"}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Framework Statement</p>
+              <p className="text-sm">{sampleBasisOfPreparation.frameworkStatement}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Currencies</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Functional Currency</p>
+                <Badge variant="outline">{sampleBasisOfPreparation.functionalCurrency}</Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Presentation Currency</p>
+                <Badge variant="outline">{sampleBasisOfPreparation.presentationCurrency}</Badge>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Rounding Policy</p>
+              <p className="text-sm">{sampleBasisOfPreparation.roundingPolicy}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Measurement Basis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{sampleBasisOfPreparation.measurementBasis}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              Going Concern Assessment
+              <Badge 
+                variant={
+                  sampleBasisOfPreparation.goingConcern.status === "CONFIRMED" ? "default" :
+                  sampleBasisOfPreparation.goingConcern.status === "MATERIAL_UNCERTAINTY" ? "destructive" :
+                  "secondary"
+                }
+                data-testid="badge-going-concern-status"
+              >
+                {sampleBasisOfPreparation.goingConcern.status === "CONFIRMED" ? "Confirmed" :
+                 sampleBasisOfPreparation.goingConcern.status === "MATERIAL_UNCERTAINTY" ? "Material Uncertainty" :
+                 "N/A"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{sampleBasisOfPreparation.goingConcern.statement}</p>
+          </CardContent>
+        </Card>
+
+        {sampleBasisOfPreparation.consolidationStatement && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg">Consolidation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm">{sampleBasisOfPreparation.consolidationStatement}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg">Comparative Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">{sampleBasisOfPreparation.comparativeStatement}</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  const renderAccountingPolicies = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-accounting-policies-title">Accounting Policies</h1>
+          <p className="text-muted-foreground">Significant accounting policies and methods</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" data-testid="button-add-policy">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Policy
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="md:col-span-1 h-fit">
+          <CardHeader>
+            <CardTitle className="text-sm">Policy Categories</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="space-y-1 p-2">
+              {Array.from(new Set(sampleAccountingPolicies.map(p => p.category))).map(category => (
+                <Button
+                  key={category}
+                  variant="ghost"
+                  className="w-full justify-start text-sm"
+                  data-testid={`button-category-${category.toLowerCase()}`}
+                >
+                  {category}
+                  <Badge variant="secondary" className="ml-auto">
+                    {sampleAccountingPolicies.filter(p => p.category === category).length}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="md:col-span-2 space-y-4">
+          {sampleAccountingPolicies.map(policy => (
+            <Card key={policy.policyId} data-testid={`card-policy-${policy.policyId}`}>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    {policy.policyName}
+                    <Badge variant="secondary" className="text-xs">{policy.category}</Badge>
+                    {policy.isBoilerplate && <Badge variant="outline" className="text-xs">Template</Badge>}
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-1">
+                    Version {policy.version} - Effective from {policy.effectiveFrom}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={
+                      policy.status === "ACTIVE" ? "default" :
+                      policy.status === "DRAFT" ? "secondary" :
+                      "outline"
+                    }
+                    data-testid={`badge-policy-status-${policy.policyId}`}
+                  >
+                    {policy.status}
+                  </Badge>
+                  <Button size="icon" variant="ghost" data-testid={`button-edit-policy-${policy.policyId}`}>
+                    <Edit3 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm whitespace-pre-line text-muted-foreground line-clamp-4">
+                  {policy.policyText}
+                </div>
+                {policy.linkedNotes.length > 0 && (
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                    <span className="text-xs text-muted-foreground">Linked to:</span>
+                    {policy.linkedNotes.map(noteId => (
+                      <Badge 
+                        key={noteId} 
+                        variant="outline" 
+                        className="text-xs cursor-pointer hover-elevate"
+                        data-testid={`badge-policy-note-${policy.policyId}-${noteId}`}
+                      >
+                        {sampleNotes.find(n => n.noteId === noteId)?.noteNumber || noteId}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMDA = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-mda-title">Management Discussion & Analysis</h1>
+          <p className="text-muted-foreground">{sampleMDA.documentTitle}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge 
+            variant={
+              sampleMDA.status === "FINAL" ? "default" :
+              sampleMDA.status === "REVIEWED" ? "secondary" :
+              "outline"
+            }
+            data-testid="badge-mda-status"
+          >
+            {sampleMDA.status}
+          </Badge>
+          <Button size="sm" variant="outline" data-testid="button-add-mda-section">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Section
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {sampleMDA.sections.map(section => (
+          <Card key={section.sectionId} data-testid={`card-mda-${section.sectionId}`}>
+            <CardHeader className="flex flex-row items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg">{section.sectionTitle}</CardTitle>
+                <CardDescription className="text-xs mt-1">
+                  Last updated: {new Date(section.lastUpdated).toLocaleDateString()} by {section.updatedBy}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={
+                    section.status === "APPROVED" ? "default" :
+                    section.status === "REVIEWED" ? "secondary" :
+                    "outline"
+                  }
+                  data-testid={`badge-mda-section-status-${section.sectionId}`}
+                >
+                  {section.status}
+                </Badge>
+                <Button size="icon" variant="ghost" data-testid={`button-edit-mda-section-${section.sectionId}`}>
+                  <Edit3 className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                {section.narrativeText.split('\n\n').map((para, idx) => (
+                  <p key={idx} className="text-sm text-muted-foreground leading-relaxed">
+                    {para.split('**').map((part, i) => 
+                      i % 2 === 1 ? <strong key={i} className="text-foreground">{part}</strong> : part
+                    )}
+                  </p>
+                ))}
+              </div>
+              
+              {(section.linkedFsLines.length > 0 || section.linkedNotes.length > 0) && (
+                <div className="flex flex-wrap items-center gap-2 pt-3 border-t">
+                  {section.linkedFsLines.length > 0 && (
+                    <>
+                      <span className="text-xs text-muted-foreground">FS Lines:</span>
+                      {section.linkedFsLines.map(lineId => (
+                        <Badge 
+                          key={lineId} 
+                          variant="outline" 
+                          className="text-xs"
+                          data-testid={`badge-mda-fs-line-${section.sectionId}-${lineId}`}
+                        >
+                          {lineId}
+                        </Badge>
+                      ))}
+                    </>
+                  )}
+                  {section.linkedNotes.length > 0 && (
+                    <>
+                      <span className="text-xs text-muted-foreground ml-2">Notes:</span>
+                      {section.linkedNotes.map(noteId => (
+                        <Badge 
+                          key={noteId} 
+                          variant="outline" 
+                          className="text-xs cursor-pointer hover-elevate"
+                          data-testid={`badge-mda-note-${section.sectionId}-${noteId}`}
+                        >
+                          {sampleNotes.find(n => n.noteId === noteId)?.noteNumber || noteId}
+                        </Badge>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (section) {
       case "disclosures":
@@ -2633,6 +3061,8 @@ export default function NetToolPage() {
         return renderBalanceSheet();
       case "fs-income-statement":
         return renderIncomeStatement();
+      case "fs-comprehensive-income":
+        return renderComprehensiveIncome();
       case "fs-equity-statement":
         return renderEquityStatement();
       case "fs-cash-flow":
@@ -2641,6 +3071,12 @@ export default function NetToolPage() {
         return renderTrialBalance();
       case "working-papers":
         return renderWorkingPapers();
+      case "notes-basis-of-preparation":
+        return renderBasisOfPreparation();
+      case "notes-accounting-policies":
+        return renderAccountingPolicies();
+      case "notes-mda":
+        return renderMDA();
       default:
         return renderDashboard();
     }

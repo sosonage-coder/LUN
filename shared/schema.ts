@@ -1976,6 +1976,83 @@ export interface FSCashFlowStatement {
   reconciliationCheck: boolean;
 }
 
+// Statement of Comprehensive Income
+export interface FSComprehensiveIncome {
+  periodId: string;
+  currentPeriodLabel: string;
+  priorPeriodLabel: string;
+  netIncome: { current: number; prior: number };
+  ociItems: {
+    itemId: string;
+    label: string;
+    isReclassifiable: boolean;
+    current: number;
+    prior: number;
+    noteRef: string | null;
+  }[];
+  totalOCI: { current: number; prior: number };
+  totalComprehensiveIncome: { current: number; prior: number };
+}
+
+// Basis of Preparation
+export interface FSBasisOfPreparation {
+  periodId: string;
+  reportingFramework: "IFRS" | "US_GAAP" | "LOCAL_GAAP";
+  frameworkStatement: string;
+  measurementBasis: string;
+  functionalCurrency: string;
+  presentationCurrency: string;
+  goingConcern: {
+    status: "CONFIRMED" | "MATERIAL_UNCERTAINTY" | "NOT_APPLICABLE";
+    statement: string;
+  };
+  consolidationStatement: string | null;
+  comparativeStatement: string;
+  roundingPolicy: string;
+  isLocked: boolean;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+// Accounting Policy
+export interface AccountingPolicy {
+  policyId: string;
+  policyName: string;
+  category: string;
+  policyText: string;
+  effectiveFrom: string;
+  version: number;
+  status: "DRAFT" | "ACTIVE" | "SUPERSEDED";
+  linkedNotes: string[];
+  isBoilerplate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+// MD&A (Management Discussion & Analysis)
+export interface MDASection {
+  sectionId: string;
+  sectionTitle: string;
+  orderIndex: number;
+  narrativeText: string;
+  linkedFsLines: string[];
+  linkedNotes: string[];
+  status: "DRAFT" | "REVIEWED" | "APPROVED";
+  lastUpdated: string;
+  updatedBy: string;
+}
+
+export interface MDADocument {
+  periodId: string;
+  documentTitle: string;
+  sections: MDASection[];
+  status: "DRAFT" | "REVIEWED" | "FINAL";
+  isLocked: boolean;
+  updatedAt: string;
+  updatedBy: string;
+}
+
 // Financial Statement Link (line to note)
 export interface FSNoteLink {
   linkId: string;

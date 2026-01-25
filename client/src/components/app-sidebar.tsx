@@ -632,9 +632,16 @@ export function AppSidebar() {
     { title: "Auditor's Opinion", url: "/nettool/fs/auditor-opinion", icon: FileCheck },
     { title: "Balance Sheet", url: "/nettool/fs/balance-sheet", icon: Scale },
     { title: "Income Statement", url: "/nettool/fs/income-statement", icon: TrendingUp },
+    { title: "Comprehensive Income", url: "/nettool/fs/comprehensive-income", icon: Activity },
     { title: "Changes in Equity", url: "/nettool/fs/equity-statement", icon: Users },
     { title: "Cash Flow Statement", url: "/nettool/fs/cash-flow", icon: ArrowDownUp },
     { title: "Trial Balance", url: "/nettool/fs/trial-balance", icon: Calculator },
+  ];
+  
+  const disclosureNotesNav = [
+    { title: "Basis of Preparation", url: "/nettool/notes/basis-of-preparation", icon: FileText },
+    { title: "Accounting Policies", url: "/nettool/notes/accounting-policies", icon: BookOpen },
+    { title: "MD&A", url: "/nettool/notes/mda", icon: Briefcase },
   ];
 
   const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs"));
@@ -710,6 +717,31 @@ export function AppSidebar() {
                 </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Disclosure Notes</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {disclosureNotesNav.map((item) => {
+              const isActive = location === item.url || location.startsWith(item.url);
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-nettool-notes-${item.title.toLowerCase().replace(/[&'\s]+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
