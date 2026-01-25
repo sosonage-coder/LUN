@@ -53,12 +53,19 @@ import {
   getLayoutTypeLabel,
   getStatusColor,
   getFrameworkLabel,
+  sampleCompanyProfile,
+  sampleAuditorOpinion,
+  sampleBalanceSheet,
+  sampleIncomeStatement,
+  sampleEquityStatement,
+  sampleCashFlowStatement,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem } from "@shared/schema";
 
 export default function NetToolPage() {
   const [, params] = useRoute("/nettool/:section");
-  const section = params?.section || "dashboard";
+  const [, fsParams] = useRoute("/nettool/fs/:fsSection");
+  const section = fsParams?.fsSection ? `fs-${fsParams.fsSection}` : (params?.section || "dashboard");
   
   const [selectedNote, setSelectedNote] = useState<DisclosureNote | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<DisclosureSchedule | null>(null);
@@ -941,6 +948,522 @@ export default function NetToolPage() {
     </div>
   );
 
+  // ===== FINANCIAL STATEMENTS SECTIONS =====
+
+  const renderCompanyProfile = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-company-profile-title">Company Profile</h1>
+          <p className="text-muted-foreground">Entity information and context</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          <Lock className="h-3 w-3 mr-1" />
+          Read-Only
+        </Badge>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Legal Entity Information</CardTitle>
+          <CardDescription>Front page of financial statements</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Legal Entity Name</label>
+                <p className="text-lg font-semibold" data-testid="text-entity-name">{sampleCompanyProfile.legalEntityName}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Registered Address</label>
+                <p className="text-sm" data-testid="text-address">{sampleCompanyProfile.registeredAddress}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Jurisdiction</label>
+                <p className="text-sm" data-testid="text-jurisdiction">{sampleCompanyProfile.jurisdiction}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Entity Type</label>
+                <p className="text-sm" data-testid="text-entity-type">{sampleCompanyProfile.entityType}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Reporting Period</label>
+                <p className="text-sm" data-testid="text-period">{sampleCompanyProfile.reportingPeriod}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Period Dates</label>
+                <p className="text-sm" data-testid="text-dates">{sampleCompanyProfile.periodStartDate} to {sampleCompanyProfile.periodEndDate}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Functional Currency</label>
+                <p className="text-sm">{sampleCompanyProfile.functionalCurrency}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Presentation Currency</label>
+                <p className="text-sm">{sampleCompanyProfile.presentationCurrency}</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Framework</label>
+                <Badge variant="outline">{sampleCompanyProfile.framework === "US_GAAP" ? "US GAAP" : "IFRS"}</Badge>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Consolidation Status</label>
+                <Badge>{sampleCompanyProfile.consolidationStatus}</Badge>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderAuditorOpinion = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-auditor-opinion-title">Auditor's Opinion</h1>
+          <p className="text-muted-foreground">Signed audit opinion for the financial statements</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          {sampleAuditorOpinion.isLocked ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
+          {sampleAuditorOpinion.isLocked ? "Locked" : "Draft"}
+        </Badge>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Auditor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold" data-testid="text-auditor-name">{sampleAuditorOpinion.auditorName}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Opinion Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge className={sampleAuditorOpinion.opinionType === "UNQUALIFIED" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-800"} data-testid="badge-opinion-type">
+              {sampleAuditorOpinion.opinionType}
+            </Badge>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Opinion Date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold" data-testid="text-opinion-date">{sampleAuditorOpinion.opinionDate}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Opinion Text</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-muted/50 rounded-lg p-4 whitespace-pre-wrap text-sm leading-relaxed" data-testid="text-opinion-content">
+            {sampleAuditorOpinion.opinionText}
+          </div>
+        </CardContent>
+      </Card>
+
+      {sampleAuditorOpinion.signedDocumentName && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Signed Document</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3 p-3 border rounded-lg">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="font-medium">{sampleAuditorOpinion.signedDocumentName}</p>
+                <p className="text-xs text-muted-foreground">Uploaded signed audit opinion</p>
+              </div>
+              <Button variant="outline" size="sm" data-testid="button-download-opinion">
+                <Download className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
+  const renderFSLineItems = (items: FSLineItem[], showNoteRef: boolean = true) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[40%]">Line Item</TableHead>
+          {showNoteRef && <TableHead className="w-[10%] text-center">Note</TableHead>}
+          <TableHead className="text-right">{sampleBalanceSheet.currentPeriodLabel}</TableHead>
+          <TableHead className="text-right">{sampleBalanceSheet.priorPeriodLabel}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.filter(item => !(item.isBold && item.currentYearAmount === 0 && item.priorYearAmount === 0 && !item.isSubtotal && !item.isTotal)).map((item) => (
+          <TableRow 
+            key={item.lineId}
+            className={item.isTotal ? "bg-muted/50 font-bold" : item.isSubtotal ? "font-semibold" : ""}
+          >
+            <TableCell 
+              className={item.isBold ? "font-semibold" : ""}
+              style={{ paddingLeft: `${(item.indentLevel * 1.5) + 1}rem` }}
+            >
+              {item.lineLabel}
+            </TableCell>
+            {showNoteRef && (
+              <TableCell className="text-center">
+                {item.noteRefs.length > 0 && (
+                  <Badge variant="outline" className="text-xs cursor-pointer hover-elevate">
+                    {item.lineNumber || item.noteRefs.map(n => sampleNotes.find(note => note.noteId === n)?.noteNumber).filter(Boolean).join(", ")}
+                  </Badge>
+                )}
+              </TableCell>
+            )}
+            <TableCell className="text-right font-mono">
+              {item.currentYearAmount !== 0 ? formatCurrency(item.currentYearAmount) : "-"}
+            </TableCell>
+            <TableCell className="text-right font-mono text-muted-foreground">
+              {item.priorYearAmount !== 0 ? formatCurrency(item.priorYearAmount) : "-"}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  const renderBalanceSheet = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-balance-sheet-title">Balance Sheet</h1>
+          <p className="text-muted-foreground">Consolidated Statement of Financial Position</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            <Lock className="h-3 w-3 mr-1" />
+            System-Calculated
+          </Badge>
+          {sampleBalanceSheet.balanceCheck ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Balanced
+            </Badge>
+          ) : (
+            <Badge className="bg-red-100 text-red-800">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Out of Balance
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Assets</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems([...sampleBalanceSheet.sections.currentAssets, ...sampleBalanceSheet.sections.nonCurrentAssets])}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Total Assets</CardTitle>
+          <div className="flex gap-8">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleBalanceSheet.currentPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono" data-testid="text-total-assets-current">{formatCurrency(sampleBalanceSheet.totalAssets.current)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleBalanceSheet.priorPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono text-muted-foreground">{formatCurrency(sampleBalanceSheet.totalAssets.prior)}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Liabilities</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems([...sampleBalanceSheet.sections.currentLiabilities, ...sampleBalanceSheet.sections.nonCurrentLiabilities])}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Stockholders' Equity</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems(sampleBalanceSheet.sections.equity)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Total Liabilities & Equity</CardTitle>
+          <div className="flex gap-8">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleBalanceSheet.currentPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono" data-testid="text-total-le-current">{formatCurrency(sampleBalanceSheet.totalLiabilities.current + sampleBalanceSheet.totalEquity.current)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleBalanceSheet.priorPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono text-muted-foreground">{formatCurrency(sampleBalanceSheet.totalLiabilities.prior + sampleBalanceSheet.totalEquity.prior)}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+
+  const renderIncomeStatement = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-income-statement-title">Income Statement</h1>
+          <p className="text-muted-foreground">Consolidated Statement of Operations</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          <Lock className="h-3 w-3 mr-1" />
+          System-Calculated
+        </Badge>
+      </div>
+
+      <Card>
+        <CardContent className="p-0 pt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40%]">Line Item</TableHead>
+                <TableHead className="w-[10%] text-center">Note</TableHead>
+                <TableHead className="text-right">{sampleIncomeStatement.currentPeriodLabel}</TableHead>
+                <TableHead className="text-right">{sampleIncomeStatement.priorPeriodLabel}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sampleIncomeStatement.lines.map((item) => (
+                <TableRow 
+                  key={item.lineId}
+                  className={item.isTotal ? "bg-muted/50 font-bold border-t-2" : item.isSubtotal ? "font-semibold bg-muted/30" : ""}
+                >
+                  <TableCell 
+                    className={item.isBold ? "font-semibold" : ""}
+                    style={{ paddingLeft: `${(item.indentLevel * 1.5) + 1}rem` }}
+                  >
+                    {item.lineLabel}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {item.noteRefs.length > 0 && (
+                      <Badge variant="outline" className="text-xs cursor-pointer hover-elevate">
+                        {item.lineNumber}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className={`text-right font-mono ${item.currentYearAmount < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                    {item.currentYearAmount !== 0 ? formatCurrency(item.currentYearAmount) : "-"}
+                  </TableCell>
+                  <TableCell className={`text-right font-mono text-muted-foreground ${item.priorYearAmount < 0 ? "text-red-400" : ""}`}>
+                    {item.priorYearAmount !== 0 ? formatCurrency(item.priorYearAmount) : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Net Income</CardTitle>
+          <div className="flex gap-8">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleIncomeStatement.currentPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono text-green-600" data-testid="text-net-income-current">{formatCurrency(sampleIncomeStatement.netIncome.current)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleIncomeStatement.priorPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono text-muted-foreground">{formatCurrency(sampleIncomeStatement.netIncome.prior)}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+
+  const renderEquityStatement = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-equity-statement-title">Statement of Changes in Equity</h1>
+          <p className="text-muted-foreground">Movements in stockholders' equity</p>
+        </div>
+        <Badge variant="outline" className="text-sm">
+          <Lock className="h-3 w-3 mr-1" />
+          System-Calculated
+        </Badge>
+      </div>
+
+      <Card>
+        <CardContent className="p-0 pt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[35%]">Component / Movement</TableHead>
+                <TableHead className="text-right">{sampleEquityStatement.currentPeriodLabel}</TableHead>
+                <TableHead className="text-right">{sampleEquityStatement.priorPeriodLabel}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sampleEquityStatement.components.map((component) => (
+                <>
+                  <TableRow key={`${component.componentId}-header`} className="bg-muted/30">
+                    <TableCell colSpan={3} className="font-semibold">
+                      {component.componentName}
+                      {component.noteRefs.length > 0 && (
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          Note {sampleNotes.find(n => n.noteId === component.noteRefs[0])?.noteNumber}
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow key={`${component.componentId}-opening`}>
+                    <TableCell className="pl-6">Opening balance</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(component.openingBalance.current)}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{formatCurrency(component.openingBalance.prior)}</TableCell>
+                  </TableRow>
+                  {component.movements.map((movement, idx) => (
+                    <TableRow key={`${component.componentId}-movement-${idx}`}>
+                      <TableCell className="pl-8 text-muted-foreground">{movement.description}</TableCell>
+                      <TableCell className={`text-right font-mono ${movement.current < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
+                        {movement.current !== 0 ? formatCurrency(movement.current) : "-"}
+                      </TableCell>
+                      <TableCell className={`text-right font-mono text-muted-foreground ${movement.prior < 0 ? "text-red-400" : ""}`}>
+                        {movement.prior !== 0 ? formatCurrency(movement.prior) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow key={`${component.componentId}-closing`} className="font-semibold">
+                    <TableCell className="pl-6">Closing balance</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(component.closingBalance.current)}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{formatCurrency(component.closingBalance.prior)}</TableCell>
+                  </TableRow>
+                </>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle>Total Equity</CardTitle>
+          <div className="flex gap-8">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleEquityStatement.currentPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono" data-testid="text-total-equity-current">{formatCurrency(sampleEquityStatement.totalEquity.current)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">{sampleEquityStatement.priorPeriodLabel}</p>
+              <p className="text-xl font-bold font-mono text-muted-foreground">{formatCurrency(sampleEquityStatement.totalEquity.prior)}</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+
+  const renderCashFlowStatement = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-fs-cash-flow-title">Cash Flow Statement</h1>
+          <p className="text-muted-foreground">Consolidated Statement of Cash Flows ({sampleCashFlowStatement.method} Method)</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            <Lock className="h-3 w-3 mr-1" />
+            System-Calculated
+          </Badge>
+          {sampleCashFlowStatement.reconciliationCheck ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Reconciled
+            </Badge>
+          ) : (
+            <Badge className="bg-red-100 text-red-800">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Not Reconciled
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Operating Activities</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems(sampleCashFlowStatement.operatingActivities)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Investing Activities</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems(sampleCashFlowStatement.investingActivities)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Financing Activities</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {renderFSLineItems(sampleCashFlowStatement.financingActivities)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cash Reconciliation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center p-4 bg-muted/30 rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase mb-1">Opening Cash</p>
+              <p className="text-lg font-bold font-mono">{formatCurrency(sampleCashFlowStatement.openingCash.current)}</p>
+              <p className="text-sm text-muted-foreground font-mono">{formatCurrency(sampleCashFlowStatement.openingCash.prior)}</p>
+            </div>
+            <div className="text-center p-4 bg-muted/30 rounded-lg">
+              <p className="text-xs text-muted-foreground uppercase mb-1">Net Change</p>
+              <p className={`text-lg font-bold font-mono ${sampleCashFlowStatement.netCashChange.current >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {formatCurrency(sampleCashFlowStatement.netCashChange.current)}
+              </p>
+              <p className="text-sm text-muted-foreground font-mono">{formatCurrency(sampleCashFlowStatement.netCashChange.prior)}</p>
+            </div>
+            <div className="text-center p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
+              <p className="text-xs text-muted-foreground uppercase mb-1">Closing Cash</p>
+              <p className="text-lg font-bold font-mono" data-testid="text-closing-cash-current">{formatCurrency(sampleCashFlowStatement.closingCash.current)}</p>
+              <p className="text-sm text-muted-foreground font-mono">{formatCurrency(sampleCashFlowStatement.closingCash.prior)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const renderContent = () => {
     switch (section) {
       case "disclosures":
@@ -955,6 +1478,18 @@ export default function NetToolPage() {
         return renderAuditView();
       case "exports":
         return renderExports();
+      case "fs-company-profile":
+        return renderCompanyProfile();
+      case "fs-auditor-opinion":
+        return renderAuditorOpinion();
+      case "fs-balance-sheet":
+        return renderBalanceSheet();
+      case "fs-income-statement":
+        return renderIncomeStatement();
+      case "fs-equity-statement":
+        return renderEquityStatement();
+      case "fs-cash-flow":
+        return renderCashFlowStatement();
       default:
         return renderDashboard();
     }

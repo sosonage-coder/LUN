@@ -1,0 +1,322 @@
+Perfect. Below is the **updated product spec**, with a **new, explicit section for Financial Statements**, written in the **same Replit-ready, build-specific style**.
+
+This section is **read-only, system-generated, comparative**, and **feeds disclosures** — it does not duplicate the disclosure engine.
+
+---
+
+# ➕ ADDITION — FINANCIAL STATEMENTS (READ-ONLY, COMPARATIVE)
+
+This section is **added to the Disclosure Tool**, not a separate product.
+
+---
+
+## 1️⃣2️⃣ FINANCIAL STATEMENTS MODULE (V1)
+
+### Purpose
+
+Provide a **structured, comparative financial statement view** that:
+
+* Anchors disclosures
+* Ensures notes tie to statements
+* Produces a complete reporting package
+* Avoids Excel / Word assembly
+
+This module is **presentation + linkage only**.
+No transaction processing. No journal entry UI.
+
+---
+
+## A. Financial Statements Entry Point (Dropdown)
+
+### UI Placement
+
+Top-level navigation item:
+
+```
+Financial Statements ▾
+```
+
+### Dropdown Options
+
+```
+Company Profile
+Auditor’s Opinion
+Balance Sheet
+Income Statement
+Statement of Changes in Equity
+Cash Flow Statement
+```
+
+---
+
+## B. General Rules (All Statements)
+
+Applies to **every statement below**.
+
+### Period Logic
+
+* Always **comparative**:
+
+  * Current Period
+  * Prior Period
+* Same structure across both periods
+* No mixed periods allowed
+
+### Edit Rules
+
+* ❌ No direct number editing
+* ⚙️ All values are system-derived
+* 🔗 Each line item links to:
+
+  * Trial balance mapping (if available)
+  * One or more disclosure notes
+
+---
+
+## C. Company Profile (FS Front Page)
+
+### Purpose
+
+Cover-page and entity context for the financial statements.
+
+### Fields (Manual)
+
+* Legal entity name
+* Registered address
+* Jurisdiction of incorporation
+* Entity type
+* Reporting period
+* Functional currency
+* Presentation currency
+
+### Fields (Automatic)
+
+* Period dates
+* Framework (IFRS / US GAAP)
+* Consolidation status (if applicable)
+
+### Output
+
+* Renders as the **first page** in exports
+* Editable text fields only (no numbers)
+
+---
+
+## D. Auditor’s Opinion
+
+### Purpose
+
+Store and present the signed audit opinion as part of the FS package.
+
+### Fields
+
+* Auditor name (✍️)
+* Opinion type (unqualified / qualified / adverse / disclaimer) (✍️)
+* Opinion date (✍️)
+* Opinion text (✍️)
+* Signed opinion document (📎 upload)
+
+### Rules
+
+* Read-only once period is final
+* Not editable by auditors directly
+* Included verbatim in exports
+
+---
+
+## E. Balance Sheet (Comparative)
+
+### Structure
+
+```
+Assets
+  Current assets
+  Non-current assets
+
+Liabilities
+  Current liabilities
+  Non-current liabilities
+
+Equity
+```
+
+### Columns
+
+```
+Line Item | Note Ref | Current Year | Prior Year
+```
+
+### Behavior
+
+* Values auto-calculated
+* Note Ref column links directly to disclosure notes
+* Totals and subtotals system-controlled
+* Equity section links to:
+
+  * Statement of Changes in Equity
+  * Equity notes
+
+---
+
+## F. Income Statement (Comparative)
+
+### Structure
+
+```
+Revenue
+Cost of sales
+Gross profit
+Operating expenses
+Operating income
+Finance income / costs
+Tax
+Net income
+```
+
+### Columns
+
+```
+Line Item | Note Ref | Current Year | Prior Year
+```
+
+### Rules
+
+* No alternative formats in V1
+* No column customization
+* Notes required for material lines (configurable later)
+
+---
+
+## G. Statement of Changes in Equity (Comparative)
+
+### Structure
+
+Rendered as a **table**, not editable.
+
+Columns:
+
+```
+Equity Component | Current Year | Prior Year
+```
+
+### Components
+
+* Share capital
+* Share premium / APIC
+* Retained earnings
+* OCI / AOCI
+* Treasury shares
+* Non-controlling interest
+* Total equity
+
+### Linkage
+
+* Clicking a component opens:
+
+  * Equity disclosure note
+  * Underlying schedules (read-only)
+
+---
+
+## H. Cash Flow Statement (Comparative)
+
+### Structure
+
+```
+Operating activities
+Investing activities
+Financing activities
+```
+
+### Columns
+
+```
+Line Item | Note Ref | Current Year | Prior Year
+```
+
+### Rules
+
+* Indirect method only (V1)
+* Totals system-calculated
+* Cash reconciliation enforced:
+
+  * Opening cash
+  * Net movement
+  * Closing cash
+
+---
+
+## I. Relationship to Disclosures (CRITICAL)
+
+### Hard Rules
+
+* Every statement line can link to **multiple notes**
+* Every note can link back to **multiple statement lines**
+* Links are:
+
+  * Explicit
+  * Stored
+  * Used for navigation and audit traceability
+
+### What this enables
+
+* Click line → see disclosure
+* Click disclosure → see impacted statement lines
+* Guaranteed consistency
+
+---
+
+## J. Exports (Financial Statements + Notes)
+
+When exporting:
+
+Order:
+
+1. Company Profile
+2. Auditor’s Opinion
+3. Balance Sheet
+4. Income Statement
+5. Statement of Changes in Equity
+6. Cash Flow Statement
+7. Notes to Financial Statements
+
+Rules:
+
+* Comparative columns always included
+* Published disclosure view only
+* Internal columns hidden
+* Text blocks rendered cleanly
+
+---
+
+## K. Explicit Out of Scope (FS Module)
+
+* No custom statement layouts
+* No direct TB mapping UI
+* No consolidation logic
+* No scenario versions
+* No cash flow builder logic
+* No XBRL
+
+---
+
+## 🔒 ENGINEERING SUMMARY (FS MODULE)
+
+> **Financial Statements are read-only, comparative views that anchor disclosures and complete the reporting package.**
+
+They exist to:
+
+* Tie notes together
+* Provide navigation
+* Support audit and sign-off
+
+---
+
+If you want next, I can:
+
+* Add **exact FS data schemas**
+* Define **how FS pulls from disclosures**
+* Show **navigation flows (line → note → schedule)**
+* Or collapse the full spec into a **single V1 build checklist**
+
+Just say where to go.

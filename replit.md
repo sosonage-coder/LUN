@@ -46,6 +46,19 @@ The application uses a client-server architecture.
     - **Accrual Reconciliation**: Validates ERP-performed FX revaluation and uses a 12-month rolling view for line-based accrual tracking.
     - **Prepaid Reconciliation**: Anchored directly to approved prepaid schedules from Schedule Studio, providing a direct tie-out to GL balance.
     - **Workflow**: Reconciliation lifecycle from NOT_STARTED to LOCKED, including multi-level certification.
+- **NetTool (Financial Statement Notes Disclosure Engine)**:
+    - Core disclosure management with notes, schedules, narratives, and review workflows.
+    - 6 schedule layout types: Rollforward, Movement by Category, Timing/Maturity, Gross to Net, Composition, Reconciliation.
+    - Spreadsheet-style grids with locked system columns and editable user columns.
+    - **Financial Statements Module** (read-only, comparative):
+        - Company Profile: Entity context and front page information.
+        - Auditor's Opinion: Audit opinion text and signed document upload.
+        - Balance Sheet: Comparative statement of financial position with note links.
+        - Income Statement: Comparative statement of operations with note links.
+        - Statement of Changes in Equity: Equity component movements.
+        - Cash Flow Statement: Indirect method with reconciliation check.
+    - All financial statement values are system-calculated with locked editing.
+    - Statement lines link to disclosure notes for navigation and traceability.
 - **One Compliance (Entity Governance & Compliance System)**:
     - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
     - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.

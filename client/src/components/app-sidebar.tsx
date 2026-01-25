@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -15,6 +16,7 @@ import {
   TrendingUp,
   TrendingDown,
   ChevronRight,
+  ChevronDown,
   Banknote,
   Shield,
   ListChecks,
@@ -39,6 +41,8 @@ import {
   Rocket,
   FileSpreadsheet,
   Award,
+  Scale,
+  ArrowDownUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -621,6 +625,17 @@ export function AppSidebar() {
     { title: "Exports", url: "/nettool/exports", icon: FileCheck },
   ];
 
+  const financialStatementsNav = [
+    { title: "Company Profile", url: "/nettool/fs/company-profile", icon: Building2 },
+    { title: "Auditor's Opinion", url: "/nettool/fs/auditor-opinion", icon: FileCheck },
+    { title: "Balance Sheet", url: "/nettool/fs/balance-sheet", icon: Scale },
+    { title: "Income Statement", url: "/nettool/fs/income-statement", icon: TrendingUp },
+    { title: "Changes in Equity", url: "/nettool/fs/equity-statement", icon: Users },
+    { title: "Cash Flow Statement", url: "/nettool/fs/cash-flow", icon: ArrowDownUp },
+  ];
+
+  const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs"));
+
   const renderNetTool = () => (
     <>
       <SidebarGroup>
@@ -629,7 +644,7 @@ export function AppSidebar() {
           <SidebarMenu>
             {netToolNav.map((item) => {
               const isActive = location === item.url || 
-                (item.url !== "/nettool" && location.startsWith(item.url));
+                (item.url !== "/nettool" && location.startsWith(item.url) && !location.startsWith("/nettool/fs"));
               return (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
@@ -645,6 +660,53 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               );
             })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Financial Statements</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <Collapsible open={fsExpanded} onOpenChange={setFsExpanded}>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton 
+                    data-testid="nav-nettool-financial-statements"
+                    className="w-full"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span className="flex-1 text-left">Financial Statements</span>
+                    {fsExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {financialStatementsNav.map((item) => {
+                      const isActive = location === item.url;
+                      return (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={isActive}
+                            data-testid={`nav-nettool-fs-${item.title.toLowerCase().replace(/['\s]+/g, '-')}`}
+                          >
+                            <Link href={item.url}>
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>

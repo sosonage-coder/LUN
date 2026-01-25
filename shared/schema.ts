@@ -1855,3 +1855,144 @@ export const insertDisclosureReviewSchema = z.object({
 });
 
 export type InsertDisclosureReview = z.infer<typeof insertDisclosureReviewSchema>;
+
+// ===== FINANCIAL STATEMENTS MODULE TYPES =====
+
+// Statement types
+export type FinancialStatementType = 
+  | "COMPANY_PROFILE"
+  | "AUDITOR_OPINION"
+  | "BALANCE_SHEET"
+  | "INCOME_STATEMENT"
+  | "STATEMENT_OF_CHANGES_IN_EQUITY"
+  | "CASH_FLOW_STATEMENT";
+
+// Opinion types
+export type AuditOpinionType = "UNQUALIFIED" | "QUALIFIED" | "ADVERSE" | "DISCLAIMER";
+
+// Company Profile (FS Front Page)
+export interface FSCompanyProfile {
+  entityId: string;
+  legalEntityName: string;
+  registeredAddress: string;
+  jurisdiction: string;
+  entityType: string;
+  reportingPeriod: string;
+  functionalCurrency: string;
+  presentationCurrency: string;
+  periodStartDate: string;
+  periodEndDate: string;
+  framework: "IFRS" | "US_GAAP";
+  consolidationStatus: "STANDALONE" | "CONSOLIDATED" | "SUBSIDIARY";
+  updatedAt: string;
+}
+
+// Auditor's Opinion
+export interface FSAuditorOpinion {
+  opinionId: string;
+  periodId: string;
+  auditorName: string;
+  opinionType: AuditOpinionType;
+  opinionDate: string;
+  opinionText: string;
+  signedDocumentId: string | null;
+  signedDocumentName: string | null;
+  isLocked: boolean;
+  updatedAt: string;
+}
+
+// Financial Statement Line Item (comparative)
+export interface FSLineItem {
+  lineId: string;
+  statementType: FinancialStatementType;
+  section: string;
+  lineLabel: string;
+  lineNumber: string;
+  indentLevel: number;
+  isBold: boolean;
+  isSubtotal: boolean;
+  isTotal: boolean;
+  currentYearAmount: number;
+  priorYearAmount: number;
+  noteRefs: string[]; // Array of noteIds
+  orderIndex: number;
+}
+
+// Balance Sheet Structure
+export interface FSBalanceSheet {
+  periodId: string;
+  currentPeriodLabel: string;
+  priorPeriodLabel: string;
+  sections: {
+    currentAssets: FSLineItem[];
+    nonCurrentAssets: FSLineItem[];
+    currentLiabilities: FSLineItem[];
+    nonCurrentLiabilities: FSLineItem[];
+    equity: FSLineItem[];
+  };
+  totalAssets: { current: number; prior: number };
+  totalLiabilities: { current: number; prior: number };
+  totalEquity: { current: number; prior: number };
+  balanceCheck: boolean;
+}
+
+// Income Statement Structure
+export interface FSIncomeStatement {
+  periodId: string;
+  currentPeriodLabel: string;
+  priorPeriodLabel: string;
+  lines: FSLineItem[];
+  netIncome: { current: number; prior: number };
+}
+
+// Statement of Changes in Equity
+export interface FSEquityStatement {
+  periodId: string;
+  currentPeriodLabel: string;
+  priorPeriodLabel: string;
+  components: {
+    componentId: string;
+    componentName: string;
+    openingBalance: { current: number; prior: number };
+    movements: { description: string; current: number; prior: number }[];
+    closingBalance: { current: number; prior: number };
+    noteRefs: string[];
+  }[];
+  totalEquity: { current: number; prior: number };
+}
+
+// Cash Flow Statement
+export interface FSCashFlowStatement {
+  periodId: string;
+  currentPeriodLabel: string;
+  priorPeriodLabel: string;
+  method: "INDIRECT" | "DIRECT";
+  operatingActivities: FSLineItem[];
+  investingActivities: FSLineItem[];
+  financingActivities: FSLineItem[];
+  openingCash: { current: number; prior: number };
+  netCashChange: { current: number; prior: number };
+  closingCash: { current: number; prior: number };
+  reconciliationCheck: boolean;
+}
+
+// Financial Statement Link (line to note)
+export interface FSNoteLink {
+  linkId: string;
+  lineId: string;
+  noteId: string;
+  statementType: FinancialStatementType;
+}
+
+// Financial Statements Package Summary
+export interface FSPackageSummary {
+  periodId: string;
+  hasCompanyProfile: boolean;
+  hasAuditorOpinion: boolean;
+  hasBalanceSheet: boolean;
+  hasIncomeStatement: boolean;
+  hasEquityStatement: boolean;
+  hasCashFlowStatement: boolean;
+  linkedNotesCount: number;
+  isComplete: boolean;
+}
