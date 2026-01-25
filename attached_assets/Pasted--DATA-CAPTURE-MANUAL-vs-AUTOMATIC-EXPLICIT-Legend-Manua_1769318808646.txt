@@ -1,0 +1,316 @@
+🧱 DATA CAPTURE — MANUAL vs AUTOMATIC (EXPLICIT)
+
+Legend
+
+✍️ = Manual (human-entered)
+
+⚙️ = Automatic (system-generated / derived)
+
+1️⃣ Entity Master (System of Record)
+Entity Profile
+
+Entity name → ✍️
+
+Jurisdiction → ✍️
+
+Entity type → ✍️
+
+Incorporation date → ✍️
+
+Operating status (active/dormant/dissolved) → ✍️ (initial), ⚙️ (updated by lifecycle events)
+
+Registration numbers → ✍️
+
+Tax IDs → ✍️
+
+Addresses & Agents
+
+Registered office address → ✍️
+
+Statutory address → ✍️
+
+Registered agent name → ✍️
+
+Agent renewal date → ✍️
+
+Officers & Ownership
+
+Officers/directors → ✍️
+
+Ownership percentages → ✍️
+
+Share classes → ✍️
+
+2️⃣ Authority & Delegation
+
+Role name → ✍️
+
+Authority type (signing/banking/filing) → ✍️
+
+Monetary threshold → ✍️
+
+Scope (entity / entity group) → ✍️
+
+Effective date → ✍️
+
+Expiry date → ✍️
+
+Authority status (active/expired) → ⚙️
+
+Authority revocation on role exit → ⚙️
+
+3️⃣ Board & Committee Governance
+Structure
+
+Board / committee name → ✍️
+
+Committee type → ✍️
+
+Members → ✍️
+
+Quorum rules → ✍️
+
+Meetings
+
+Meeting date → ✍️
+
+Agenda items → ✍️
+
+Attendance record → ✍️
+
+Resolutions drafted → ✍️
+
+Outputs
+
+Resolution approval status → ⚙️
+
+Action item list → ⚙️
+
+Decision audit trail → ⚙️
+
+4️⃣ Governance Policy Management
+Policy Record
+
+Policy name → ✍️
+
+Policy category → ✍️
+
+Version number → ✍️
+
+Policy owner → ✍️
+
+Effective date → ✍️
+
+Review cycle → ✍️
+
+Applicability (org/entity group) → ✍️
+
+Lifecycle & Acknowledgement
+
+Policy status (active/under review/retired) → ⚙️
+
+Required acknowledgement roles → ✍️
+
+Individual acknowledgements → ✍️ (user action)
+
+Acknowledgement counts → ⚙️
+
+Pending acknowledgement flag → ⚙️
+
+5️⃣ Compliance Obligations & Filings
+Obligation Definition
+
+Obligation name → ✍️
+
+Obligation type (statutory/tax/governance) → ✍️
+
+Filing authority → ✍️
+
+Frequency (annual/quarterly/etc.) → ✍️
+
+Due date rule → ✍️
+
+Required approvals → ✍️
+
+Track-only vs execution-enabled → ✍️
+
+Obligation Instance
+
+Period → ⚙️
+
+Due date → ⚙️
+
+Obligation status → ⚙️
+
+6️⃣ Compliance Calendar
+
+Calendar entries → ⚙️
+
+Calendar dates → ⚙️
+
+Overdue status → ⚙️
+
+Escalation triggers → ⚙️
+
+❌ No manual entry on this page
+
+7️⃣ Electronic Filing & E-Signature
+
+Filing initiated → ✍️
+
+Signer selection → ✍️
+
+Signature timestamps → ⚙️
+
+Filing submission status → ⚙️
+
+Confirmation receipt → ⚙️ (or ✍️ if uploaded)
+
+Signature audit log → ⚙️
+
+8️⃣ Governance Document Automation
+
+Template selection → ✍️
+
+Document generation → ⚙️
+
+Version number → ⚙️
+
+Generated document content → ⚙️
+
+Storage & linkage → ⚙️
+
+9️⃣ Capital & Equity Governance
+
+Share classes → ✍️
+
+Rights & restrictions → ✍️
+
+Issuance event → ✍️
+
+Dividend declaration → ✍️
+
+Approval resolution → ✍️
+
+Ownership update → ⚙️
+
+Equity audit trail → ⚙️
+
+🔟 Entity Change & Lifecycle Management
+
+Change type (officer/address/name/etc.) → ✍️
+
+Change effective date → ✍️
+
+Approval record → ✍️
+
+Filing requirement → ⚙️
+
+Entity master update → ⚙️
+
+Lifecycle status update → ⚙️
+
+1️⃣1️⃣ Regulatory Correspondence & Enforcement
+
+Regulator name → ✍️
+
+Notice type → ✍️
+
+Notice date → ✍️
+
+Uploaded correspondence → ✍️
+
+Response deadline → ⚙️ (derived or manual override ✍️)
+
+Escalation flag → ⚙️
+
+Resolution status → ✍️ / ⚙️
+
+1️⃣2️⃣ Risk & Issue Register
+
+Manual risk entry → ✍️ (optional)
+
+Risk category → ✍️
+
+Risk owner → ✍️
+
+System-generated risk flags → ⚙️
+
+Recurring issue detection → ⚙️
+
+Risk trend metrics → ⚙️
+
+1️⃣3️⃣ Third-Party & Advisor Registry
+
+Advisor name → ✍️
+
+Advisor type → ✍️
+
+Jurisdiction → ✍️
+
+Engagement scope → ✍️
+
+Start / end date → ✍️
+
+Renewal alert → ⚙️
+
+Active / expired status → ⚙️
+
+1️⃣4️⃣ Evidence Vault & Period Snapshots
+
+Evidence upload → ✍️
+
+Evidence type → ✍️
+
+Evidence linkage (entity/obligation) → ⚙️
+
+Timestamp → ⚙️
+
+Period snapshot creation → ⚙️
+
+Snapshot immutability → ⚙️
+
+1️⃣5️⃣ Org & Ownership Visualization
+
+Org charts → ⚙️
+
+Ownership trees → ⚙️
+
+Percentage rollups → ⚙️
+
+❌ No manual entry
+
+1️⃣6️⃣ Governance Health & Reporting
+
+Health scores → ⚙️
+
+Risk heatmaps → ⚙️
+
+KPI calculations → ⚙️
+
+Reports → ⚙️
+
+❌ No manual entry
+
+1️⃣7️⃣ Intersettle Integration Layer
+
+Agreement status sync → ⚙️
+
+Documentation completeness → ⚙️
+
+Evidence references → ⚙️
+
+🧠 HARD RULES (SYSTEM-WIDE)
+
+Humans only enter facts and intent
+
+The system never infers legal meaning
+
+All status, counts, alerts, and trends are automatic
+
+No page mixes data entry + reporting
+
+ONE-LINE SUMMARY (FOR BUILD TEAMS)
+
+Manual = structure, authority, intent.
+Automatic = dates, status, evidence, history, risk.
