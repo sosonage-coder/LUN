@@ -59,8 +59,11 @@ import {
   sampleIncomeStatement,
   sampleEquityStatement,
   sampleCashFlowStatement,
+  sampleTBWorkspace,
+  sampleGLAccounts,
+  fsCategoryLabels,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory } from "@shared/schema";
 
 export default function NetToolPage() {
   const [, params] = useRoute("/nettool/:section");
@@ -73,6 +76,17 @@ export default function NetToolPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateNoteDialog, setShowCreateNoteDialog] = useState(false);
   const [showCreateScheduleDialog, setShowCreateScheduleDialog] = useState(false);
+  
+  // Trial Balance state
+  const [tbLines, setTbLines] = useState<TBLine[]>(sampleTBWorkspace.lines);
+  const [tbColumns, setTbColumns] = useState<TBColumn[]>(sampleTBWorkspace.columns);
+  const [showAddColumnDialog, setShowAddColumnDialog] = useState(false);
+  const [showAddRowDialog, setShowAddRowDialog] = useState(false);
+  const [newColumnLabel, setNewColumnLabel] = useState("");
+  const [newRowAccountCode, setNewRowAccountCode] = useState("");
+  const [newRowAccountName, setNewRowAccountName] = useState("");
+  const [editingCell, setEditingCell] = useState<{ lineId: string; columnId: string; type: "debit" | "credit" } | null>(null);
+  const [editingFsCategory, setEditingFsCategory] = useState<string | null>(null);
   
   const kpis = calculateDashboardKPIs(sampleNotes, sampleSchedules, sampleNarratives, sampleReviews);
   const activePeriod = samplePeriods.find(p => p.state !== "FINAL") || samplePeriods[0];
@@ -1464,6 +1478,439 @@ export default function NetToolPage() {
     </div>
   );
 
+  // Trial Balance helper functions
+  const calculateTBTotals = () => {
+    let totalOpeningDebit = 0;
+    let totalOpeningCredit = 0;
+    let totalClosingDebit = 0;
+    let totalClosingCredit = 0;
+    
+    tbLines.forEach(line => {
+      totalOpeningDebit += line.openingDebit;
+      totalOpeningCredit += line.openingCredit;
+      totalClosingDebit += line.closingDebit;
+      totalClosingCredit += line.closingCredit;
+    });
+    
+    return { totalOpeningDebit, totalOpeningCredit, totalClosingDebit, totalClosingCredit };
+  };
+
+  const handleAddColumn = () => {
+    if (!newColumnLabel.trim()) return;
+    const newColumn: TBColumn = {
+      columnId: `col-user-${Date.now()}`,
+      columnLabel: newColumnLabel,
+      columnType: "USER",
+      isLocked: false,
+      orderIndex: tbColumns.length,
+    };
+    
+    // Add column to columns list
+    setTbColumns([...tbColumns.filter(c => c.columnType !== "CLOSING"), newColumn, ...tbColumns.filter(c => c.columnType === "CLOSING")]);
+    
+    // Add empty amounts for this column to all lines
+    setTbLines(tbLines.map(line => ({
+      ...line,
+      amounts: { ...line.amounts, [newColumn.columnId]: { debit: 0, credit: 0 } }
+    })));
+    
+    setNewColumnLabel("");
+    setShowAddColumnDialog(false);
+  };
+
+  const handleAddRow = () => {
+    if (!newRowAccountCode.trim() || !newRowAccountName.trim()) return;
+    const newLine: TBLine = {
+      lineId: `tb-${Date.now()}`,
+      accountId: `gl-${Date.now()}`,
+      accountCode: newRowAccountCode,
+      accountName: newRowAccountName,
+      fsCategory: null,
+      normalBalance: "DEBIT",
+      openingDebit: 0,
+      openingCredit: 0,
+      amounts: tbColumns.filter(c => c.columnType !== "OPENING" && c.columnType !== "CLOSING")
+        .reduce((acc, col) => ({ ...acc, [col.columnId]: { debit: 0, credit: 0 } }), {}),
+      closingDebit: 0,
+      closingCredit: 0,
+      orderIndex: tbLines.length + 1,
+    };
+    
+    setTbLines([...tbLines, newLine]);
+    setNewRowAccountCode("");
+    setNewRowAccountName("");
+    setShowAddRowDialog(false);
+  };
+
+  const handleCellUpdate = (lineId: string, columnId: string, type: "debit" | "credit", value: number) => {
+    setTbLines(tbLines.map(line => {
+      if (line.lineId !== lineId) return line;
+      
+      const updatedAmounts = { ...line.amounts };
+      if (columnId === "col-opening") {
+        // Update opening balance
+        if (type === "debit") {
+          return { ...line, openingDebit: value, closingDebit: line.closingDebit + (value - line.openingDebit) };
+        } else {
+          return { ...line, openingCredit: value, closingCredit: line.closingCredit + (value - line.openingCredit) };
+        }
+      } else {
+        // Update movement column
+        updatedAmounts[columnId] = { ...updatedAmounts[columnId], [type]: value };
+        
+        // Recalculate closing balance
+        let closingDebit = line.openingDebit;
+        let closingCredit = line.openingCredit;
+        Object.values(updatedAmounts).forEach(amt => {
+          closingDebit += amt.debit;
+          closingCredit += amt.credit;
+        });
+        
+        return { ...line, amounts: updatedAmounts, closingDebit, closingCredit };
+      }
+    }));
+    setEditingCell(null);
+  };
+
+  const handleFsCategoryUpdate = (lineId: string, category: FSCategory | null) => {
+    setTbLines(tbLines.map(line => 
+      line.lineId === lineId ? { ...line, fsCategory: category } : line
+    ));
+    setEditingFsCategory(null);
+  };
+
+  const getFsCategoryColor = (category: FSCategory | null): string => {
+    if (!category) return "bg-muted text-muted-foreground";
+    switch (category) {
+      case "CURRENT_ASSETS":
+      case "NON_CURRENT_ASSETS":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "CURRENT_LIABILITIES":
+      case "NON_CURRENT_LIABILITIES":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
+      case "EQUITY":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "REVENUE":
+      case "OTHER_INCOME":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "COST_OF_SALES":
+      case "OPERATING_EXPENSES":
+      case "OTHER_EXPENSES":
+      case "TAX_EXPENSE":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      default:
+        return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const renderTrialBalance = () => {
+    const totals = calculateTBTotals();
+    const isBalanced = Math.abs(totals.totalClosingDebit - totals.totalClosingCredit) < 0.01;
+    const userColumns = tbColumns.filter(c => c.columnType !== "OPENING" && c.columnType !== "CLOSING");
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold" data-testid="text-tb-title">Trial Balance</h1>
+            <p className="text-muted-foreground">{sampleTBWorkspace.entityName} - {sampleTBWorkspace.periodLabel}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-muted-foreground" data-testid="badge-tb-readonly">
+              <Lock className="w-3 h-3 mr-1" />
+              Opening Locked
+            </Badge>
+            {isBalanced ? (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" data-testid="badge-tb-balanced">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Balanced
+              </Badge>
+            ) : (
+              <Badge variant="destructive" data-testid="badge-tb-unbalanced">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Out of Balance
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Trial Balance Workspace</CardTitle>
+                <CardDescription>Manage GL accounts, add columns for adjustments, and tag accounts for FS auto-population</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowAddColumnDialog(true)} data-testid="button-add-column">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Column
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowAddRowDialog(true)} data-testid="button-add-row">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Row
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[600px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-24 sticky left-0 bg-muted/50 z-10">Code</TableHead>
+                    <TableHead className="min-w-[200px] sticky left-24 bg-muted/50 z-10">Account Name</TableHead>
+                    <TableHead className="w-40">FS Category</TableHead>
+                    <TableHead className="text-center w-32" colSpan={2}>
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs text-muted-foreground">Opening Balance</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    {userColumns.map(col => (
+                      <TableHead key={col.columnId} className="text-center w-32" colSpan={2}>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs">{col.columnLabel}</span>
+                          {col.isLocked && <Lock className="w-3 h-3 mt-1 text-muted-foreground" />}
+                        </div>
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-center w-32" colSpan={2}>
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-semibold">Closing Balance</span>
+                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                  <TableRow className="bg-muted/30">
+                    <TableHead className="sticky left-0 bg-muted/30 z-10"></TableHead>
+                    <TableHead className="sticky left-24 bg-muted/30 z-10"></TableHead>
+                    <TableHead></TableHead>
+                    <TableHead className="text-right text-xs">Debit</TableHead>
+                    <TableHead className="text-right text-xs">Credit</TableHead>
+                    {userColumns.map(col => (
+                      <>
+                        <TableHead key={`${col.columnId}-dr`} className="text-right text-xs">Debit</TableHead>
+                        <TableHead key={`${col.columnId}-cr`} className="text-right text-xs">Credit</TableHead>
+                      </>
+                    ))}
+                    <TableHead className="text-right text-xs font-semibold">Debit</TableHead>
+                    <TableHead className="text-right text-xs font-semibold">Credit</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tbLines.map(line => (
+                    <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-tb-${line.accountCode}`}>
+                      <TableCell className="font-mono text-sm sticky left-0 bg-background z-10">{line.accountCode}</TableCell>
+                      <TableCell className="sticky left-24 bg-background z-10">{line.accountName}</TableCell>
+                      <TableCell>
+                        {editingFsCategory === line.lineId ? (
+                          <Select
+                            value={line.fsCategory || ""}
+                            onValueChange={(value) => handleFsCategoryUpdate(line.lineId, value as FSCategory || null)}
+                          >
+                            <SelectTrigger className="h-7 text-xs" data-testid={`select-fs-category-${line.accountCode}`}>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {Object.entries(fsCategoryLabels).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs cursor-pointer ${getFsCategoryColor(line.fsCategory)}`}
+                            onClick={() => setEditingFsCategory(line.lineId)}
+                            data-testid={`badge-fs-category-${line.accountCode}`}
+                          >
+                            {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "Not Tagged"}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      {/* Opening Balance - Locked */}
+                      <TableCell className="text-right font-mono text-sm bg-muted/20">
+                        {line.openingDebit > 0 ? formatCurrency(line.openingDebit) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm bg-muted/20">
+                        {line.openingCredit > 0 ? formatCurrency(line.openingCredit) : "-"}
+                      </TableCell>
+                      {/* User Columns - Editable */}
+                      {userColumns.map(col => {
+                        const amounts = line.amounts[col.columnId] || { debit: 0, credit: 0 };
+                        return (
+                          <>
+                            <TableCell key={`${col.columnId}-dr`} className="text-right font-mono text-sm">
+                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId && editingCell?.type === "debit" ? (
+                                <Input
+                                  type="number"
+                                  className="h-6 w-20 text-right text-xs"
+                                  defaultValue={amounts.debit}
+                                  autoFocus
+                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, "debit", parseFloat(e.target.value) || 0)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, "debit", parseFloat((e.target as HTMLInputElement).value) || 0)}
+                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}-dr`}
+                                />
+                              ) : (
+                                <span 
+                                  className="cursor-pointer hover:bg-muted rounded px-1"
+                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId, type: "debit" })}
+                                >
+                                  {amounts.debit > 0 ? formatCurrency(amounts.debit) : "-"}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell key={`${col.columnId}-cr`} className="text-right font-mono text-sm">
+                              {editingCell?.lineId === line.lineId && editingCell?.columnId === col.columnId && editingCell?.type === "credit" ? (
+                                <Input
+                                  type="number"
+                                  className="h-6 w-20 text-right text-xs"
+                                  defaultValue={amounts.credit}
+                                  autoFocus
+                                  onBlur={(e) => handleCellUpdate(line.lineId, col.columnId, "credit", parseFloat(e.target.value) || 0)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleCellUpdate(line.lineId, col.columnId, "credit", parseFloat((e.target as HTMLInputElement).value) || 0)}
+                                  data-testid={`input-tb-${line.accountCode}-${col.columnId}-cr`}
+                                />
+                              ) : (
+                                <span 
+                                  className="cursor-pointer hover:bg-muted rounded px-1"
+                                  onClick={() => !col.isLocked && setEditingCell({ lineId: line.lineId, columnId: col.columnId, type: "credit" })}
+                                >
+                                  {amounts.credit > 0 ? formatCurrency(amounts.credit) : "-"}
+                                </span>
+                              )}
+                            </TableCell>
+                          </>
+                        );
+                      })}
+                      {/* Closing Balance - Calculated */}
+                      <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
+                        {line.closingDebit > 0 ? formatCurrency(line.closingDebit) : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm font-semibold bg-primary/5">
+                        {line.closingCredit > 0 ? formatCurrency(line.closingCredit) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Totals Row */}
+                  <TableRow className="bg-muted font-bold border-t-2">
+                    <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right font-mono" data-testid="text-tb-opening-debit-total">{formatCurrency(totals.totalOpeningDebit)}</TableCell>
+                    <TableCell className="text-right font-mono" data-testid="text-tb-opening-credit-total">{formatCurrency(totals.totalOpeningCredit)}</TableCell>
+                    {userColumns.map(col => {
+                      const colDebitTotal = tbLines.reduce((sum, line) => sum + (line.amounts[col.columnId]?.debit || 0), 0);
+                      const colCreditTotal = tbLines.reduce((sum, line) => sum + (line.amounts[col.columnId]?.credit || 0), 0);
+                      return (
+                        <>
+                          <TableCell key={`${col.columnId}-dr-total`} className="text-right font-mono">{formatCurrency(colDebitTotal)}</TableCell>
+                          <TableCell key={`${col.columnId}-cr-total`} className="text-right font-mono">{formatCurrency(colCreditTotal)}</TableCell>
+                        </>
+                      );
+                    })}
+                    <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-debit-total">{formatCurrency(totals.totalClosingDebit)}</TableCell>
+                    <TableCell className="text-right font-mono bg-primary/10" data-testid="text-tb-closing-credit-total">{formatCurrency(totals.totalClosingCredit)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* FS Category Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Financial Statement Category Summary</CardTitle>
+            <CardDescription>Auto-population mapping for financial statements</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(fsCategoryLabels).slice(0, 8).map(([key, label]) => {
+                const categoryLines = tbLines.filter(l => l.fsCategory === key);
+                const totalDebit = categoryLines.reduce((sum, l) => sum + l.closingDebit, 0);
+                const totalCredit = categoryLines.reduce((sum, l) => sum + l.closingCredit, 0);
+                const netAmount = totalDebit - totalCredit;
+                
+                return (
+                  <div key={key} className="p-3 border rounded-md">
+                    <Badge variant="outline" className={`text-xs ${getFsCategoryColor(key as FSCategory)}`}>
+                      {label}
+                    </Badge>
+                    <p className="text-lg font-bold font-mono mt-2">
+                      {formatCurrency(Math.abs(netAmount))}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{categoryLines.length} accounts</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Column Dialog */}
+        <Dialog open={showAddColumnDialog} onOpenChange={setShowAddColumnDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Column</DialogTitle>
+              <DialogDescription>Add a new adjustment or movement column to the trial balance</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium">Column Label</label>
+                <Input 
+                  placeholder="e.g., IFRS Adjustments" 
+                  value={newColumnLabel}
+                  onChange={(e) => setNewColumnLabel(e.target.value)}
+                  data-testid="input-new-column-label"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddColumnDialog(false)}>Cancel</Button>
+              <Button onClick={handleAddColumn} data-testid="button-confirm-add-column">Add Column</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Row Dialog */}
+        <Dialog open={showAddRowDialog} onOpenChange={setShowAddRowDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Account Row</DialogTitle>
+              <DialogDescription>Add a new GL account to the trial balance</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium">Account Code</label>
+                <Input 
+                  placeholder="e.g., 1400" 
+                  value={newRowAccountCode}
+                  onChange={(e) => setNewRowAccountCode(e.target.value)}
+                  data-testid="input-new-row-code"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Account Name</label>
+                <Input 
+                  placeholder="e.g., Other Receivables" 
+                  value={newRowAccountName}
+                  onChange={(e) => setNewRowAccountName(e.target.value)}
+                  data-testid="input-new-row-name"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddRowDialog(false)}>Cancel</Button>
+              <Button onClick={handleAddRow} data-testid="button-confirm-add-row">Add Account</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (section) {
       case "disclosures":
@@ -1490,6 +1937,8 @@ export default function NetToolPage() {
         return renderEquityStatement();
       case "fs-cash-flow":
         return renderCashFlowStatement();
+      case "fs-trial-balance":
+        return renderTrialBalance();
       default:
         return renderDashboard();
     }

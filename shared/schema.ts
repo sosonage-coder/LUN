@@ -1984,6 +1984,78 @@ export interface FSNoteLink {
   statementType: FinancialStatementType;
 }
 
+// Financial Statement Category for GL Tagging
+export type FSCategory = 
+  | "CURRENT_ASSETS"
+  | "NON_CURRENT_ASSETS"
+  | "CURRENT_LIABILITIES"
+  | "NON_CURRENT_LIABILITIES"
+  | "EQUITY"
+  | "REVENUE"
+  | "COST_OF_SALES"
+  | "OPERATING_EXPENSES"
+  | "OTHER_INCOME"
+  | "OTHER_EXPENSES"
+  | "TAX_EXPENSE"
+  | "CASH_OPERATING"
+  | "CASH_INVESTING"
+  | "CASH_FINANCING";
+
+// GL Account for Trial Balance
+export interface GLAccount {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  fsCategory: FSCategory | null;
+  isActive: boolean;
+  normalBalance: "DEBIT" | "CREDIT";
+  orderIndex: number;
+}
+
+// Trial Balance Column (dynamic)
+export interface TBColumn {
+  columnId: string;
+  columnLabel: string;
+  columnType: "OPENING" | "MOVEMENT" | "ADJUSTMENT" | "CLOSING" | "USER";
+  isLocked: boolean;
+  orderIndex: number;
+}
+
+// Trial Balance Line
+export interface TBLine {
+  lineId: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  fsCategory: FSCategory | null;
+  normalBalance: "DEBIT" | "CREDIT";
+  openingDebit: number;
+  openingCredit: number;
+  amounts: Record<string, { debit: number; credit: number }>; // columnId -> debit/credit
+  closingDebit: number;
+  closingCredit: number;
+  orderIndex: number;
+}
+
+// Trial Balance Workspace
+export interface TBWorkspace {
+  workspaceId: string;
+  periodId: string;
+  periodLabel: string;
+  priorPeriodId: string;
+  entityName: string;
+  reportingCurrency: string;
+  columns: TBColumn[];
+  lines: TBLine[];
+  glAccounts: GLAccount[];
+  totalOpeningDebit: number;
+  totalOpeningCredit: number;
+  totalClosingDebit: number;
+  totalClosingCredit: number;
+  isBalanced: boolean;
+  lastUpdated: string;
+}
+
 // Financial Statements Package Summary
 export interface FSPackageSummary {
   periodId: string;

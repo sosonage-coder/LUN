@@ -837,8 +837,194 @@ export const sampleCashFlowStatement: FSCashFlowStatement = {
 export const financialStatementNavItems = [
   { id: "company-profile", label: "Company Profile", icon: "Building2" },
   { id: "auditor-opinion", label: "Auditor's Opinion", icon: "FileCheck" },
+  { id: "trial-balance", label: "Trial Balance", icon: "Calculator" },
   { id: "balance-sheet", label: "Balance Sheet", icon: "Scale" },
   { id: "income-statement", label: "Income Statement", icon: "TrendingUp" },
   { id: "equity-statement", label: "Statement of Changes in Equity", icon: "Users" },
   { id: "cash-flow", label: "Cash Flow Statement", icon: "ArrowDownUp" },
 ];
+
+// Trial Balance Sample Data
+import type { GLAccount, TBColumn, TBLine, TBWorkspace, FSCategory } from "@shared/schema";
+
+// Sample GL Accounts with FS Category Tags
+export const sampleGLAccounts: GLAccount[] = [
+  // Current Assets
+  { accountId: "gl-1010", accountCode: "1010", accountName: "Cash and Cash Equivalents", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 1 },
+  { accountId: "gl-1100", accountCode: "1100", accountName: "Accounts Receivable", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 2 },
+  { accountId: "gl-1150", accountCode: "1150", accountName: "Allowance for Doubtful Accounts", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "CREDIT", orderIndex: 3 },
+  { accountId: "gl-1200", accountCode: "1200", accountName: "Inventory", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 4 },
+  { accountId: "gl-1300", accountCode: "1300", accountName: "Prepaid Expenses", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 5 },
+  { accountId: "gl-1350", accountCode: "1350", accountName: "Other Current Assets", fsCategory: "CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 6 },
+  // Non-Current Assets
+  { accountId: "gl-1500", accountCode: "1500", accountName: "Property, Plant & Equipment", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 7 },
+  { accountId: "gl-1550", accountCode: "1550", accountName: "Accumulated Depreciation - PPE", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "CREDIT", orderIndex: 8 },
+  { accountId: "gl-1600", accountCode: "1600", accountName: "Intangible Assets", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 9 },
+  { accountId: "gl-1650", accountCode: "1650", accountName: "Accumulated Amortization - Intangibles", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "CREDIT", orderIndex: 10 },
+  { accountId: "gl-1700", accountCode: "1700", accountName: "Right-of-Use Assets", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 11 },
+  { accountId: "gl-1750", accountCode: "1750", accountName: "Accumulated Depreciation - ROU", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "CREDIT", orderIndex: 12 },
+  { accountId: "gl-1800", accountCode: "1800", accountName: "Deferred Tax Assets", fsCategory: "NON_CURRENT_ASSETS", isActive: true, normalBalance: "DEBIT", orderIndex: 13 },
+  // Current Liabilities
+  { accountId: "gl-2010", accountCode: "2010", accountName: "Accounts Payable", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 14 },
+  { accountId: "gl-2100", accountCode: "2100", accountName: "Accrued Expenses", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 15 },
+  { accountId: "gl-2150", accountCode: "2150", accountName: "Income Taxes Payable", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 16 },
+  { accountId: "gl-2200", accountCode: "2200", accountName: "Deferred Revenue - Current", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 17 },
+  { accountId: "gl-2250", accountCode: "2250", accountName: "Current Portion of Long-Term Debt", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 18 },
+  { accountId: "gl-2300", accountCode: "2300", accountName: "Current Lease Liabilities", fsCategory: "CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 19 },
+  // Non-Current Liabilities
+  { accountId: "gl-2500", accountCode: "2500", accountName: "Long-Term Debt", fsCategory: "NON_CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 20 },
+  { accountId: "gl-2600", accountCode: "2600", accountName: "Long-Term Lease Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 21 },
+  { accountId: "gl-2700", accountCode: "2700", accountName: "Deferred Tax Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 22 },
+  { accountId: "gl-2800", accountCode: "2800", accountName: "Other Long-Term Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", isActive: true, normalBalance: "CREDIT", orderIndex: 23 },
+  // Equity
+  { accountId: "gl-3010", accountCode: "3010", accountName: "Common Stock", fsCategory: "EQUITY", isActive: true, normalBalance: "CREDIT", orderIndex: 24 },
+  { accountId: "gl-3100", accountCode: "3100", accountName: "Additional Paid-in Capital", fsCategory: "EQUITY", isActive: true, normalBalance: "CREDIT", orderIndex: 25 },
+  { accountId: "gl-3200", accountCode: "3200", accountName: "Retained Earnings", fsCategory: "EQUITY", isActive: true, normalBalance: "CREDIT", orderIndex: 26 },
+  { accountId: "gl-3300", accountCode: "3300", accountName: "Accumulated OCI", fsCategory: "EQUITY", isActive: true, normalBalance: "CREDIT", orderIndex: 27 },
+  // Revenue
+  { accountId: "gl-4010", accountCode: "4010", accountName: "Product Revenue", fsCategory: "REVENUE", isActive: true, normalBalance: "CREDIT", orderIndex: 28 },
+  { accountId: "gl-4100", accountCode: "4100", accountName: "Service Revenue", fsCategory: "REVENUE", isActive: true, normalBalance: "CREDIT", orderIndex: 29 },
+  { accountId: "gl-4200", accountCode: "4200", accountName: "Other Revenue", fsCategory: "OTHER_INCOME", isActive: true, normalBalance: "CREDIT", orderIndex: 30 },
+  // Cost of Sales
+  { accountId: "gl-5010", accountCode: "5010", accountName: "Cost of Goods Sold", fsCategory: "COST_OF_SALES", isActive: true, normalBalance: "DEBIT", orderIndex: 31 },
+  { accountId: "gl-5100", accountCode: "5100", accountName: "Cost of Services", fsCategory: "COST_OF_SALES", isActive: true, normalBalance: "DEBIT", orderIndex: 32 },
+  // Operating Expenses
+  { accountId: "gl-6010", accountCode: "6010", accountName: "Salaries & Wages", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 33 },
+  { accountId: "gl-6100", accountCode: "6100", accountName: "Employee Benefits", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 34 },
+  { accountId: "gl-6200", accountCode: "6200", accountName: "Rent Expense", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 35 },
+  { accountId: "gl-6300", accountCode: "6300", accountName: "Depreciation & Amortization", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 36 },
+  { accountId: "gl-6400", accountCode: "6400", accountName: "Professional Fees", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 37 },
+  { accountId: "gl-6500", accountCode: "6500", accountName: "Marketing & Advertising", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 38 },
+  { accountId: "gl-6600", accountCode: "6600", accountName: "Utilities", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 39 },
+  { accountId: "gl-6700", accountCode: "6700", accountName: "Insurance", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 40 },
+  { accountId: "gl-6800", accountCode: "6800", accountName: "Travel & Entertainment", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 41 },
+  { accountId: "gl-6900", accountCode: "6900", accountName: "Office Supplies & Expenses", fsCategory: "OPERATING_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 42 },
+  // Other Expenses
+  { accountId: "gl-7010", accountCode: "7010", accountName: "Interest Expense", fsCategory: "OTHER_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 43 },
+  { accountId: "gl-7100", accountCode: "7100", accountName: "Other Expense", fsCategory: "OTHER_EXPENSES", isActive: true, normalBalance: "DEBIT", orderIndex: 44 },
+  // Tax
+  { accountId: "gl-8010", accountCode: "8010", accountName: "Income Tax Expense", fsCategory: "TAX_EXPENSE", isActive: true, normalBalance: "DEBIT", orderIndex: 45 },
+];
+
+// Sample Trial Balance Columns
+export const sampleTBColumns: TBColumn[] = [
+  { columnId: "col-opening", columnLabel: "Opening Balance", columnType: "OPENING", isLocked: true, orderIndex: 0 },
+  { columnId: "col-period", columnLabel: "Period Activity", columnType: "MOVEMENT", isLocked: false, orderIndex: 1 },
+  { columnId: "col-adj", columnLabel: "Adjustments", columnType: "ADJUSTMENT", isLocked: false, orderIndex: 2 },
+  { columnId: "col-closing", columnLabel: "Closing Balance", columnType: "CLOSING", isLocked: true, orderIndex: 3 },
+];
+
+// Sample TB Lines with opening balances rolled forward
+export const sampleTBLines: TBLine[] = [
+  // Current Assets
+  { lineId: "tb-1010", accountId: "gl-1010", accountCode: "1010", accountName: "Cash and Cash Equivalents", fsCategory: "CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 2450000, openingCredit: 0, amounts: { "col-period": { debit: 450000, credit: 50000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 2850000, closingCredit: 0, orderIndex: 1 },
+  { lineId: "tb-1100", accountId: "gl-1100", accountCode: "1100", accountName: "Accounts Receivable", fsCategory: "CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 3200000, openingCredit: 0, amounts: { "col-period": { debit: 500000, credit: 100000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 3600000, closingCredit: 0, orderIndex: 2 },
+  { lineId: "tb-1150", accountId: "gl-1150", accountCode: "1150", accountName: "Allowance for Doubtful Accounts", fsCategory: "CURRENT_ASSETS", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 135000, amounts: { "col-period": { debit: 0, credit: 15000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 150000, orderIndex: 3 },
+  { lineId: "tb-1200", accountId: "gl-1200", accountCode: "1200", accountName: "Inventory", fsCategory: "CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 815000, openingCredit: 0, amounts: { "col-period": { debit: 100000, credit: 25000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 890000, closingCredit: 0, orderIndex: 4 },
+  { lineId: "tb-1300", accountId: "gl-1300", accountCode: "1300", accountName: "Prepaid Expenses", fsCategory: "CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 580000, openingCredit: 0, amounts: { "col-period": { debit: 75000, credit: 30000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 625000, closingCredit: 0, orderIndex: 5 },
+  { lineId: "tb-1350", accountId: "gl-1350", accountCode: "1350", accountName: "Other Current Assets", fsCategory: "CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 500000, openingCredit: 0, amounts: { "col-period": { debit: 50000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 550000, closingCredit: 0, orderIndex: 6 },
+  // Non-Current Assets
+  { lineId: "tb-1500", accountId: "gl-1500", accountCode: "1500", accountName: "Property, Plant & Equipment", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 8200000, openingCredit: 0, amounts: { "col-period": { debit: 590000, credit: 40000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 8750000, closingCredit: 0, orderIndex: 7 },
+  { lineId: "tb-1550", accountId: "gl-1550", accountCode: "1550", accountName: "Accumulated Depreciation - PPE", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 2850000, amounts: { "col-period": { debit: 20000, credit: 650000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 3480000, orderIndex: 8 },
+  { lineId: "tb-1600", accountId: "gl-1600", accountCode: "1600", accountName: "Intangible Assets", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 2200000, openingCredit: 0, amounts: { "col-period": { debit: 175000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 2375000, closingCredit: 0, orderIndex: 9 },
+  { lineId: "tb-1650", accountId: "gl-1650", accountCode: "1650", accountName: "Accumulated Amortization - Intangibles", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 400000, amounts: { "col-period": { debit: 0, credit: 225000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 625000, orderIndex: 10 },
+  { lineId: "tb-1700", accountId: "gl-1700", accountCode: "1700", accountName: "Right-of-Use Assets", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 2500000, openingCredit: 0, amounts: { "col-period": { debit: 100000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 2600000, closingCredit: 0, orderIndex: 11 },
+  { lineId: "tb-1750", accountId: "gl-1750", accountCode: "1750", accountName: "Accumulated Depreciation - ROU", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 350000, amounts: { "col-period": { debit: 0, credit: 150000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 500000, orderIndex: 12 },
+  { lineId: "tb-1800", accountId: "gl-1800", accountCode: "1800", accountName: "Deferred Tax Assets", fsCategory: "NON_CURRENT_ASSETS", normalBalance: "DEBIT", openingDebit: 285000, openingCredit: 0, amounts: { "col-period": { debit: 15000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 300000, closingCredit: 0, orderIndex: 13 },
+  // Current Liabilities
+  { lineId: "tb-2010", accountId: "gl-2010", accountCode: "2010", accountName: "Accounts Payable", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 1280000, amounts: { "col-period": { debit: 80000, credit: 280000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 1480000, orderIndex: 14 },
+  { lineId: "tb-2100", accountId: "gl-2100", accountCode: "2100", accountName: "Accrued Expenses", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 630000, amounts: { "col-period": { debit: 30000, credit: 100000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 700000, orderIndex: 15 },
+  { lineId: "tb-2150", accountId: "gl-2150", accountCode: "2150", accountName: "Income Taxes Payable", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 210000, amounts: { "col-period": { debit: 10000, credit: 25000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 225000, orderIndex: 16 },
+  { lineId: "tb-2200", accountId: "gl-2200", accountCode: "2200", accountName: "Deferred Revenue - Current", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 660000, amounts: { "col-period": { debit: 20000, credit: 60000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 700000, orderIndex: 17 },
+  { lineId: "tb-2250", accountId: "gl-2250", accountCode: "2250", accountName: "Current Portion of Long-Term Debt", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 500000, amounts: { "col-period": { debit: 0, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 500000, orderIndex: 18 },
+  { lineId: "tb-2300", accountId: "gl-2300", accountCode: "2300", accountName: "Current Lease Liabilities", fsCategory: "CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 175000, amounts: { "col-period": { debit: 0, credit: 10000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 185000, orderIndex: 19 },
+  // Non-Current Liabilities
+  { lineId: "tb-2500", accountId: "gl-2500", accountCode: "2500", accountName: "Long-Term Debt", fsCategory: "NON_CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 4500000, amounts: { "col-period": { debit: 500000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 4000000, orderIndex: 20 },
+  { lineId: "tb-2600", accountId: "gl-2600", accountCode: "2600", accountName: "Long-Term Lease Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 1700000, amounts: { "col-period": { debit: 180000, credit: 95000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 1615000, orderIndex: 21 },
+  { lineId: "tb-2700", accountId: "gl-2700", accountCode: "2700", accountName: "Deferred Tax Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 565000, amounts: { "col-period": { debit: 0, credit: 35000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 600000, orderIndex: 22 },
+  { lineId: "tb-2800", accountId: "gl-2800", accountCode: "2800", accountName: "Other Long-Term Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 280000, amounts: { "col-period": { debit: 0, credit: 20000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 300000, orderIndex: 23 },
+  // Equity
+  { lineId: "tb-3010", accountId: "gl-3010", accountCode: "3010", accountName: "Common Stock", fsCategory: "EQUITY", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 50000, amounts: { "col-period": { debit: 0, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 50000, orderIndex: 24 },
+  { lineId: "tb-3100", accountId: "gl-3100", accountCode: "3100", accountName: "Additional Paid-in Capital", fsCategory: "EQUITY", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 3200000, amounts: { "col-period": { debit: 0, credit: 300000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 3500000, orderIndex: 25 },
+  { lineId: "tb-3200", accountId: "gl-3200", accountCode: "3200", accountName: "Retained Earnings", fsCategory: "EQUITY", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 3345000, amounts: { "col-period": { debit: 175000, credit: 410000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 3580000, orderIndex: 26 },
+  { lineId: "tb-3300", accountId: "gl-3300", accountCode: "3300", accountName: "Accumulated OCI", fsCategory: "EQUITY", normalBalance: "CREDIT", openingDebit: 100000, openingCredit: 0, amounts: { "col-period": { debit: 0, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 100000, closingCredit: 0, orderIndex: 27 },
+  // Revenue (Income Statement)
+  { lineId: "tb-4010", accountId: "gl-4010", accountCode: "4010", accountName: "Product Revenue", fsCategory: "REVENUE", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 0, credit: 9500000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 9500000, orderIndex: 28 },
+  { lineId: "tb-4100", accountId: "gl-4100", accountCode: "4100", accountName: "Service Revenue", fsCategory: "REVENUE", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 0, credit: 2850000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 2850000, orderIndex: 29 },
+  { lineId: "tb-4200", accountId: "gl-4200", accountCode: "4200", accountName: "Other Revenue", fsCategory: "OTHER_INCOME", normalBalance: "CREDIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 0, credit: 150000 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 0, closingCredit: 150000, orderIndex: 30 },
+  // Cost of Sales
+  { lineId: "tb-5010", accountId: "gl-5010", accountCode: "5010", accountName: "Cost of Goods Sold", fsCategory: "COST_OF_SALES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 5700000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 5700000, closingCredit: 0, orderIndex: 31 },
+  { lineId: "tb-5100", accountId: "gl-5100", accountCode: "5100", accountName: "Cost of Services", fsCategory: "COST_OF_SALES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 1650000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 1650000, closingCredit: 0, orderIndex: 32 },
+  // Operating Expenses
+  { lineId: "tb-6010", accountId: "gl-6010", accountCode: "6010", accountName: "Salaries & Wages", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 1850000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 1850000, closingCredit: 0, orderIndex: 33 },
+  { lineId: "tb-6100", accountId: "gl-6100", accountCode: "6100", accountName: "Employee Benefits", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 425000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 425000, closingCredit: 0, orderIndex: 34 },
+  { lineId: "tb-6200", accountId: "gl-6200", accountCode: "6200", accountName: "Rent Expense", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 180000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 180000, closingCredit: 0, orderIndex: 35 },
+  { lineId: "tb-6300", accountId: "gl-6300", accountCode: "6300", accountName: "Depreciation & Amortization", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 875000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 875000, closingCredit: 0, orderIndex: 36 },
+  { lineId: "tb-6400", accountId: "gl-6400", accountCode: "6400", accountName: "Professional Fees", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 215000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 215000, closingCredit: 0, orderIndex: 37 },
+  { lineId: "tb-6500", accountId: "gl-6500", accountCode: "6500", accountName: "Marketing & Advertising", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 275000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 275000, closingCredit: 0, orderIndex: 38 },
+  { lineId: "tb-6600", accountId: "gl-6600", accountCode: "6600", accountName: "Utilities", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 72000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 72000, closingCredit: 0, orderIndex: 39 },
+  { lineId: "tb-6700", accountId: "gl-6700", accountCode: "6700", accountName: "Insurance", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 95000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 95000, closingCredit: 0, orderIndex: 40 },
+  { lineId: "tb-6800", accountId: "gl-6800", accountCode: "6800", accountName: "Travel & Entertainment", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 58000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 58000, closingCredit: 0, orderIndex: 41 },
+  { lineId: "tb-6900", accountId: "gl-6900", accountCode: "6900", accountName: "Office Supplies & Expenses", fsCategory: "OPERATING_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 35000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 35000, closingCredit: 0, orderIndex: 42 },
+  // Other Expenses
+  { lineId: "tb-7010", accountId: "gl-7010", accountCode: "7010", accountName: "Interest Expense", fsCategory: "OTHER_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 280000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 280000, closingCredit: 0, orderIndex: 43 },
+  { lineId: "tb-7100", accountId: "gl-7100", accountCode: "7100", accountName: "Other Expense", fsCategory: "OTHER_EXPENSES", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 15000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 15000, closingCredit: 0, orderIndex: 44 },
+  // Tax
+  { lineId: "tb-8010", accountId: "gl-8010", accountCode: "8010", accountName: "Income Tax Expense", fsCategory: "TAX_EXPENSE", normalBalance: "DEBIT", openingDebit: 0, openingCredit: 0, amounts: { "col-period": { debit: 325000, credit: 0 }, "col-adj": { debit: 0, credit: 0 } }, closingDebit: 325000, closingCredit: 0, orderIndex: 45 },
+];
+
+// Calculate totals
+const calculateTBTotals = (lines: TBLine[]) => {
+  let totalOpeningDebit = 0;
+  let totalOpeningCredit = 0;
+  let totalClosingDebit = 0;
+  let totalClosingCredit = 0;
+  
+  lines.forEach(line => {
+    totalOpeningDebit += line.openingDebit;
+    totalOpeningCredit += line.openingCredit;
+    totalClosingDebit += line.closingDebit;
+    totalClosingCredit += line.closingCredit;
+  });
+  
+  return { totalOpeningDebit, totalOpeningCredit, totalClosingDebit, totalClosingCredit };
+};
+
+const tbTotals = calculateTBTotals(sampleTBLines);
+
+// Sample Trial Balance Workspace
+export const sampleTBWorkspace: TBWorkspace = {
+  workspaceId: "tb-fy2024",
+  periodId: "FY2024",
+  periodLabel: "FY 2024",
+  priorPeriodId: "FY2023",
+  entityName: "Acme Corporation Inc.",
+  reportingCurrency: "USD",
+  columns: sampleTBColumns,
+  lines: sampleTBLines,
+  glAccounts: sampleGLAccounts,
+  totalOpeningDebit: tbTotals.totalOpeningDebit,
+  totalOpeningCredit: tbTotals.totalOpeningCredit,
+  totalClosingDebit: tbTotals.totalClosingDebit,
+  totalClosingCredit: tbTotals.totalClosingCredit,
+  isBalanced: Math.abs(tbTotals.totalClosingDebit - tbTotals.totalClosingCredit) < 0.01,
+  lastUpdated: "2024-12-31T23:59:59Z",
+};
+
+// FS Category labels for display
+export const fsCategoryLabels: Record<FSCategory, string> = {
+  CURRENT_ASSETS: "Current Assets",
+  NON_CURRENT_ASSETS: "Non-Current Assets",
+  CURRENT_LIABILITIES: "Current Liabilities",
+  NON_CURRENT_LIABILITIES: "Non-Current Liabilities",
+  EQUITY: "Equity",
+  REVENUE: "Revenue",
+  COST_OF_SALES: "Cost of Sales",
+  OPERATING_EXPENSES: "Operating Expenses",
+  OTHER_INCOME: "Other Income",
+  OTHER_EXPENSES: "Other Expenses",
+  TAX_EXPENSE: "Tax Expense",
+  CASH_OPERATING: "Cash - Operating",
+  CASH_INVESTING: "Cash - Investing",
+  CASH_FINANCING: "Cash - Financing",
+};
