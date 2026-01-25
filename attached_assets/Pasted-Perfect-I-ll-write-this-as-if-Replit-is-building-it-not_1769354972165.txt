@@ -1,0 +1,304 @@
+Perfect. I’ll write this **as if Replit is building it**, not as a concept deck.
+This is an **implementation-grade UX spec**: screens, components, states, rules, and non-goals.
+
+No fluff. No theory. This is what the engineer builds.
+
+---
+
+# 🧾 PRODUCT UX SPEC — DISCLOSURE & WORKING-PAPER TOOL
+
+**(Replit-Ready | Excel Replacement for FS, Notes & Splits)**
+
+---
+
+## 0️⃣ Product Objective (Non-Negotiable)
+
+Build a **single financial truth system** that produces:
+
+* Financial Statements
+* Disclosure Notes
+* Supporting Working Papers
+
+…with **explicit, auditable relationships** between them.
+
+This product:
+
+* Replaces Excel as the *explanation layer*
+* Does **not** replace the ERP or trial balance
+* Stores **declared accounting judgments**, not guesses
+
+---
+
+## 1️⃣ Core UX Objects (Engineered, Not Abstract)
+
+### Primary Objects
+
+| Object                    | Purpose                          |
+| ------------------------- | -------------------------------- |
+| Company Profile           | Metadata + reporting context     |
+| Trial Balance (Read-Only) | Source of GL truth               |
+| Financial Statements      | Presentation surface             |
+| Disclosure Notes          | Narrative + tabular explanations |
+| Working Papers            | Structured calculations & splits |
+| Split Declaration         | Explicit breakdown of balances   |
+
+---
+
+## 2️⃣ Navigation Structure (Left Rail)
+
+```
+📁 Company
+ ├── Profile
+ ├── Auditors Opinion
+ ├── Financial Statements
+ │    ├── Balance Sheet
+ │    ├── Income Statement
+ │    ├── Statement of Changes in Equity
+ │    └── Cash Flow Statement
+ ├── Notes to the Financial Statements
+ └── Working Papers
+```
+
+> FS and Notes are **not documents**.
+> They are **live views** backed by structured data.
+
+---
+
+## 3️⃣ Financial Statements UX
+
+### 3.1 FS Page Layout
+
+**Header**
+
+* Entity name
+* Period selector (Current | Prior Year)
+* Status: Draft / Reviewed / Final
+
+**Body**
+
+* Line items (collapsible)
+* Prior-year comparative column (always visible)
+
+**Footer**
+
+* Footnote references auto-generated
+
+---
+
+### 3.2 Line Item Behavior
+
+Each FS line item has:
+
+| Interaction  | Result                                 |
+| ------------ | -------------------------------------- |
+| Hover        | Shows note reference + total           |
+| Click        | Opens right-side **Explanation Panel** |
+| Warning icon | Split or disclosure incomplete         |
+
+---
+
+## 4️⃣ Disclosure Notes UX
+
+### 4.1 Notes List View
+
+Each note shows:
+
+* Note number (auto-sequenced)
+* Title
+* Completion status
+* Linked FS line items
+
+---
+
+### 4.2 Note Detail View
+
+Split screen:
+
+**Left**
+
+* Narrative text (rich text, controlled)
+* Section headers via **Text Blocks**
+
+**Right**
+
+* Structured tables (auto-footing)
+* Prior-year comparison toggle
+* Linked working paper references
+
+> ❗ Text Blocks are *presentation only*.
+> No numbers live inside free text.
+
+---
+
+## 5️⃣ Working Papers UX (The Excel Replacement)
+
+### 5.1 Working Paper List
+
+Each WP:
+
+* Name
+* Type (Linear / Aging / Rollforward)
+* Linked FS line(s)
+* Status
+
+---
+
+### 5.2 Working Paper Grid
+
+**Grid Capabilities**
+
+* Add rows
+* Add columns
+* Resize columns
+* Rename headers
+* Insert **Text Blocks** (for section headers)
+* Freeze header rows
+
+**Hard Rule**
+
+> The system does **not** infer meaning from layout.
+> Meaning is declared through metadata.
+
+---
+
+## 6️⃣ Split Declaration UX (Critical Path)
+
+### 6.1 When Split Is Triggered
+
+System auto-prompts split when:
+
+* One GL account maps to multiple disclosures
+* Disclosure total ≠ TB balance
+* User explicitly requests breakdown
+
+---
+
+### 6.2 Split Panel (Right Drawer)
+
+**Header**
+
+```
+Split Declaration
+GL Account: 2100 – Accrued Expenses
+TB Balance: $500,000
+```
+
+---
+
+### 6.3 Split Summary Section
+
+| Metric        | Amount      |
+| ------------- | ----------- |
+| Trial Balance | $500,000    |
+| Assigned      | $300,000    |
+| Unassigned    | $200,000 ⚠️ |
+
+---
+
+### 6.4 Split Entry Table
+
+| Component Name  | Amount  | Source Type | Basis          |
+| --------------- | ------- | ----------- | -------------- |
+| Payroll accrual | 120,000 | Declared    | Jan payroll    |
+| Legal accrual   | 80,000  | Declared    | Legal invoices |
+| Bonus accrual   | 100,000 | GL-Backed   | GL 2150        |
+
+---
+
+### 6.5 Split Rules (Enforced)
+
+* Total splits must equal GL balance
+* Declared splits:
+
+  * Require name
+  * Require explanation text
+* No proportional or automated allocations
+* Declared splits are **period-locked**
+
+---
+
+## 7️⃣ Cross-Reference UX (Visual Accounting)
+
+### 7.1 Hover Trails
+
+Hovering any number shows:
+
+```
+Source:
+✔ GL 2100
+✔ Split Declaration
+✔ Working Paper WP-004
+✔ Note 7
+```
+
+---
+
+### 7.2 Breadcrumb View
+
+In Working Paper:
+
+```
+Balance Sheet → Accrued Expenses → Note 7 → WP-004
+```
+
+Clickable at each level.
+
+---
+
+## 8️⃣ Print / Export Engine (Coherence Guarantee)
+
+### 8.1 Print Mode Activation
+
+User selects:
+
+* “Generate Financial Statements”
+
+System:
+
+* Locks period
+* Freezes splits
+* Resolves all references
+* Orders notes automatically
+
+---
+
+### 8.2 Output
+
+Single PDF:
+
+1. Auditors Opinion
+2. Financial Statements
+3. Notes
+4. Supporting Schedules (optional)
+
+> Live system → Static audited artifact
+
+---
+
+## 9️⃣ Explicit Non-Goals (Do NOT Build)
+
+❌ No journal posting
+❌ No ERP sync beyond TB import
+❌ No auto allocations
+❌ No approval workflow (future phase)
+❌ No “smart suggestions” for splits
+
+---
+
+## 🔟 Why This UX Works
+
+* Humans declare judgment once
+* System remembers it forever
+* FS, Notes, and WPs never drift
+* Audit trail is native, not bolted on
+
+---
+
+If you want next, I can:
+
+* Translate this into **Replit component architecture**
+* Define **DB schema for splits + references**
+* Write **acceptance criteria per screen**
+* Or turn this into a **build checklist for Replit**
+
+This spec is strong enough to build **without you in the room** — which is the real test.
