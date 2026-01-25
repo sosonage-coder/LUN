@@ -1,0 +1,296 @@
+Got it. I’ll write this as a **final, polished product definition**.
+Not exploratory. Not a brainstorm. Something you could drop straight into a deck, a Notion doc, or a website.
+
+---
+
+## Entity Compliance Calendar
+
+**Centralized compliance control for every legal entity**
+
+The Entity Compliance Calendar is a centralized platform that gives finance, tax, and governance teams **clear, continuous visibility into all compliance obligations for every legal entity in the group**.
+
+It replaces fragmented spreadsheets, email reminders, and tribal knowledge with a **structured, auditable system of record** for entity-level compliance.
+
+At any moment, the organization can answer with confidence:
+
+> Which entities are compliant, which are at risk, and what evidence supports that status?
+> 
+
+---
+
+## What the Product Does
+
+The Entity Compliance Calendar tracks, manages, and evidences **all recurring and ad-hoc compliance obligations** tied to a legal entity, across jurisdictions and functions.
+
+It focuses on:
+
+- Visibility
+- Ownership
+- Evidence
+- Predictability
+
+It does **not** file returns or provide legal advice.
+It ensures nothing is missed and everything is provable.
+
+---
+
+## Compliance Scope
+
+The platform supports obligations across:
+
+- Statutory financial statements
+- Corporate income tax filings
+- VAT / GST / sales tax
+- Payroll and employment filings
+- Annual returns and corporate registry filings
+- Local statutory audits
+- Transfer pricing documentation
+- Intercompany documentation refresh
+- Internal governance and board approvals
+
+Each obligation is tied explicitly to a **legal entity and jurisdiction**, not just a date.
+
+---
+
+## Core Product Components
+
+### 1. Entity-Centric Compliance Profiles
+
+Each legal entity has a dedicated compliance profile that defines:
+
+- Jurisdiction(s)
+- Entity type
+- Operating status
+- Reporting currency
+- Group role
+
+Compliance obligations are assigned based on the entity profile, ensuring accuracy and relevance.
+
+**Outcome**
+
+- No ambiguity about what applies to which entity
+- Scales cleanly as entities are added, dissolved, or restructured
+- Reduces dependency on institutional memory
+
+---
+
+### 2. Structured Obligation Registry
+
+Every compliance obligation is defined as a structured record with:
+
+- Obligation category (tax, statutory, payroll, regulatory, intercompany, governance)
+- Frequency (monthly, quarterly, annual, ad hoc)
+- Standard due date logic
+- Required evidence
+- Risk criticality
+
+Obligations are standardized, not free-text reminders.
+
+**Outcome**
+
+- Consistency across countries and entities
+- Faster audits and walkthroughs
+- Easier handover during team changes
+
+---
+
+### 3. Calendar & Timeline Views
+
+Compliance can be viewed by:
+
+- Individual entity
+- Country or jurisdiction
+- Region
+- Entire group
+
+Views highlight:
+
+- Upcoming deadlines
+- At-risk obligations
+- Completed items
+- Missed or overdue filings
+
+**Outcome**
+
+- One authoritative view instead of multiple trackers
+- Clear prioritization
+- Early warning instead of last-minute panic
+
+---
+
+### 4. Ownership, Review & Accountability
+
+Each obligation includes:
+
+- Primary owner
+- Backup owner
+- Reviewer or approver
+- Escalation rules
+
+Ownership is role-based, not person-dependent.
+
+**Outcome**
+
+- Clear accountability
+- Reduced key-person risk
+- Strong internal control environment
+
+---
+
+### 5. Evidence & Completion Tracking
+
+For each obligation, the platform stores:
+
+- Filed returns
+- Submission confirmations
+- Signed financial statements
+- Correspondence with authorities
+- Internal approvals and sign-offs
+
+Once completed:
+
+- The obligation is time-stamped
+- Evidence is locked
+- Historical completion is retained
+
+**Outcome**
+
+- Instant audit readiness
+- No annual re-collection of evidence
+- Strong support for cut-off and completeness assertions
+
+---
+
+### 6. Dependency & Sequencing Logic
+
+Many obligations depend on others.
+
+The system understands dependencies such as:
+
+- Tax filings dependent on finalized financial statements
+- Transfer pricing documentation dependent on intercompany agreement updates
+- Audit sign-off dependent on management approval
+
+Blocked or cascading delays are clearly flagged.
+
+**Outcome**
+
+- Realistic timelines
+- Fewer downstream surprises
+- Better coordination across finance, tax, and legal teams
+
+---
+
+### 7. Risk & Criticality Indicators
+
+Each obligation is tagged with:
+
+- Regulatory risk
+- Financial penalty risk
+- Reputational risk
+
+This allows teams to distinguish between:
+
+- Critical obligations
+- Important but flexible items
+- Low-risk tasks
+
+**Outcome**
+
+- Smarter prioritization
+- Reduced reactive behavior
+- Clear escalation thresholds
+
+---
+
+### 8. Historical Risk & Exception Tracking
+
+The platform maintains history of:
+
+- Late filings
+- Missed deadlines
+- Repeated escalations
+- Chronic risk areas by entity or jurisdiction
+
+This creates an entity-level compliance risk profile over time.
+
+**Outcome**
+
+- Early identification of systemic issues
+- Strong governance oversight
+- Better resourcing and planning decisions
+
+---
+
+## Integration with Intersettle
+
+The Entity Compliance Calendar integrates naturally with Intersettle:
+
+- Intersettle feeds:
+    - Transfer pricing documentation deadlines
+    - Intercompany agreement renewal dates
+    - Jurisdiction-specific intercompany compliance requirements
+- The Compliance Calendar feeds:
+    - Entity compliance status
+    - Risk indicators ahead of intercompany elimination and audit
+    - Evidence supporting intercompany positions
+
+Together, they ensure:
+
+> Compliance obligations and intercompany positions are aligned, documented, and defensible.
+> 
+
+---
+
+## AI Enhancements (Optional, Controlled)
+
+AI enhances visibility and insight without replacing judgment.
+
+- **Obligation suggestion**
+Identifies potentially missing obligations based on entity jurisdiction and activity.
+- **Risk pattern detection**
+Flags entities or jurisdictions with recurring late or high-risk filings.
+- **Narrative drafting**
+Produces audit-ready summaries and board-level compliance status reports.
+
+All AI outputs are reviewable and editable before use.
+
+---
+
+## What the Product Solves
+
+- Missed or late filings
+- Fragmented compliance tracking
+- Loss of knowledge when staff leave
+- Audit evidence chaos
+- Lack of entity-level compliance visibility
+
+---
+
+## Value to the Organization
+
+**Controllers & CFOs**
+
+- Clear, real-time compliance posture
+- Fewer surprises
+- Strong governance narrative
+
+**Finance, Tax & Legal Teams**
+
+- Clear ownership and priorities
+- Reduced last-minute stress
+- Better coordination across functions
+
+**Auditors**
+
+- Immediate access to evidence
+- Faster walkthroughs
+- Higher confidence in controls
+
+---
+
+## In One Line
+
+The Entity Compliance Calendar transforms entity-level compliance from scattered reminders and spreadsheets into **structured, auditable control across the entire group**.
+
+It is the natural companion to Intersettle:

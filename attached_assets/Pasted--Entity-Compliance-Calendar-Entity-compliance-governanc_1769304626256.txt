@@ -1,0 +1,247 @@
+## Entity Compliance Calendar
+
+**Entity compliance, governance, and statutory execution — in one system of record**
+
+The Entity Compliance Calendar is a centralized platform that enables organizations to **manage, execute, and evidence legal-entity compliance and governance obligations** across jurisdictions.
+
+It goes beyond tracking deadlines.
+
+It supports **filing, documentation, approvals, and proof** — all anchored to the legal entity.
+
+At any moment, the organization can answer:
+
+> Are our entities compliant, properly governed, and provably up to date — and can we show it instantly?
+> 
+
+---
+
+## Expanded Scope (What This Product Now Covers)
+
+The platform supports:
+
+- Statutory compliance tracking
+- Regulatory and tax obligations
+- Governance documentation and approvals
+- Entity data management
+- Ownership and structure visibility
+- Filing, signing, and evidence retention
+
+It still does **not** replace legal counsel.
+
+It replaces fragmentation, manual assembly, and blind spots.
+
+---
+
+## Core Product Sections (Expanded)
+
+---
+
+## 1. Entity-Centric Compliance & Governance Profiles
+
+Each legal entity has a complete profile that includes:
+
+- Jurisdiction(s)
+- Entity type
+- Operating status
+- Registered agent
+- Officers and directors
+- Ownership and share structure
+- Reporting and compliance obligations
+
+This profile is the **single source of truth** feeding all compliance, filings, and documents.
+
+**Value**
+
+- Eliminates duplicated records across tools
+- Reduces risk of inconsistent filings
+- Supports audit, legal, and tax equally
+
+---
+
+## 2. Structured Obligation & Filing Registry
+
+Every obligation is defined with:
+
+- Obligation type (statutory, tax, payroll, regulatory, governance)
+- Filing authority
+- Frequency and due date logic
+- Required forms
+- Required approvals
+- Evidence expectations
+
+Obligations can be:
+
+- Track-only
+- File-enabled
+- Governance-enabled
+
+**Value**
+
+- Clear distinction between awareness and execution
+- No ambiguity about what must be filed vs approved
+
+---
+
+## 3. Electronic Filing & E-Signature Enablement
+
+Where supported by jurisdiction and authority, the platform enables:
+
+- Direct electronic filing of statutory forms
+- In-app preparation of filings
+- E-signature workflows for:
+    - Director resolutions
+    - Shareholder consents
+    - Financial statements
+    - Officer certifications
+
+Integrates with tools such as **DocuSign** and aligns with capabilities seen in platforms like **Diligent Entities**, **MinuteBox**, and **EntityKeeper**.
+
+**What’s automated**
+
+- Form generation
+- Signature routing
+- Submission confirmation capture
+
+**What remains controlled**
+
+- Filing approval
+- Final sign-off authority
+
+**Value**
+
+- Reduces manual filing risk
+- Speeds execution
+- Creates immediate, verifiable evidence
+
+---
+
+## 4. Bulk Document Assembly & Governance Automation
+
+The platform can automatically generate and maintain:
+
+- Minute books
+- Board and shareholder resolutions
+- Officer appointments and changes
+- Ownership and cap table summaries
+- Annual governance packs
+- Statutory registers
+
+Documents are:
+
+- Template-driven
+- Entity-aware
+- Automatically stamped and versioned
+- Stored with rotation and historical traceability
+
+This mirrors advanced automation seen in tools like **Athennian**, without forcing users into a separate governance system.
+
+**Value**
+
+- Eliminates repetitive legal admin
+- Ensures consistency across entities
+- Dramatically reduces audit and due diligence prep time
+
+---
+
+## 5. Interactive Org Charts & Ownership Visualization
+
+The platform includes dynamic, interactive views of:
+
+- Legal entity structures
+- Ownership percentages
+- Subsidiary relationships
+- Investor and shareholder stakes
+- Cross-border entity hierarchies
+
+These visuals are:
+
+- Data-driven
+- Always current
+- Linked directly to source records and cap tables
+
+Changes in ownership or structure automatically update downstream views and documents.
+
+**Value**
+
+- No more static PowerPoint org charts
+- Immediate accuracy for audit, tax, and M&A
+- Strong governance transparency
+
+---
+
+## 6. Registered Agent & Jurisdiction Oversight
+
+For each entity, the system tracks:
+
+- Registered agent details
+- Jurisdiction-specific requirements
+- Agent correspondence
+- Renewal and change deadlines
+
+Optionally integrates with single-vendor registered agent providers, similar to the centralized approach offered by **EntityKeeper**.
+
+**Value**
+
+- One view of agent activity across countries
+- Reduced risk of missed notices
+- Better control in multi-jurisdiction groups
+
+---
+
+## 7. Evidence, Audit Trail & Period Locking
+
+Every filing, approval, and document action creates:
+
+- Time-stamped records
+- Immutable evidence
+- Period-based snapshots
+
+The system retains:
+
+- Filing confirmations
+- Signed documents
+- Submission receipts
+- Approval logs
+
+**Value**
+
+- Instant audit readiness
+- Strong support for completeness, cut-off, and existence
+- No re-assembly during audits or due diligence
+
+---
+
+## 8. Risk, Exceptions & Governance Health
+
+The platform tracks:
+
+- Missed or late filings
+- Repeated governance delays
+- Entities with chronic compliance risk
+- Jurisdictions with higher exposure
+
+This builds an **entity governance risk profile** over time.
+
+**Value**
+
+- Early warning system
+- Strong internal control narratives
+- Better board and audit committee reporting
+
+---
+
+## Integration with Intersettle (Strategic)
+
+- Compliance Calendar feeds Intersettle with:
+    - Transfer pricing documentation status
+    - Entity compliance health before elimination
+    - Evidence supporting intercompany positions
+- Intersettle feeds Compliance Calendar with:
+    - Intercompany agreement renewals
+    - Jurisdiction-specific IC obligations
+    - Audit readiness signals
+
+Together they form:
+
+> A complete entity governance + intercompany control layer.
+>
