@@ -77,6 +77,50 @@ The application uses a client-server architecture.
         - Row types: DATA, HEADER, SUBTOTAL, TOTAL with differentiated styling.
         - Text blocks for notes and annotations.
         - Breadcrumb navigation between list and detail views.
+        - **Comprehensive WP Coverage** (14 working papers):
+            - Revenue Analysis (LINEAR) - revenue stream breakdown
+            - COGS Analysis (LINEAR) - cost category breakdown
+            - Inventory Rollforward (ROLLFORWARD) - raw materials, WIP, finished goods
+            - Operating Expenses Analysis (LINEAR) - SG&A, R&D, D&A breakdown
+            - AR Aging (AGING) - customer aging buckets
+            - AP Aging (AGING) - vendor aging buckets
+            - Accrued Liabilities Rollforward (ROLLFORWARD) - payroll, bonus, PTO
+            - Debt Rollforward (ROLLFORWARD) - term loans with rates/maturity
+            - Equity Rollforward (ROLLFORWARD) - all equity components
+            - Cash Reconciliation (LINEAR) - bank to GL reconciliation
+            - Prepaid Rollforward (ROLLFORWARD) - insurance, software, deposits
+            - Income Tax Provision (CUSTOM) - current/deferred breakdown
+            - PPE Rollforward (ROLLFORWARD) - buildings, equipment, vehicles
+            - Intangible Assets Rollforward (ROLLFORWARD) - software, patents
+    - **Disclosure Notes** (18 notes covering all FS line items):
+        - Note 3: Revenue (product, service, licensing)
+        - Note 4: Cash and Cash Equivalents
+        - Note 5: Trade and Other Receivables
+        - Note 6: Inventories
+        - Note 7: Prepaid Expenses
+        - Note 8: Cost of Goods Sold
+        - Note 9: Operating Expenses
+        - Note 10: Property, Plant & Equipment
+        - Note 11: Intangible Assets
+        - Note 12: Leases
+        - Note 13: Goodwill
+        - Note 15: Trade and Other Payables
+        - Note 16: Accrued Liabilities
+        - Note 17: Borrowings
+        - Note 19: Income Taxes
+        - Note 21: Share Capital and Reserves
+        - Note 22: Other Comprehensive Income
+    - **Schedules** (22 schedules with 6 layout types):
+        - Composition: Cash, COGS, OpEx, Goodwill, Tax Provision, OCI
+        - Rollforward: Prepaid, PPE, Intangibles, Accruals, Debt, Equity, Inventory, ROU Assets
+        - Timing/Maturity: AR Aging, AP Aging, Debt Maturity, Lease Maturity
+        - Gross-to-Net: Deferred Tax Assets/Liabilities
+        - Movement by Category: Equity Components, Intangibles
+        - Reconciliation: Revenue breakdown
+    - **Narratives** (18 narrative blocks):
+        - Each disclosure note has a corresponding narrative explaining accounting policies, significant items, and year-over-year changes
+        - Narratives link to related schedules and movements
+        - Coverage includes all major FS categories: Revenue, COGS, Assets (Cash, AR, Inventory, Prepaid, PPE, Intangibles, ROU, Goodwill), Liabilities (AP, Accruals, Debt, Leases, DTL), and Equity (Capital, Reserves, AOCI)
     - **Print/Export Engine**:
         - Generate Financial Statements dialog with format selection (PDF, Excel, Word).
         - Statement selection toggles for Balance Sheet, Income Statement, Equity, Cash Flow.
