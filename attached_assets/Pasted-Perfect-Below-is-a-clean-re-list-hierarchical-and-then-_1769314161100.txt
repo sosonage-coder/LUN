@@ -1,0 +1,375 @@
+Perfect. Below is a **clean re-list**, **hierarchical**, and then a **visual representation of the app** the way a product designer, buyer, or engineer would immediately understand it.
+
+No narrative. No strategy talk. Just **what exists, where it lives, and how it connects**.
+
+---
+
+# 🧱 ENTITY COMPLIANCE & GOVERNANCE PLATFORM
+
+## Sections, Sub-Features & App Structure
+
+---
+
+## 1️⃣ Entity Master (System of Record)
+
+**Purpose:** Single source of truth for every legal entity
+
+**Sub-features**
+
+* Entity profile (name, jurisdiction, type, status)
+* Operating status (active, dormant, dissolved)
+* Registered office & statutory addresses
+* Registered agent details
+* Officers & directors registry
+* Ownership & share structure summary
+* Entity identifiers (tax IDs, registration numbers)
+
+---
+
+## 2️⃣ Authority & Delegation
+
+**Purpose:** Who can act, sign, approve — and within what limits
+
+**Sub-features**
+
+* Delegation of Authority (DoA) matrix
+* Signing authority thresholds
+* Banking and financial authority limits
+* Board vs officer vs shareholder authority
+* Temporary delegations
+* Authority expiry tracking
+* Role change impact tracking
+
+---
+
+## 3️⃣ Board & Committee Governance
+
+**Purpose:** Decision-making, not document storage
+
+**Sub-features**
+
+* Board & committee structures
+* Charters and mandates
+* Meeting cadence & quorum rules
+* Agenda management
+* Resolution lifecycle (draft → approve → execute)
+* Action item tracking
+* Decision audit trail
+
+---
+
+## 4️⃣ Governance Policy Management
+
+**Purpose:** Entity-level rules, not accounting manuals
+
+**Sub-features**
+
+* Governance & authority policies
+* Compliance and regulatory policies
+* Intercompany governance policies
+* Equity & capital governance policies
+* Ethics & conduct policies
+* Entity applicability mapping
+* Local deviations / addenda
+* Review cycles & approvals
+* Policy acknowledgment tracking
+
+---
+
+## 5️⃣ Compliance Obligations & Filings
+
+**Purpose:** What must be done, when, by whom
+
+**Sub-features**
+
+* Obligation registry (statutory, tax, governance)
+* Filing authority mapping
+* Frequency & due date logic
+* Required approvals
+* Required forms
+* Track-only vs execution-enabled obligations
+* Dependency awareness
+
+---
+
+## 6️⃣ Compliance Calendar
+
+**Purpose:** Execution layer for obligations
+
+**Sub-features**
+
+* Entity-level compliance calendar
+* Multi-entity rollups
+* Deadline alerts & escalation
+* Missed / late filing detection
+* Jurisdiction-specific views
+* Workload visibility
+
+---
+
+## 7️⃣ Electronic Filing & E-Signature
+
+**Purpose:** Execute and evidence compliance
+
+**Sub-features**
+
+* In-app filing preparation (where supported)
+* Resolution and consent generation
+* Director & officer e-signature workflows
+* Signature routing rules
+* Filing submission tracking
+* Confirmation & receipt capture
+* DocuSign / e-signature integrations
+
+---
+
+## 8️⃣ Governance Document Automation
+
+**Purpose:** Eliminate repetitive legal admin
+
+**Sub-features**
+
+* Automated minute books
+* Board and shareholder resolutions
+* Officer appointments & removals
+* Statutory registers
+* Annual governance packs
+* Version control
+* Historical traceability
+
+---
+
+## 9️⃣ Capital & Equity Governance
+
+**Purpose:** Control ownership and rights
+
+**Sub-features**
+
+* Share classes & rights
+* Issuance and cancellation approvals
+* Dividend declaration workflows
+* Capital increases / decreases
+* Ownership restrictions & covenants
+* Equity approval audit trail
+
+---
+
+## 🔟 Entity Change & Lifecycle Management
+
+**Purpose:** Control structural change
+
+**Sub-features**
+
+* Entity formation
+* Amendments (name, address, officers)
+* Mergers & amalgamations
+* Restructurings
+* Dormancy & reactivation
+* Dissolution & wind-down
+* Filing and approval linkage
+
+---
+
+## 1️⃣1️⃣ Regulatory Correspondence & Enforcement
+
+**Purpose:** Never miss regulator interaction
+
+**Sub-features**
+
+* Regulator notices log
+* Information requests
+* Penalties & warnings
+* Response deadlines
+* Ownership & escalation
+* Resolution tracking
+* Evidence storage
+
+---
+
+## 1️⃣2️⃣ Risk & Issue Register (Entity-Level)
+
+**Purpose:** Early warning system
+
+**Sub-features**
+
+* Compliance risks
+* Governance risks
+* Reputational risks
+* Issue ownership
+* Mitigation actions
+* Recurring issue detection
+* Risk trend analysis
+
+---
+
+## 1️⃣3️⃣ Third-Party & Advisor Registry
+
+**Purpose:** Control who acts on behalf of the entity
+
+**Sub-features**
+
+* Legal counsel registry
+* Tax advisors
+* Accountants & auditors
+* Corporate secretaries
+* Registered agents
+* Engagement scope
+* Renewal & expiry tracking
+
+---
+
+## 1️⃣4️⃣ Evidence Vault & Period Snapshots
+
+**Purpose:** Proof over time
+
+**Sub-features**
+
+* Immutable evidence storage
+* Filing confirmations
+* Signed documents
+* Approval logs
+* Period snapshots
+* Historical entity states
+* Audit & litigation readiness
+
+---
+
+## 1️⃣5️⃣ Org & Ownership Visualization
+
+**Purpose:** Make structure visible and reliable
+
+**Sub-features**
+
+* Interactive legal entity org charts
+* Ownership percentage visualization
+* Cross-border hierarchies
+* Investor & subsidiary views
+* Auto-updating from source records
+
+---
+
+## 1️⃣6️⃣ Governance Health & Reporting
+
+**Purpose:** Executive and board visibility
+
+**Sub-features**
+
+* Entity compliance health score
+* Governance risk heatmaps
+* Upcoming critical actions
+* Chronic problem indicators
+* Board-ready dashboards
+* Exportable reports
+
+---
+
+## 1️⃣7️⃣ Intersettle Integration Layer
+
+**Purpose:** Link governance to intercompany control
+
+**Sub-features**
+
+* Intercompany policy linkage
+* Transfer pricing documentation status
+* Agreement renewal tracking
+* Compliance gating for settlements
+* Evidence synchronization
+
+---
+
+# 🧭 VISUAL REPRESENTATION — APP STRUCTURE
+
+### High-Level Navigation (Left Menu)
+
+```
+🏢 Entities
+   └─ Entity Profile
+   └─ Ownership & Structure
+   └─ Officers & Directors
+
+🧾 Compliance
+   └─ Obligations
+   └─ Compliance Calendar
+   └─ Filings & Submissions
+
+🧑‍⚖️ Governance
+   └─ Authority & DoA
+   └─ Board & Committees
+   └─ Policies
+   └─ Capital & Equity
+
+🔄 Changes
+   └─ Entity Lifecycle
+   └─ Amendments
+   └─ M&A / Dissolution
+
+⚠️ Risk & Oversight
+   └─ Risk Register
+   └─ Regulatory Correspondence
+   └─ Issues & Escalations
+
+📁 Documents & Evidence
+   └─ Governance Docs
+   └─ Evidence Vault
+   └─ Period Snapshots
+
+📊 Insights
+   └─ Governance Health
+   └─ Compliance Status
+   └─ Board Reports
+
+🔗 Integrations
+   └─ Intersettle
+   └─ E-Signature
+   └─ Registered Agents
+```
+
+---
+
+### Entity-Centric View (Core UX Concept)
+
+```
+[ ENTITY DASHBOARD ]
+
+Entity Health: 🟢 Compliant | 🟠 Watch | 🔴 At Risk
+
+────────────────────────────────────
+ENTITY PROFILE   |   OWNERSHIP
+AUTHORITY        |   POLICIES
+BOARD ACTIONS    |   CAPITAL
+COMPLIANCE       |   FILINGS
+RISKS            |   EVIDENCE
+────────────────────────────────────
+```
+
+Everything **fans out from the entity**.
+No hunting. No cross-tool reconciliation.
+
+---
+
+## Mental Model (Important)
+
+This app is:
+
+* **Entity-first**
+* **Authority-aware**
+* **Approval-driven**
+* **Evidence-anchored**
+* **Audit-native**
+
+Not:
+
+* A document dump
+* A reminder calendar
+* An ERP
+* A legal opinion engine
+
+---
+
+If you want next, we can:
+
+* Turn this into a **wireframe-ready IA**
+* Define **V1 scope (must-haves only)**
+* Or map **features → buyer personas** (GC, Corp Sec, CFO, Audit)
+
+Just tell me where to go next.
