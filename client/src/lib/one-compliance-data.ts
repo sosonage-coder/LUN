@@ -1,6 +1,421 @@
 // One Compliance - Entity Governance Platform Sample Data
 
 // ================================
+// Field Capture Metadata
+// ================================
+// MANUAL = Human-entered data (✍️)
+// AUTOMATIC = System-generated / derived (⚙️)
+
+export type FieldCaptureMode = "MANUAL" | "AUTOMATIC";
+
+export interface FieldMeta {
+  mode: FieldCaptureMode;
+  label: string;
+  description?: string;
+}
+
+// Field metadata by interface - defines which fields are manual vs automatic
+export const FIELD_METADATA = {
+  // 1️⃣ Entity Master (System of Record)
+  Entity: {
+    name: { mode: "MANUAL", label: "Entity Name" },
+    legalName: { mode: "MANUAL", label: "Legal Name" },
+    entityType: { mode: "MANUAL", label: "Entity Type" },
+    jurisdictionCode: { mode: "MANUAL", label: "Jurisdiction" },
+    status: { mode: "AUTOMATIC", label: "Operating Status", description: "Updated by lifecycle events" },
+    incorporationDate: { mode: "MANUAL", label: "Incorporation Date" },
+    fiscalYearEnd: { mode: "MANUAL", label: "Fiscal Year End" },
+    registrationNumber: { mode: "MANUAL", label: "Registration Number" },
+    taxId: { mode: "MANUAL", label: "Tax ID" },
+    registeredAddress: { mode: "MANUAL", label: "Registered Office Address" },
+    operatingAddress: { mode: "MANUAL", label: "Operating Address" },
+    parentEntityId: { mode: "MANUAL", label: "Parent Entity" },
+    ownershipPercentage: { mode: "MANUAL", label: "Ownership %" },
+    reportingCurrency: { mode: "MANUAL", label: "Reporting Currency" },
+    localCurrency: { mode: "MANUAL", label: "Local Currency" },
+    healthScore: { mode: "AUTOMATIC", label: "Health Score", description: "Calculated from compliance data" },
+    complianceScore: { mode: "AUTOMATIC", label: "Compliance Score", description: "Calculated from filing status" },
+    lastAuditDate: { mode: "MANUAL", label: "Last Audit Date" },
+    registeredAgentId: { mode: "MANUAL", label: "Registered Agent" },
+  } as Record<string, FieldMeta>,
+
+  // Officers & Ownership
+  Officer: {
+    name: { mode: "MANUAL", label: "Officer Name" },
+    role: { mode: "MANUAL", label: "Role/Title" },
+    appointmentDate: { mode: "MANUAL", label: "Appointment Date" },
+    resignationDate: { mode: "MANUAL", label: "Resignation Date" },
+    email: { mode: "MANUAL", label: "Email" },
+    isDirector: { mode: "MANUAL", label: "Is Director" },
+    isShareholder: { mode: "MANUAL", label: "Is Shareholder" },
+    signatoryLevel: { mode: "MANUAL", label: "Signatory Level" },
+  } as Record<string, FieldMeta>,
+
+  Shareholder: {
+    name: { mode: "MANUAL", label: "Shareholder Name" },
+    shareholderType: { mode: "MANUAL", label: "Shareholder Type" },
+    shareClass: { mode: "MANUAL", label: "Share Class" },
+    sharesHeld: { mode: "MANUAL", label: "Shares Held" },
+    ownershipPercentage: { mode: "AUTOMATIC", label: "Ownership %", description: "Calculated from shares" },
+    votingRights: { mode: "AUTOMATIC", label: "Voting Rights", description: "Derived from share class" },
+    acquisitionDate: { mode: "MANUAL", label: "Acquisition Date" },
+  } as Record<string, FieldMeta>,
+
+  // 2️⃣ Authority & Delegation
+  AuthorizedSignatory: {
+    officerName: { mode: "MANUAL", label: "Officer/Delegate Name" },
+    authorityType: { mode: "MANUAL", label: "Authority Type" },
+    signingLimit: { mode: "MANUAL", label: "Monetary Threshold" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    requiresCoSigner: { mode: "MANUAL", label: "Requires Co-Signer" },
+    coSignerRequired: { mode: "MANUAL", label: "Co-Signer Required" },
+    effectiveDate: { mode: "MANUAL", label: "Effective Date" },
+    expiryDate: { mode: "MANUAL", label: "Expiry Date" },
+    isActive: { mode: "AUTOMATIC", label: "Authority Status", description: "Based on dates and role status" },
+    delegatedBy: { mode: "MANUAL", label: "Delegated By" },
+    delegationScope: { mode: "MANUAL", label: "Delegation Scope" },
+  } as Record<string, FieldMeta>,
+
+  // 3️⃣ Board & Committee Governance
+  Meeting: {
+    meetingType: { mode: "MANUAL", label: "Meeting Type" },
+    title: { mode: "MANUAL", label: "Meeting Title" },
+    scheduledDate: { mode: "MANUAL", label: "Scheduled Date" },
+    location: { mode: "MANUAL", label: "Location" },
+    quorumRequired: { mode: "MANUAL", label: "Quorum Required" },
+    attendeesCount: { mode: "MANUAL", label: "Attendees Count" },
+    isQuorumMet: { mode: "AUTOMATIC", label: "Quorum Met", description: "Calculated from attendance" },
+    minutesApproved: { mode: "MANUAL", label: "Minutes Approved" },
+    agendaItems: { mode: "MANUAL", label: "Agenda Items" },
+    actionItems: { mode: "AUTOMATIC", label: "Action Items", description: "Generated from resolutions" },
+    status: { mode: "AUTOMATIC", label: "Meeting Status", description: "Based on date and completion" },
+  } as Record<string, FieldMeta>,
+
+  Resolution: {
+    title: { mode: "MANUAL", label: "Resolution Title" },
+    resolutionType: { mode: "MANUAL", label: "Resolution Type" },
+    status: { mode: "AUTOMATIC", label: "Approval Status", description: "Updated by voting" },
+    proposedDate: { mode: "MANUAL", label: "Proposed Date" },
+    approvedDate: { mode: "AUTOMATIC", label: "Approved Date", description: "Set when approved" },
+    executedDate: { mode: "AUTOMATIC", label: "Executed Date", description: "Set when executed" },
+    proposedBy: { mode: "MANUAL", label: "Proposed By" },
+    approvers: { mode: "MANUAL", label: "Approvers" },
+    votesFor: { mode: "AUTOMATIC", label: "Votes For", description: "Counted from votes" },
+    votesAgainst: { mode: "AUTOMATIC", label: "Votes Against", description: "Counted from votes" },
+    abstentions: { mode: "AUTOMATIC", label: "Abstentions", description: "Counted from votes" },
+    documentUrl: { mode: "AUTOMATIC", label: "Document", description: "Generated document" },
+    relatedMeetingId: { mode: "AUTOMATIC", label: "Related Meeting", description: "Linked automatically" },
+  } as Record<string, FieldMeta>,
+
+  // 4️⃣ Governance Policy Management
+  Policy: {
+    name: { mode: "MANUAL", label: "Policy Name" },
+    category: { mode: "MANUAL", label: "Policy Category" },
+    description: { mode: "MANUAL", label: "Description" },
+    status: { mode: "AUTOMATIC", label: "Policy Status", description: "Based on review cycle" },
+    version: { mode: "MANUAL", label: "Version Number" },
+    effectiveDate: { mode: "MANUAL", label: "Effective Date" },
+    reviewDate: { mode: "MANUAL", label: "Review Date" },
+    owner: { mode: "MANUAL", label: "Policy Owner" },
+    approvedBy: { mode: "MANUAL", label: "Approved By" },
+    applicableEntities: { mode: "MANUAL", label: "Applicable Entities" },
+    requiresAcknowledgement: { mode: "MANUAL", label: "Requires Acknowledgement" },
+    acknowledgementCount: { mode: "AUTOMATIC", label: "Acknowledgement Count", description: "Counted from responses" },
+    totalApplicable: { mode: "AUTOMATIC", label: "Total Applicable", description: "Calculated from scope" },
+  } as Record<string, FieldMeta>,
+
+  // 5️⃣ Compliance Obligations & Filings
+  Obligation: {
+    name: { mode: "MANUAL", label: "Obligation Name" },
+    obligationType: { mode: "MANUAL", label: "Obligation Type" },
+    description: { mode: "MANUAL", label: "Description" },
+    authority: { mode: "MANUAL", label: "Filing Authority" },
+    frequency: { mode: "MANUAL", label: "Frequency" },
+    dueDate: { mode: "AUTOMATIC", label: "Due Date", description: "Calculated from frequency" },
+    nextDueDate: { mode: "AUTOMATIC", label: "Next Due Date", description: "Calculated from frequency" },
+    filingStatus: { mode: "AUTOMATIC", label: "Filing Status", description: "Updated by system" },
+    approvalStatus: { mode: "AUTOMATIC", label: "Approval Status", description: "Updated by workflow" },
+    requiredForms: { mode: "MANUAL", label: "Required Forms" },
+    requiresSignature: { mode: "MANUAL", label: "Requires Signature" },
+    requiresApproval: { mode: "MANUAL", label: "Requires Approval" },
+    evidenceAttached: { mode: "AUTOMATIC", label: "Evidence Attached", description: "Tracked by system" },
+    assignedTo: { mode: "MANUAL", label: "Assigned To" },
+    lastFiledDate: { mode: "AUTOMATIC", label: "Last Filed Date", description: "Set on filing" },
+    lastFiledBy: { mode: "AUTOMATIC", label: "Last Filed By", description: "Logged by system" },
+  } as Record<string, FieldMeta>,
+
+  Filing: {
+    filingDate: { mode: "AUTOMATIC", label: "Filing Date", description: "Timestamp of submission" },
+    dueDate: { mode: "AUTOMATIC", label: "Due Date", description: "From obligation" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Updated by system" },
+    confirmationNumber: { mode: "AUTOMATIC", label: "Confirmation Number", description: "From authority" },
+    filedBy: { mode: "AUTOMATIC", label: "Filed By", description: "Logged by system" },
+    approvedBy: { mode: "AUTOMATIC", label: "Approved By", description: "From workflow" },
+    approvedAt: { mode: "AUTOMATIC", label: "Approved At", description: "Timestamp" },
+    documents: { mode: "MANUAL", label: "Documents" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+
+  // 7️⃣ E-Filing & E-Signature
+  FilingSignature: {
+    filingInitiated: { mode: "MANUAL", label: "Filing Initiated" },
+    signerSelection: { mode: "MANUAL", label: "Signer Selection" },
+    signatureTimestamp: { mode: "AUTOMATIC", label: "Signature Timestamp", description: "System recorded" },
+    submissionStatus: { mode: "AUTOMATIC", label: "Submission Status", description: "From e-filing system" },
+    confirmationReceipt: { mode: "AUTOMATIC", label: "Confirmation Receipt", description: "From authority" },
+    signatureAuditLog: { mode: "AUTOMATIC", label: "Signature Audit Log", description: "System generated" },
+  } as Record<string, FieldMeta>,
+
+  // 9️⃣ Capital & Equity Governance
+  ShareClassDefinition: {
+    className: { mode: "MANUAL", label: "Class Name" },
+    classCode: { mode: "MANUAL", label: "Class Code" },
+    authorizedShares: { mode: "MANUAL", label: "Authorized Shares" },
+    issuedShares: { mode: "AUTOMATIC", label: "Issued Shares", description: "Calculated from events" },
+    parValue: { mode: "MANUAL", label: "Par Value" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    votingRightsPerShare: { mode: "MANUAL", label: "Voting Rights/Share" },
+    dividendRights: { mode: "MANUAL", label: "Dividend Rights" },
+    dividendRate: { mode: "MANUAL", label: "Dividend Rate" },
+    liquidationPreference: { mode: "MANUAL", label: "Liquidation Preference" },
+    conversionRatio: { mode: "MANUAL", label: "Conversion Ratio" },
+    isConvertible: { mode: "MANUAL", label: "Is Convertible" },
+    restrictions: { mode: "MANUAL", label: "Restrictions" },
+    createdDate: { mode: "AUTOMATIC", label: "Created Date", description: "System timestamp" },
+    lastModifiedDate: { mode: "AUTOMATIC", label: "Last Modified", description: "System timestamp" },
+  } as Record<string, FieldMeta>,
+
+  EquityEvent: {
+    eventType: { mode: "MANUAL", label: "Event Type" },
+    eventDate: { mode: "MANUAL", label: "Event Date" },
+    effectiveDate: { mode: "MANUAL", label: "Effective Date" },
+    shareClassId: { mode: "MANUAL", label: "Share Class" },
+    numberOfShares: { mode: "MANUAL", label: "Number of Shares" },
+    pricePerShare: { mode: "MANUAL", label: "Price Per Share" },
+    totalValue: { mode: "AUTOMATIC", label: "Total Value", description: "Calculated" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    fromParty: { mode: "MANUAL", label: "From Party" },
+    toParty: { mode: "MANUAL", label: "To Party" },
+    resolutionId: { mode: "AUTOMATIC", label: "Resolution", description: "Linked automatically" },
+    approvalStatus: { mode: "AUTOMATIC", label: "Approval Status", description: "From workflow" },
+    approvedBy: { mode: "AUTOMATIC", label: "Approved By", description: "From workflow" },
+    approvedDate: { mode: "AUTOMATIC", label: "Approved Date", description: "System timestamp" },
+    documents: { mode: "MANUAL", label: "Documents" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+
+  Dividend: {
+    dividendType: { mode: "MANUAL", label: "Dividend Type" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Updated by workflow" },
+    declarationDate: { mode: "MANUAL", label: "Declaration Date" },
+    recordDate: { mode: "MANUAL", label: "Record Date" },
+    paymentDate: { mode: "MANUAL", label: "Payment Date" },
+    amountPerShare: { mode: "MANUAL", label: "Amount Per Share" },
+    totalAmount: { mode: "AUTOMATIC", label: "Total Amount", description: "Calculated from shares" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    shareClassId: { mode: "MANUAL", label: "Share Class" },
+    fiscalYear: { mode: "MANUAL", label: "Fiscal Year" },
+    fiscalPeriod: { mode: "MANUAL", label: "Fiscal Period" },
+    resolutionId: { mode: "AUTOMATIC", label: "Resolution", description: "Linked automatically" },
+    approvedBy: { mode: "AUTOMATIC", label: "Approved By", description: "From workflow" },
+    approvedDate: { mode: "AUTOMATIC", label: "Approved Date", description: "System timestamp" },
+    paidDate: { mode: "AUTOMATIC", label: "Paid Date", description: "Set on payment" },
+    paidBy: { mode: "AUTOMATIC", label: "Paid By", description: "System logged" },
+    isIntercompany: { mode: "MANUAL", label: "Is Intercompany" },
+    netAmount: { mode: "AUTOMATIC", label: "Net Amount", description: "Calculated after tax" },
+  } as Record<string, FieldMeta>,
+
+  // 🔟 Entity Change & Lifecycle Management
+  EntityChange: {
+    changeType: { mode: "MANUAL", label: "Change Type" },
+    description: { mode: "MANUAL", label: "Description" },
+    effectiveDate: { mode: "MANUAL", label: "Effective Date" },
+    requestedBy: { mode: "MANUAL", label: "Requested By" },
+    requestedAt: { mode: "AUTOMATIC", label: "Requested At", description: "System timestamp" },
+    approvedBy: { mode: "MANUAL", label: "Approved By" },
+    approvedAt: { mode: "AUTOMATIC", label: "Approved At", description: "System timestamp" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on workflow" },
+    oldValue: { mode: "AUTOMATIC", label: "Old Value", description: "Captured by system" },
+    newValue: { mode: "MANUAL", label: "New Value" },
+    filingRequired: { mode: "AUTOMATIC", label: "Filing Required", description: "Based on change type" },
+    filingCompleted: { mode: "AUTOMATIC", label: "Filing Completed", description: "Tracked by system" },
+    auditTrail: { mode: "AUTOMATIC", label: "Audit Trail", description: "System generated" },
+  } as Record<string, FieldMeta>,
+
+  // 1️⃣1️⃣ Regulatory Correspondence
+  RegulatoryCorrespondence: {
+    authority: { mode: "MANUAL", label: "Regulator Name" },
+    correspondenceType: { mode: "MANUAL", label: "Notice Type" },
+    subject: { mode: "MANUAL", label: "Subject" },
+    receivedDate: { mode: "MANUAL", label: "Notice Date" },
+    responseDeadline: { mode: "AUTOMATIC", label: "Response Deadline", description: "Derived from notice" },
+    responseStatus: { mode: "AUTOMATIC", label: "Resolution Status", description: "Updated by workflow" },
+    severity: { mode: "AUTOMATIC", label: "Escalation Flag", description: "System assessed" },
+    assignedTo: { mode: "MANUAL", label: "Assigned To" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+
+  // 1️⃣2️⃣ Risk & Issue Register
+  ComplianceRisk: {
+    riskType: { mode: "MANUAL", label: "Risk Category" },
+    title: { mode: "MANUAL", label: "Risk Title" },
+    description: { mode: "MANUAL", label: "Description" },
+    severity: { mode: "AUTOMATIC", label: "Severity", description: "System-generated flag" },
+    likelihood: { mode: "MANUAL", label: "Likelihood" },
+    impact: { mode: "MANUAL", label: "Impact" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on mitigation" },
+    mitigationPlan: { mode: "MANUAL", label: "Mitigation Plan" },
+    owner: { mode: "MANUAL", label: "Risk Owner" },
+    dueDate: { mode: "MANUAL", label: "Due Date" },
+    identifiedDate: { mode: "AUTOMATIC", label: "Identified Date", description: "System timestamp" },
+    lastReviewDate: { mode: "AUTOMATIC", label: "Last Review Date", description: "System tracked" },
+  } as Record<string, FieldMeta>,
+
+  // 1️⃣3️⃣ Third-Party & Advisor Registry
+  ThirdPartyAdvisor: {
+    name: { mode: "MANUAL", label: "Advisor Name" },
+    advisorType: { mode: "MANUAL", label: "Advisor Type" },
+    companyName: { mode: "MANUAL", label: "Company Name" },
+    jurisdiction: { mode: "MANUAL", label: "Jurisdiction" },
+    email: { mode: "MANUAL", label: "Email" },
+    phone: { mode: "MANUAL", label: "Phone" },
+    engagementStartDate: { mode: "MANUAL", label: "Start Date" },
+    engagementEndDate: { mode: "MANUAL", label: "End Date" },
+    renewalDate: { mode: "AUTOMATIC", label: "Renewal Alert", description: "Calculated from dates" },
+    annualFee: { mode: "MANUAL", label: "Annual Fee" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on dates" },
+    assignedEntities: { mode: "MANUAL", label: "Assigned Entities" },
+    servicesProvided: { mode: "MANUAL", label: "Services Provided" },
+  } as Record<string, FieldMeta>,
+
+  // 1️⃣4️⃣ Evidence Vault & Period Snapshots
+  PeriodSnapshot: {
+    period: { mode: "AUTOMATIC", label: "Period", description: "System generated" },
+    snapshotDate: { mode: "AUTOMATIC", label: "Snapshot Date", description: "System timestamp" },
+    entityCount: { mode: "AUTOMATIC", label: "Entity Count", description: "Calculated" },
+    totalObligations: { mode: "AUTOMATIC", label: "Total Obligations", description: "Calculated" },
+    filedOnTime: { mode: "AUTOMATIC", label: "Filed On Time", description: "Calculated" },
+    filedLate: { mode: "AUTOMATIC", label: "Filed Late", description: "Calculated" },
+    pending: { mode: "AUTOMATIC", label: "Pending", description: "Calculated" },
+    overallComplianceScore: { mode: "AUTOMATIC", label: "Compliance Score", description: "Calculated" },
+    isLocked: { mode: "AUTOMATIC", label: "Is Locked", description: "System state" },
+    lockedBy: { mode: "AUTOMATIC", label: "Locked By", description: "System logged" },
+    lockedAt: { mode: "AUTOMATIC", label: "Locked At", description: "System timestamp" },
+  } as Record<string, FieldMeta>,
+
+  // Startup Equity - Funding Rounds
+  FundingRound: {
+    roundType: { mode: "MANUAL", label: "Round Type" },
+    roundName: { mode: "MANUAL", label: "Round Name" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on dates and activity" },
+    targetAmount: { mode: "MANUAL", label: "Target Amount" },
+    raisedAmount: { mode: "AUTOMATIC", label: "Raised Amount", description: "Sum of investments" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    preMoneyValuation: { mode: "MANUAL", label: "Pre-Money Valuation" },
+    postMoneyValuation: { mode: "AUTOMATIC", label: "Post-Money Valuation", description: "Calculated" },
+    pricePerShare: { mode: "MANUAL", label: "Price Per Share" },
+    shareClass: { mode: "MANUAL", label: "Share Class" },
+    openDate: { mode: "MANUAL", label: "Open Date" },
+    closeDate: { mode: "MANUAL", label: "Close Date" },
+    leadInvestor: { mode: "MANUAL", label: "Lead Investor" },
+    boardSeatsOffered: { mode: "MANUAL", label: "Board Seats Offered" },
+    proRataRights: { mode: "MANUAL", label: "Pro Rata Rights" },
+    antiDilutionProvision: { mode: "MANUAL", label: "Anti-Dilution Provision" },
+    liquidationPreference: { mode: "MANUAL", label: "Liquidation Preference" },
+    participatingPreferred: { mode: "MANUAL", label: "Participating Preferred" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+
+  FundingRoundInvestor: {
+    investorName: { mode: "MANUAL", label: "Investor Name" },
+    investorType: { mode: "MANUAL", label: "Investor Type" },
+    investmentAmount: { mode: "MANUAL", label: "Investment Amount" },
+    sharesIssued: { mode: "AUTOMATIC", label: "Shares Issued", description: "Calculated from amount" },
+    ownershipPercentage: { mode: "AUTOMATIC", label: "Ownership %", description: "Calculated" },
+    boardSeat: { mode: "MANUAL", label: "Board Seat" },
+    proRataRights: { mode: "MANUAL", label: "Pro Rata Rights" },
+    investmentDate: { mode: "MANUAL", label: "Investment Date" },
+    isLead: { mode: "MANUAL", label: "Is Lead Investor" },
+  } as Record<string, FieldMeta>,
+
+  // Convertible Instruments
+  ConvertibleInstrument: {
+    instrumentType: { mode: "MANUAL", label: "Instrument Type" },
+    investorName: { mode: "MANUAL", label: "Investor Name" },
+    principalAmount: { mode: "MANUAL", label: "Principal Amount" },
+    currency: { mode: "MANUAL", label: "Currency" },
+    issueDate: { mode: "MANUAL", label: "Issue Date" },
+    maturityDate: { mode: "MANUAL", label: "Maturity Date" },
+    valuationCap: { mode: "MANUAL", label: "Valuation Cap" },
+    discountRate: { mode: "MANUAL", label: "Discount Rate" },
+    interestRate: { mode: "MANUAL", label: "Interest Rate" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on conversion/repayment" },
+    convertedToRoundId: { mode: "AUTOMATIC", label: "Converted To", description: "Set on conversion" },
+    convertedShares: { mode: "AUTOMATIC", label: "Converted Shares", description: "Calculated" },
+    convertedDate: { mode: "AUTOMATIC", label: "Converted Date", description: "System timestamp" },
+    mfnClause: { mode: "MANUAL", label: "MFN Clause" },
+    proRataRights: { mode: "MANUAL", label: "Pro Rata Rights" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+
+  // Option Pool & Grants
+  OptionPool: {
+    poolName: { mode: "MANUAL", label: "Pool Name" },
+    authorizedShares: { mode: "MANUAL", label: "Authorized Shares" },
+    issuedShares: { mode: "AUTOMATIC", label: "Issued Shares", description: "Sum of grants" },
+    reservedShares: { mode: "AUTOMATIC", label: "Reserved Shares", description: "Pending grants" },
+    availableShares: { mode: "AUTOMATIC", label: "Available Shares", description: "Calculated" },
+    shareClass: { mode: "MANUAL", label: "Share Class" },
+    createdDate: { mode: "AUTOMATIC", label: "Created Date", description: "System timestamp" },
+    expirationDate: { mode: "MANUAL", label: "Expiration Date" },
+    vestingScheduleDefault: { mode: "MANUAL", label: "Default Vesting Schedule" },
+    exercisePriceDefault: { mode: "MANUAL", label: "Default Exercise Price" },
+  } as Record<string, FieldMeta>,
+
+  OptionGrant: {
+    granteeName: { mode: "MANUAL", label: "Grantee Name" },
+    granteeRole: { mode: "MANUAL", label: "Grantee Role" },
+    grantDate: { mode: "MANUAL", label: "Grant Date" },
+    sharesGranted: { mode: "MANUAL", label: "Shares Granted" },
+    exercisePrice: { mode: "MANUAL", label: "Exercise Price" },
+    vestingStartDate: { mode: "MANUAL", label: "Vesting Start Date" },
+    vestingSchedule: { mode: "MANUAL", label: "Vesting Schedule" },
+    cliffMonths: { mode: "MANUAL", label: "Cliff Months" },
+    vestingMonths: { mode: "MANUAL", label: "Vesting Months" },
+    sharesVested: { mode: "AUTOMATIC", label: "Shares Vested", description: "Calculated from schedule" },
+    sharesExercised: { mode: "AUTOMATIC", label: "Shares Exercised", description: "From exercise events" },
+    sharesUnvested: { mode: "AUTOMATIC", label: "Shares Unvested", description: "Calculated" },
+    expirationDate: { mode: "AUTOMATIC", label: "Expiration Date", description: "Calculated from grant" },
+    status: { mode: "AUTOMATIC", label: "Status", description: "Based on vesting/exercise" },
+    exercisedDate: { mode: "AUTOMATIC", label: "Exercised Date", description: "System timestamp" },
+    terminationDate: { mode: "MANUAL", label: "Termination Date" },
+    notes: { mode: "MANUAL", label: "Notes" },
+  } as Record<string, FieldMeta>,
+} as const;
+
+// Helper function to get field metadata
+export function getFieldMeta(interfaceName: keyof typeof FIELD_METADATA, fieldName: string): FieldMeta | undefined {
+  const interfaceMeta = FIELD_METADATA[interfaceName];
+  if (interfaceMeta && fieldName in interfaceMeta) {
+    return interfaceMeta[fieldName as keyof typeof interfaceMeta];
+  }
+  return undefined;
+}
+
+// Helper function to check if a field is manual
+export function isManualField(interfaceName: keyof typeof FIELD_METADATA, fieldName: string): boolean {
+  const meta = getFieldMeta(interfaceName, fieldName);
+  return meta?.mode === "MANUAL";
+}
+
+// Helper function to check if a field is automatic
+export function isAutomaticField(interfaceName: keyof typeof FIELD_METADATA, fieldName: string): boolean {
+  const meta = getFieldMeta(interfaceName, fieldName);
+  return meta?.mode === "AUTOMATIC";
+}
+
+// ================================
 // Type Definitions
 // ================================
 

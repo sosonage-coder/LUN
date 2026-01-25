@@ -106,6 +106,9 @@ import {
   getStartupEquityMetrics,
   getFilingRequirements,
   getFilingRequirementMetrics,
+  FIELD_METADATA,
+  type FieldMeta,
+  type FieldCaptureMode,
   type Entity,
   type Obligation,
   type TimelineItem,
@@ -120,6 +123,11 @@ import {
   type JurisdictionHeatmapCell,
   type FilingRequirement,
 } from "@/lib/one-compliance-data";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function formatCurrency(value: number, currency: string = "USD"): string {
   return new Intl.NumberFormat("en-US", {
@@ -136,6 +144,104 @@ function formatDate(dateStr: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+// ================================
+// Field Capture Indicators
+// ================================
+
+function FieldIndicator({ 
+  mode, 
+  label, 
+  description,
+  showLabel = true 
+}: { 
+  mode: FieldCaptureMode; 
+  label?: string;
+  description?: string;
+  showLabel?: boolean;
+}) {
+  const isManual = mode === "MANUAL";
+  
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span 
+          className={`inline-flex items-center gap-1 text-xs ${isManual ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}
+          data-testid={`field-indicator-${mode.toLowerCase()}`}
+        >
+          {isManual ? (
+            <PenTool className="h-3 w-3" />
+          ) : (
+            <Activity className="h-3 w-3" />
+          )}
+          {showLabel && label && <span className="font-medium">{label}</span>}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <div className="text-xs">
+          <div className="font-medium mb-1">
+            {isManual ? "Manual Entry" : "System Generated"}
+          </div>
+          {description && <div className="text-muted-foreground">{description}</div>}
+          {!description && (
+            <div className="text-muted-foreground">
+              {isManual 
+                ? "This field is entered by users" 
+                : "This field is automatically calculated or derived by the system"}
+            </div>
+          )}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function FieldLabel({ 
+  interfaceName, 
+  fieldName,
+  children 
+}: { 
+  interfaceName: keyof typeof FIELD_METADATA; 
+  fieldName: string;
+  children?: React.ReactNode;
+}) {
+  const metadata = FIELD_METADATA[interfaceName];
+  const fieldMeta = metadata?.[fieldName as keyof typeof metadata] as FieldMeta | undefined;
+  
+  if (!fieldMeta) {
+    return <span className="text-sm font-medium">{children || fieldName}</span>;
+  }
+  
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <FieldIndicator 
+        mode={fieldMeta.mode} 
+        label={fieldMeta.label}
+        description={fieldMeta.description}
+        showLabel={false}
+      />
+      <span className="text-sm font-medium">{children || fieldMeta.label}</span>
+    </span>
+  );
+}
+
+function DataCaptureLegend({ compact = false, sectionId }: { compact?: boolean; sectionId?: string }) {
+  return (
+    <div 
+      className={`flex items-center gap-4 ${compact ? "text-xs" : "text-sm"} text-muted-foreground`}
+      data-testid={`data-capture-legend${sectionId ? `-${sectionId}` : ""}`}
+    >
+      <div className="flex items-center gap-1.5">
+        <PenTool className={`${compact ? "h-3 w-3" : "h-4 w-4"} text-blue-600 dark:text-blue-400`} />
+        <span>Manual Entry</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Activity className={`${compact ? "h-3 w-3" : "h-4 w-4"} text-muted-foreground`} />
+        <span>System Generated</span>
+      </div>
+    </div>
+  );
 }
 
 function StatusBadge({ status, variant }: { status: string; variant?: "default" | "success" | "warning" | "destructive" }) {
@@ -422,27 +528,37 @@ function EntityGrid({ entities }: { entities: Entity[] }) {
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <h4 className="font-medium text-sm">{entity.name}</h4>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} description="Entity name is manually entered" />
+                    <h4 className="font-medium text-sm">{entity.name}</h4>
+                  </div>
                   <p className="text-xs text-muted-foreground">{entity.legalName}</p>
                 </div>
               </div>
-              <StatusBadge status={entity.status} />
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status updated by lifecycle events" />
+                <StatusBadge status={entity.status} />
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-2 text-xs mb-3">
               <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
                 <Globe className="h-3 w-3 text-muted-foreground" />
                 <span>{entity.jurisdictionCode}</span>
               </div>
               <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
                 <FileText className="h-3 w-3 text-muted-foreground" />
                 <span>{entity.entityType}</span>
               </div>
               <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
                 <Calendar className="h-3 w-3 text-muted-foreground" />
                 <span>{formatDate(entity.incorporationDate)}</span>
               </div>
               <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
                 <DollarSign className="h-3 w-3 text-muted-foreground" />
                 <span>{entity.localCurrency}</span>
               </div>
@@ -450,6 +566,7 @@ function EntityGrid({ entities }: { entities: Entity[] }) {
 
             <div className="flex items-center justify-between pt-2 border-t">
               <div className="flex items-center gap-2">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Health score calculated from compliance data" />
                 <span className="text-xs text-muted-foreground">Health:</span>
                 <Progress value={entity.healthScore} className="w-16 h-2" />
                 <span className={`text-xs font-medium ${entity.healthScore >= 80 ? "text-green-600" : entity.healthScore >= 60 ? "text-yellow-600" : "text-red-600"}`}>
@@ -473,12 +590,37 @@ function ObligationsTable({ obligations }: { obligations: Obligation[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Obligation</TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Obligation
+              </span>
+            </TableHead>
             <TableHead>Entity</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Due Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Assigned</TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Type
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Calculated from frequency" />
+                Due Date
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Updated by system" />
+                Status
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Assigned
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -536,29 +678,41 @@ function RisksPanel({ risks }: { risks: ComplianceRisk[] }) {
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="font-medium text-sm">{risk.title}</h4>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} description="Risk title is manually entered" />
+                  <h4 className="font-medium text-sm">{risk.title}</h4>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">{risk.description}</p>
               </div>
-              <Badge variant={risk.severity === "CRITICAL" || risk.severity === "HIGH" ? "destructive" : "secondary"}>
-                {risk.severity}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Severity is system-assessed" />
+                <Badge variant={risk.severity === "CRITICAL" || risk.severity === "HIGH" ? "destructive" : "secondary"}>
+                  {risk.severity}
+                </Badge>
+              </div>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
               <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
                 <Users className="h-3 w-3" />
                 <span>{risk.owner}</span>
               </div>
               {risk.dueDate && (
                 <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
                   <Calendar className="h-3 w-3" />
                   <span>Due: {formatDate(risk.dueDate)}</span>
                 </div>
               )}
-              <StatusBadge status={risk.status} />
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status based on mitigation" />
+                <StatusBadge status={risk.status} />
+              </div>
             </div>
             {risk.mitigationPlan && (
               <div className="mt-3 p-2 rounded bg-muted/50 text-xs">
-                <span className="font-medium">Mitigation: </span>
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                <span className="font-medium"> Mitigation: </span>
                 {risk.mitigationPlan}
               </div>
             )}
@@ -578,20 +732,34 @@ function PoliciesPanel({ policies }: { policies: Policy[] }) {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <div className="flex items-center gap-2 mb-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} description="Policy name is manually entered" />
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <h4 className="font-medium text-sm">{policy.name}</h4>
                 </div>
                 <p className="text-xs text-muted-foreground">{policy.description}</p>
               </div>
-              <StatusBadge status={policy.status} />
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status based on review cycle" />
+                <StatusBadge status={policy.status} />
+              </div>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-              <Badge variant="outline">{policy.category}</Badge>
-              <span>v{policy.version}</span>
-              <span>Owner: {policy.owner}</span>
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                <Badge variant="outline">{policy.category}</Badge>
+              </div>
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                <span>v{policy.version}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                <span>Owner: {policy.owner}</span>
+              </div>
             </div>
             {policy.requiresAcknowledgement && (
               <div className="flex items-center gap-2 mt-3">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Counted from responses" />
                 <Progress 
                   value={(policy.acknowledgementCount / policy.totalApplicable) * 100} 
                   className="flex-1 h-2" 
@@ -622,32 +790,53 @@ function AdvisorsPanel({ advisors }: { advisors: ThirdPartyAdvisor[] }) {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h4 className="font-medium text-sm">{advisor.name}</h4>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} description="Advisor name is manually entered" />
+                    <h4 className="font-medium text-sm">{advisor.name}</h4>
+                  </div>
                   <p className="text-xs text-muted-foreground">{advisor.companyName}</p>
                 </div>
               </div>
-              <StatusBadge status={advisor.status} />
+              <div className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status based on dates" />
+                <StatusBadge status={advisor.status} />
+              </div>
             </div>
             <div className="space-y-1 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Type:</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  Type:
+                </span>
                 <Badge variant="outline">{advisor.advisorType.replace(/_/g, " ")}</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Jurisdiction:</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  Jurisdiction:
+                </span>
                 <span>{advisor.jurisdiction}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Annual Fee:</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  Annual Fee:
+                </span>
                 <span className="font-medium">{formatCurrency(advisor.annualFee, advisor.currency)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Entities:</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  Entities:
+                </span>
                 <span>{advisor.assignedEntities.length} assigned</span>
               </div>
               {advisor.renewalDate && (
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Renewal:</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Calculated from dates" />
+                    Renewal:
+                  </span>
                   <span>{formatDate(advisor.renewalDate)}</span>
                 </div>
               )}
@@ -670,26 +859,45 @@ function MeetingsPanel({ meetings }: { meetings: Meeting[] }) {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} description="Meeting title is manually entered" />
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <h4 className="font-medium text-sm">{meeting.title}</h4>
                   </div>
                   <p className="text-xs text-muted-foreground">{entity?.name}</p>
                 </div>
-                <StatusBadge status={meeting.status} />
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on date and completion" />
+                  <StatusBadge status={meeting.status} />
+                </div>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                <Badge variant="outline">{meeting.meetingType}</Badge>
-                <span>{formatDate(meeting.scheduledDate)}</span>
-                <span>{meeting.location}</span>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <Badge variant="outline">{meeting.meetingType}</Badge>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <span>{formatDate(meeting.scheduledDate)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <span>{meeting.location}</span>
+                </div>
               </div>
               {meeting.status === "COMPLETED" && (
                 <div className="flex items-center gap-4 mt-2 text-xs">
-                  <span className={meeting.isQuorumMet ? "text-green-600" : "text-red-600"}>
-                    {meeting.isQuorumMet ? "Quorum met" : "No quorum"}
-                  </span>
-                  <span className={meeting.minutesApproved ? "text-green-600" : "text-muted-foreground"}>
-                    {meeting.minutesApproved ? "Minutes approved" : "Minutes pending"}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Calculated from attendance" />
+                    <span className={meeting.isQuorumMet ? "text-green-600" : "text-red-600"}>
+                      {meeting.isQuorumMet ? "Quorum met" : "No quorum"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} />
+                    <span className={meeting.minutesApproved ? "text-green-600" : "text-muted-foreground"}>
+                      {meeting.minutesApproved ? "Minutes approved" : "Minutes pending"}
+                    </span>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -710,18 +918,36 @@ function ResolutionsPanel({ resolutions }: { resolutions: Resolution[] }) {
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h4 className="font-medium text-sm">{resolution.title}</h4>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} description="Resolution title is manually entered" />
+                    <h4 className="font-medium text-sm">{resolution.title}</h4>
+                  </div>
                   <p className="text-xs text-muted-foreground">{entity?.name}</p>
                 </div>
-                <StatusBadge status={resolution.status} />
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status updated by voting" />
+                  <StatusBadge status={resolution.status} />
+                </div>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                <Badge variant="outline">{resolution.resolutionType}</Badge>
-                <span>Proposed: {formatDate(resolution.proposedDate)}</span>
-                {resolution.approvedDate && <span>Approved: {formatDate(resolution.approvedDate)}</span>}
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <Badge variant="outline">{resolution.resolutionType}</Badge>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <span>Proposed: {formatDate(resolution.proposedDate)}</span>
+                </div>
+                {resolution.approvedDate && (
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Set when approved" />
+                    <span>Approved: {formatDate(resolution.approvedDate)}</span>
+                  </div>
+                )}
               </div>
               {resolution.status === "APPROVED" || resolution.status === "EXECUTED" ? (
                 <div className="flex items-center gap-4 mt-2 text-xs text-green-600">
+                  <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Vote counts are calculated" />
                   <CheckCircle2 className="h-3 w-3" />
                   <span>Votes: {resolution.votesFor} for, {resolution.votesAgainst} against</span>
                 </div>
@@ -740,12 +966,37 @@ function SignatoriesPanel({ signatories }: { signatories: AuthorizedSignatory[] 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Officer</TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Officer
+              </span>
+            </TableHead>
             <TableHead>Entity</TableHead>
-            <TableHead>Authority</TableHead>
-            <TableHead>Limit</TableHead>
-            <TableHead>Co-Signer</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Authority
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Limit
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="MANUAL" showLabel={false} />
+                Co-Signer
+              </span>
+            </TableHead>
+            <TableHead>
+              <span className="flex items-center gap-1">
+                <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on dates and role status" />
+                Status
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -796,25 +1047,44 @@ function ChangesPanel({ changes }: { changes: EntityChange[] }) {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline">{change.changeType.replace(/_/g, " ")}</Badge>
+                    <div className="flex items-center gap-1">
+                      <FieldIndicator mode="MANUAL" showLabel={false} description="Change type is manually selected" />
+                      <Badge variant="outline">{change.changeType.replace(/_/g, " ")}</Badge>
+                    </div>
                     <h4 className="font-medium text-sm">{change.description}</h4>
                   </div>
                   <p className="text-xs text-muted-foreground">{entity?.name}</p>
                 </div>
-                <StatusBadge status={change.status} />
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Status based on workflow" />
+                  <StatusBadge status={change.status} />
+                </div>
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                <span>Effective: {formatDate(change.effectiveDate)}</span>
-                <span>Requested by: {change.requestedBy}</span>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <span>Effective: {formatDate(change.effectiveDate)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FieldIndicator mode="MANUAL" showLabel={false} />
+                  <span>Requested by: {change.requestedBy}</span>
+                </div>
               </div>
               {change.oldValue && change.newValue && (
                 <div className="mt-2 p-2 rounded bg-muted/50 text-xs">
-                  <div><span className="font-medium">From:</span> {change.oldValue}</div>
-                  <div><span className="font-medium">To:</span> {change.newValue}</div>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Captured by system" />
+                    <span className="font-medium">From:</span> {change.oldValue}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <FieldIndicator mode="MANUAL" showLabel={false} />
+                    <span className="font-medium">To:</span> {change.newValue}
+                  </div>
                 </div>
               )}
               {change.filingRequired && (
                 <div className="flex items-center gap-2 mt-2 text-xs">
+                  <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on change type" />
                   <FileText className="h-3 w-3" />
                   <span className={change.filingCompleted ? "text-green-600" : "text-muted-foreground"}>
                     Filing {change.filingCompleted ? "completed" : "required"}
@@ -1291,20 +1561,53 @@ function StartupEquitySection({
             />
           </div>
           <Card>
-            <CardHeader>
-              <CardTitle>Funding Round History</CardTitle>
-              <CardDescription>Track fundraising rounds with valuations</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <CardTitle>Funding Round History</CardTitle>
+                <CardDescription>Track fundraising rounds with valuations</CardDescription>
+              </div>
+              <DataCaptureLegend compact sectionId="funding-rounds" />
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Round</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Raised</TableHead>
-                    <TableHead className="text-right">Post-Money</TableHead>
-                    <TableHead>Lead Investor</TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Round
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Type
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on dates and activity" />
+                        Status
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Sum of investments" />
+                        Raised
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Calculated from pre-money + raised" />
+                        Post-Money
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Lead Investor
+                      </span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1352,19 +1655,47 @@ function StartupEquitySection({
             />
           </div>
           <Card>
-            <CardHeader>
-              <CardTitle>Convertible Instruments</CardTitle>
-              <CardDescription>SAFE and convertible note management</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <CardTitle>Convertible Instruments</CardTitle>
+                <CardDescription>SAFE and convertible note management</CardDescription>
+              </div>
+              <DataCaptureLegend compact sectionId="convertibles" />
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Investor</TableHead>
-                    <TableHead className="text-right">Principal</TableHead>
-                    <TableHead className="text-right">Cap</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Type
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Investor
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Principal
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Cap
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on conversion/repayment" />
+                        Status
+                      </span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1415,20 +1746,53 @@ function StartupEquitySection({
             />
           </div>
           <Card>
-            <CardHeader>
-              <CardTitle>Option Grants</CardTitle>
-              <CardDescription>Employee and advisor option grants</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <CardTitle>Option Grants</CardTitle>
+                <CardDescription>Employee and advisor option grants</CardDescription>
+              </div>
+              <DataCaptureLegend compact sectionId="option-grants" />
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Grantee</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="text-right">Shares</TableHead>
-                    <TableHead className="text-right">Exercise Price</TableHead>
-                    <TableHead>Vesting Schedule</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Grantee
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Role
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Shares
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <span className="flex items-center justify-end gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Exercise Price
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="MANUAL" showLabel={false} />
+                        Vesting Schedule
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="flex items-center gap-1">
+                        <FieldIndicator mode="AUTOMATIC" showLabel={false} description="Based on vesting/exercise" />
+                        Status
+                      </span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1796,9 +2160,12 @@ export default function OneCompliancePage() {
                     />
                   </div>
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Authority & Delegation Register</CardTitle>
-                      <CardDescription>Authorized signatories and signing limits</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between gap-2">
+                      <div>
+                        <CardTitle>Authority & Delegation Register</CardTitle>
+                        <CardDescription>Authorized signatories and signing limits</CardDescription>
+                      </div>
+                      <DataCaptureLegend compact sectionId="authority-delegation" />
                     </CardHeader>
                     <CardContent>
                       <SignatoriesPanel signatories={signatories} />
@@ -1832,18 +2199,24 @@ export default function OneCompliancePage() {
                   </div>
                   <div className="grid gap-6 lg:grid-cols-2">
                     <Card>
-                      <CardHeader>
-                        <CardTitle>Meetings</CardTitle>
-                        <CardDescription>Board and shareholder meetings</CardDescription>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2">
+                        <div>
+                          <CardTitle>Meetings</CardTitle>
+                          <CardDescription>Board and shareholder meetings</CardDescription>
+                        </div>
+                        <DataCaptureLegend compact sectionId="meetings" />
                       </CardHeader>
                       <CardContent>
                         <MeetingsPanel meetings={meetings} />
                       </CardContent>
                     </Card>
                     <Card>
-                      <CardHeader>
-                        <CardTitle>Resolutions</CardTitle>
-                        <CardDescription>Board and shareholder resolutions</CardDescription>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2">
+                        <div>
+                          <CardTitle>Resolutions</CardTitle>
+                          <CardDescription>Board and shareholder resolutions</CardDescription>
+                        </div>
+                        <DataCaptureLegend compact sectionId="resolutions" />
                       </CardHeader>
                       <CardContent>
                         <ResolutionsPanel resolutions={resolutions} />
@@ -1880,6 +2253,7 @@ export default function OneCompliancePage() {
                     <CardHeader>
                       <CardTitle>Policies & Procedures</CardTitle>
                       <CardDescription>Corporate policies and acknowledgement tracking</CardDescription>
+                      <DataCaptureLegend compact sectionId="policies" />
                     </CardHeader>
                     <CardContent>
                       <PoliciesPanel policies={policies} />
@@ -1935,9 +2309,12 @@ export default function OneCompliancePage() {
                     />
                   </div>
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Lifecycle Changes</CardTitle>
-                      <CardDescription>Entity changes and approvals</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between gap-2">
+                      <div>
+                        <CardTitle>Lifecycle Changes</CardTitle>
+                        <CardDescription>Entity changes and approvals</CardDescription>
+                      </div>
+                      <DataCaptureLegend compact sectionId="lifecycle-changes" />
                     </CardHeader>
                     <CardContent>
                       <ChangesPanel changes={changes} />
@@ -2010,6 +2387,7 @@ export default function OneCompliancePage() {
                     <CardHeader>
                       <CardTitle>Risk Register</CardTitle>
                       <CardDescription>Compliance and operational risks</CardDescription>
+                      <DataCaptureLegend compact sectionId="risk-register" />
                     </CardHeader>
                     <CardContent>
                       <RisksPanel risks={risks} />
