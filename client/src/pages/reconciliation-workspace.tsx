@@ -24,6 +24,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
+import { Accrual12MonthGrid } from "@/components/accrual-12month-grid";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,12 @@ const sectionTypeConfig: Record<string, { color: string }> = {
   VARIANCE_ANALYSIS: { color: "bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800" },
   SUPPORTING_DOCUMENTATION: { color: "bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800" },
   CUSTOM: { color: "bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800" },
+  FX_REVALUATION: { color: "bg-cyan-50 dark:bg-cyan-950 border-cyan-200 dark:border-cyan-800" },
+  BANK_NOT_IN_GL: { color: "bg-rose-50 dark:bg-rose-950 border-rose-200 dark:border-rose-800" },
+  GL_NOT_IN_BANK: { color: "bg-violet-50 dark:bg-violet-950 border-violet-200 dark:border-violet-800" },
+  ACCRUAL_LINE_DETAIL: { color: "bg-indigo-50 dark:bg-indigo-950 border-indigo-200 dark:border-indigo-800" },
+  FX_EXCEPTION: { color: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800" },
+  SUMMARY_TIE_OUT: { color: "bg-teal-50 dark:bg-teal-950 border-teal-200 dark:border-teal-800" },
 };
 
 interface ReconciliationData {
@@ -355,7 +362,11 @@ export default function ReconciliationWorkspacePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {reconciliation.sections.length === 0 ? (
+              {template?.templateVariant === "ACCRUAL_12M_ROLLFORWARD" ? (
+                <div className="text-sm text-muted-foreground">
+                  See the 12-Month Rollforward grid below for accrual line details.
+                </div>
+              ) : reconciliation.sections.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>No sections populated yet. Start by adding items to each section.</p>
                 </div>
@@ -372,7 +383,7 @@ export default function ReconciliationWorkspacePage() {
                     >
                       <Card className={`border ${sectionConfig.color}`}>
                         <CollapsibleTrigger asChild>
-                          <CardHeader className="cursor-pointer py-3 hover:bg-muted/30 transition-colors" data-testid={`section-header-${section.sectionId}`}>
+                          <CardHeader className="cursor-pointer py-3 transition-colors" data-testid={`section-header-${section.sectionId}`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {isExpanded ? (
@@ -458,6 +469,14 @@ export default function ReconciliationWorkspacePage() {
               )}
             </CardContent>
           </Card>
+          
+          {template?.templateVariant === "ACCRUAL_12M_ROLLFORWARD" && (
+            <Accrual12MonthGrid 
+              sections={reconciliation.sections}
+              period={reconciliation.period}
+              glBalance={reconciliation.glBalance}
+            />
+          )}
         </div>
 
         <div className="space-y-4">
