@@ -214,9 +214,19 @@ const startupEquityNav = [
   { title: "Options", url: "/compliance/options", icon: Award },
 ];
 
+const closeTasksNav = [
+  { title: "Calendar", url: "/close-tasks", icon: CalendarDays },
+  { title: "Task List", url: "/close-tasks", icon: ListChecks },
+  { title: "My Tasks", url: "/close-tasks", icon: ClipboardCheck },
+  { title: "Control Checklist", url: "/close-tasks", icon: FileCheck },
+  { title: "Dashboard", url: "/close-tasks", icon: LayoutDashboard },
+  { title: "Setup", url: "/close-tasks", icon: Settings },
+];
+
 const productInfo = {
   "schedule-studio": { name: "Schedule Studio", icon: Calculator, description: "Cost Allocation" },
   "oneclose": { name: "OneClose", icon: Shield, description: "Close Management" },
+  "close-tasks": { name: "Close Tasks", icon: ListChecks, description: "Task & Control" },
   "reconciliations": { name: "Reconciliations", icon: FileCheck, description: "Account Reconciliation" },
   "onecompliance": { name: "One Compliance", icon: Globe, description: "Entity Governance" },
   "policies": { name: "Policies", icon: FileText, description: "Coming Soon" },
@@ -600,6 +610,35 @@ export function AppSidebar() {
     </>
   );
 
+  const renderCloseTasks = () => (
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {closeTasksNav.map((item) => {
+              const isActive = location === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-close-tasks-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </>
+  );
+
   const renderComingSoon = () => (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -631,9 +670,10 @@ export function AppSidebar() {
       <SidebarContent>
         {activeProduct === "schedule-studio" && renderScheduleStudio()}
         {activeProduct === "oneclose" && renderOneClose()}
+        {activeProduct === "close-tasks" && renderCloseTasks()}
         {activeProduct === "reconciliations" && renderReconciliations()}
         {activeProduct === "onecompliance" && renderOneCompliance()}
-        {!["schedule-studio", "oneclose", "reconciliations", "onecompliance"].includes(activeProduct) && renderComingSoon()}
+        {!["schedule-studio", "oneclose", "close-tasks", "reconciliations", "onecompliance"].includes(activeProduct) && renderComingSoon()}
         
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>

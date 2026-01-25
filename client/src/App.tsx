@@ -56,6 +56,7 @@ import MyTasksPage from "@/pages/my-tasks";
 import ReconciliationTemplatesPage from "@/pages/reconciliation-templates";
 import ReconciliationWorkspacePage from "@/pages/reconciliation-workspace";
 import OneCompliancePage from "@/pages/one-compliance";
+import CloseTasksPage from "@/pages/close-tasks";
 
 function Router() {
   return (
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/walkthroughs" component={WalkthroughsPage} />
       <Route path="/reports" component={ReportsPage} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/close-tasks" component={CloseTasksPage} />
       <Route path="/close-control" component={CloseControlDashboard} />
       <Route path="/close-control/templates" component={CloseControlTemplatesPage} />
       <Route path="/close-control/templates/:id" component={CloseControlTemplateEditorPage} />

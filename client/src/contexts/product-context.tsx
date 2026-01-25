@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useLocation } from "wouter";
 
-export type ProductId = "schedule-studio" | "oneclose" | "reconciliations" | "onecompliance" | "policies" | "walkthroughs" | "reports" | "admin";
+export type ProductId = "schedule-studio" | "oneclose" | "close-tasks" | "reconciliations" | "onecompliance" | "policies" | "walkthroughs" | "reports" | "admin";
 
 interface ProductContextType {
   activeProduct: ProductId;
@@ -11,6 +11,9 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | null>(null);
 
 function getProductFromRoute(path: string): ProductId {
+  if (path.startsWith("/close-tasks")) {
+    return "close-tasks";
+  }
   if (path.startsWith("/close-control") || path === "/my-tasks" || path.startsWith("/close-control")) {
     return "oneclose";
   }

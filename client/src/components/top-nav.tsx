@@ -25,6 +25,7 @@ import {
   Settings,
   Check,
   Globe,
+  ListChecks,
 } from "lucide-react";
 import { useProduct, ProductId } from "@/contexts/product-context";
 
@@ -52,6 +53,14 @@ const products: Product[] = [
     icon: Shield,
     href: "/close-control",
     description: "Period-end close management",
+    available: true,
+  },
+  {
+    id: "close-tasks",
+    name: "Close Tasks",
+    icon: ListChecks,
+    href: "/close-tasks",
+    description: "Task & control management",
     available: true,
   },
   {
