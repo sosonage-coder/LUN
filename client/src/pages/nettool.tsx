@@ -138,6 +138,17 @@ export default function NetToolPage() {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateLayout, setNewTemplateLayout] = useState<ScheduleLayoutType>("ROLLFORWARD");
   const [newTemplateFramework, setNewTemplateFramework] = useState<"IFRS" | "US_GAAP" | "BOTH">("BOTH");
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<{
+    name: string;
+    type: string;
+    category: "disclosure" | "working-paper" | "reconciliation" | "close-control";
+    layoutType?: ScheduleLayoutType;
+    framework?: string;
+    description: string;
+    columns: string[];
+    sampleData?: { [key: string]: string | number }[];
+  } | null>(null);
   
   // Print/Export Engine state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -3167,6 +3178,149 @@ export default function NetToolPage() {
     setTemplates(prev => prev.filter(t => t.templateId !== templateId));
   };
 
+  const handlePreviewTemplate = (template: {
+    name: string;
+    type: string;
+    category: "disclosure" | "working-paper" | "reconciliation" | "close-control";
+    layoutType?: ScheduleLayoutType;
+    framework?: string;
+    description: string;
+    columns: string[];
+    sampleData?: { [key: string]: string | number }[];
+  }) => {
+    setPreviewTemplate(template);
+    setShowTemplatePreview(true);
+  };
+
+  const getTemplatePreviewData = (layoutType: ScheduleLayoutType): { columns: string[]; sampleData: { [key: string]: string | number }[] } => {
+    switch (layoutType) {
+      case "ROLLFORWARD":
+        return {
+          columns: ["Description", "Opening Balance", "Additions", "Disposals", "Transfers", "Revaluations", "Closing Balance"],
+          sampleData: [
+            { Description: "Land", "Opening Balance": 500000, Additions: 0, Disposals: 0, Transfers: 0, Revaluations: 25000, "Closing Balance": 525000 },
+            { Description: "Buildings", "Opening Balance": 1200000, Additions: 150000, Disposals: 0, Transfers: 0, Revaluations: 0, "Closing Balance": 1350000 },
+            { Description: "Equipment", "Opening Balance": 450000, Additions: 75000, Disposals: -25000, Transfers: 10000, Revaluations: 0, "Closing Balance": 510000 },
+          ]
+        };
+      case "MOVEMENT_BY_CATEGORY":
+        return {
+          columns: ["Category", "Prior Year", "Current Year", "Change", "% Change"],
+          sampleData: [
+            { Category: "Operating Revenue", "Prior Year": 2500000, "Current Year": 2750000, Change: 250000, "% Change": "10%" },
+            { Category: "Interest Income", "Prior Year": 45000, "Current Year": 52000, Change: 7000, "% Change": "16%" },
+            { Category: "Other Income", "Prior Year": 12000, "Current Year": 8500, Change: -3500, "% Change": "-29%" },
+          ]
+        };
+      case "TIMING_MATURITY":
+        return {
+          columns: ["Item", "< 1 Year", "1-2 Years", "2-5 Years", "> 5 Years", "Total"],
+          sampleData: [
+            { Item: "Trade Receivables", "< 1 Year": 850000, "1-2 Years": 0, "2-5 Years": 0, "> 5 Years": 0, Total: 850000 },
+            { Item: "Lease Liabilities", "< 1 Year": 120000, "1-2 Years": 115000, "2-5 Years": 280000, "> 5 Years": 85000, Total: 600000 },
+            { Item: "Long-term Debt", "< 1 Year": 50000, "1-2 Years": 50000, "2-5 Years": 150000, "> 5 Years": 250000, Total: 500000 },
+          ]
+        };
+      case "GROSS_TO_NET":
+        return {
+          columns: ["Description", "Gross Amount", "Allowance", "Net Amount"],
+          sampleData: [
+            { Description: "Trade Receivables", "Gross Amount": 920000, Allowance: -45000, "Net Amount": 875000 },
+            { Description: "Notes Receivable", "Gross Amount": 150000, Allowance: -12000, "Net Amount": 138000 },
+            { Description: "Other Receivables", "Gross Amount": 35000, Allowance: -5000, "Net Amount": 30000 },
+          ]
+        };
+      case "COMPOSITION":
+        return {
+          columns: ["Component", "Amount", "% of Total"],
+          sampleData: [
+            { Component: "Cash on Hand", Amount: 25000, "% of Total": "2%" },
+            { Component: "Bank Accounts", Amount: 1250000, "% of Total": "83%" },
+            { Component: "Money Market", Amount: 200000, "% of Total": "13%" },
+            { Component: "Petty Cash", Amount: 5000, "% of Total": "<1%" },
+          ]
+        };
+      case "RECONCILIATION":
+        return {
+          columns: ["Description", "Amount"],
+          sampleData: [
+            { Description: "Balance per Bank Statement", Amount: 1285000 },
+            { Description: "Add: Deposits in Transit", Amount: 45000 },
+            { Description: "Less: Outstanding Checks", Amount: -32000 },
+            { Description: "Adjusted Bank Balance", Amount: 1298000 },
+            { Description: "Balance per Books", Amount: 1298000 },
+          ]
+        };
+      default:
+        return { columns: ["Column 1", "Column 2", "Column 3"], sampleData: [] };
+    }
+  };
+
+  const getWorkingPaperPreviewData = (type: string): { columns: string[]; sampleData: { [key: string]: string | number }[] } => {
+    switch (type) {
+      case "Rollforward":
+        return {
+          columns: ["Account", "Opening", "Debits", "Credits", "Adjustments", "Closing"],
+          sampleData: [
+            { Account: "Prepaid Insurance", Opening: 48000, Debits: 0, Credits: -4000, Adjustments: 0, Closing: 44000 },
+            { Account: "Prepaid Rent", Opening: 72000, Debits: 0, Credits: -6000, Adjustments: 0, Closing: 66000 },
+          ]
+        };
+      case "Aging Schedule":
+        return {
+          columns: ["Customer", "Current", "31-60 Days", "61-90 Days", "Over 90 Days", "Total"],
+          sampleData: [
+            { Customer: "ABC Corp", Current: 45000, "31-60 Days": 12000, "61-90 Days": 0, "Over 90 Days": 0, Total: 57000 },
+            { Customer: "XYZ Ltd", Current: 32000, "31-60 Days": 8000, "61-90 Days": 5000, "Over 90 Days": 2000, Total: 47000 },
+          ]
+        };
+      case "Linear Analysis":
+        return {
+          columns: ["Line Item", "Jan", "Feb", "Mar", "Q1 Total"],
+          sampleData: [
+            { "Line Item": "Revenue", Jan: 125000, Feb: 132000, Mar: 145000, "Q1 Total": 402000 },
+            { "Line Item": "COGS", Jan: 75000, Feb: 78000, Mar: 85000, "Q1 Total": 238000 },
+          ]
+        };
+      default:
+        return {
+          columns: ["Column A", "Column B", "Column C", "Formula"],
+          sampleData: [
+            { "Column A": "Row 1", "Column B": 100, "Column C": 200, Formula: 300 },
+          ]
+        };
+    }
+  };
+
+  const getReconciliationPreviewData = (type: string): { columns: string[]; sampleData: { [key: string]: string | number }[] } => {
+    switch (type) {
+      case "CASH":
+        return {
+          columns: ["Description", "Per Bank", "Per Books", "Difference"],
+          sampleData: [
+            { Description: "Ending Balance", "Per Bank": 1250000, "Per Books": 1250000, Difference: 0 },
+            { Description: "Outstanding Checks", "Per Bank": "", "Per Books": -32000, Difference: 32000 },
+            { Description: "Deposits in Transit", "Per Bank": "", "Per Books": 45000, Difference: -45000 },
+          ]
+        };
+      case "PREPAID":
+        return {
+          columns: ["Vendor", "Original Amount", "Monthly Expense", "YTD Expense", "Balance"],
+          sampleData: [
+            { Vendor: "Insurance Co", "Original Amount": 48000, "Monthly Expense": 4000, "YTD Expense": 8000, Balance: 40000 },
+            { Vendor: "Landlord LLC", "Original Amount": 72000, "Monthly Expense": 6000, "YTD Expense": 12000, Balance: 60000 },
+          ]
+        };
+      default:
+        return {
+          columns: ["Item", "Opening", "Additions", "Reductions", "Closing"],
+          sampleData: [
+            { Item: "Account 1", Opening: 100000, Additions: 25000, Reductions: -15000, Closing: 110000 },
+          ]
+        };
+    }
+  };
+
   const renderTemplateRepository = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -3230,6 +3384,26 @@ export default function NetToolPage() {
                           <Button 
                             variant="ghost" 
                             size="icon"
+                            onClick={() => {
+                              const previewData = getTemplatePreviewData(template.layoutType);
+                              handlePreviewTemplate({
+                                name: template.templateName,
+                                type: getLayoutTypeLabel(template.layoutType),
+                                category: "disclosure",
+                                layoutType: template.layoutType,
+                                framework: getFrameworkLabel(template.framework),
+                                description: `Disclosure template using ${getLayoutTypeLabel(template.layoutType)} layout`,
+                                columns: previewData.columns,
+                                sampleData: previewData.sampleData,
+                              });
+                            }}
+                            data-testid={`button-preview-template-${template.templateId}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
                             onClick={() => handleEditTemplate(template)}
                             data-testid={`button-edit-template-${template.templateId}`}
                           >
@@ -3271,25 +3445,44 @@ export default function NetToolPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {["Rollforward", "Aging Schedule", "Linear Analysis", "Custom Grid"].map((type, idx) => (
-                  <Card key={type} className="hover-elevate cursor-pointer" data-testid={`card-wp-template-${idx}`}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">{type}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        {type === "Rollforward" && "Track opening to closing balance movements"}
-                        {type === "Aging Schedule" && "Analyze receivables/payables by age bucket"}
-                        {type === "Linear Analysis" && "Simple columnar analysis worksheets"}
-                        {type === "Custom Grid" && "Flexible grid with custom columns and formulas"}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Badge variant="outline">System</Badge>
-                        <span className="text-xs text-muted-foreground">Default template</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {["Rollforward", "Aging Schedule", "Linear Analysis", "Custom Grid"].map((type, idx) => {
+                  const description = type === "Rollforward" ? "Track opening to closing balance movements" :
+                    type === "Aging Schedule" ? "Analyze receivables/payables by age bucket" :
+                    type === "Linear Analysis" ? "Simple columnar analysis worksheets" :
+                    "Flexible grid with custom columns and formulas";
+                  const previewData = getWorkingPaperPreviewData(type);
+                  return (
+                    <Card key={type} className="hover-elevate" data-testid={`card-wp-template-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{type}</CardTitle>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handlePreviewTemplate({
+                              name: type,
+                              type: "Working Paper",
+                              category: "working-paper",
+                              description,
+                              columns: previewData.columns,
+                              sampleData: previewData.sampleData,
+                            })}
+                            data-testid={`button-preview-wp-${idx}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">{description}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <Badge variant="outline">System</Badge>
+                          <span className="text-xs text-muted-foreground">Default template</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -3312,19 +3505,39 @@ export default function NetToolPage() {
                   { name: "Accrual 12M Rollforward", desc: "Monthly accrual tracking with 12-month view", type: "ACCRUAL" },
                   { name: "Fixed Asset Rollforward", desc: "Asset additions, disposals, and depreciation", type: "FIXED_ASSET" },
                   { name: "Intercompany Recon", desc: "IC balance matching and elimination entries", type: "INTERCOMPANY" },
-                ].map((template, idx) => (
-                  <Card key={template.type} className="hover-elevate cursor-pointer" data-testid={`card-recon-template-${idx}`}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">{template.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">{template.desc}</p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Badge variant="secondary">{template.type}</Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                ].map((template, idx) => {
+                  const previewData = getReconciliationPreviewData(template.type);
+                  return (
+                    <Card key={template.type} className="hover-elevate" data-testid={`card-recon-template-${idx}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{template.name}</CardTitle>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handlePreviewTemplate({
+                              name: template.name,
+                              type: "Reconciliation",
+                              category: "reconciliation",
+                              description: template.desc,
+                              columns: previewData.columns,
+                              sampleData: previewData.sampleData,
+                            })}
+                            data-testid={`button-preview-recon-${idx}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground">{template.desc}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <Badge variant="secondary">{template.type}</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -3342,18 +3555,41 @@ export default function NetToolPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { name: "Month-End Close Checklist", tasks: 24, category: "Monthly Close" },
-                  { name: "Quarter-End Close Checklist", tasks: 42, category: "Quarterly Close" },
-                  { name: "Year-End Close Checklist", tasks: 68, category: "Annual Close" },
-                  { name: "Consolidation Tasks", tasks: 18, category: "Consolidation" },
-                  { name: "Intercompany Elimination", tasks: 12, category: "Eliminations" },
-                  { name: "External Audit Prep", tasks: 32, category: "Audit" },
+                  { name: "Month-End Close Checklist", tasks: 24, category: "Monthly Close", sampleTasks: ["Reconcile bank accounts", "Post depreciation entries", "Accrue payroll expense", "Review open POs", "Post intercompany entries"] },
+                  { name: "Quarter-End Close Checklist", tasks: 42, category: "Quarterly Close", sampleTasks: ["Complete month-end close", "Prepare interim financials", "Review contingencies", "Update lease schedules", "Prepare board package"] },
+                  { name: "Year-End Close Checklist", tasks: 68, category: "Annual Close", sampleTasks: ["Complete quarterly close", "Year-end audit prep", "Tax provision calculation", "Goodwill impairment test", "Disclosure notes review"] },
+                  { name: "Consolidation Tasks", tasks: 18, category: "Consolidation", sampleTasks: ["Collect subsidiary data", "Currency translation", "Elimination entries", "Minority interest calc", "Consolidated financials"] },
+                  { name: "Intercompany Elimination", tasks: 12, category: "Eliminations", sampleTasks: ["Match IC transactions", "Eliminate IC revenue/expense", "Eliminate IC receivables", "Eliminate IC inventory profit", "Post elimination JEs"] },
+                  { name: "External Audit Prep", tasks: 32, category: "Audit", sampleTasks: ["Prepare PBC list", "Schedule confirmations", "Prepare lead schedules", "Document roll-forwards", "Compile support files"] },
                 ].map((template, idx) => (
-                  <Card key={template.name} className="hover-elevate cursor-pointer" data-testid={`card-close-template-${idx}`}>
+                  <Card key={template.name} className="hover-elevate" data-testid={`card-close-template-${idx}`}>
                     <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <CardTitle className="text-base">{template.name}</CardTitle>
-                        <Badge>{template.tasks} tasks</Badge>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handlePreviewTemplate({
+                              name: template.name,
+                              type: "Close Control",
+                              category: "close-control",
+                              description: `${template.category} checklist with ${template.tasks} tasks`,
+                              columns: ["Task", "Owner", "Due Date", "Status", "Notes"],
+                              sampleData: template.sampleTasks.map((task, i) => ({
+                                Task: task,
+                                Owner: i % 2 === 0 ? "Controller" : "Accounting Manager",
+                                "Due Date": `Day ${i + 1}`,
+                                Status: i === 0 ? "Completed" : i === 1 ? "In Progress" : "Pending",
+                                Notes: "",
+                              })),
+                            })}
+                            data-testid={`button-preview-close-${idx}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Badge>{template.tasks} tasks</Badge>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -3424,6 +3660,105 @@ export default function NetToolPage() {
             </Button>
             <Button onClick={handleSaveTemplate} data-testid="button-save-template">
               {editingTemplate ? "Save Changes" : "Create Template"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showTemplatePreview} onOpenChange={setShowTemplatePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Template Preview: {previewTemplate?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Preview how this template will look when applied
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewTemplate && (
+            <div className="flex-1 overflow-auto space-y-6 py-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Category</p>
+                  <Badge className="mt-1">{previewTemplate.category.replace("-", " ")}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Type</p>
+                  <p className="font-medium">{previewTemplate.type}</p>
+                </div>
+                {previewTemplate.layoutType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Layout</p>
+                    <Badge variant="outline">{getLayoutTypeLabel(previewTemplate.layoutType)}</Badge>
+                  </div>
+                )}
+                {previewTemplate.framework && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Framework</p>
+                    <p className="font-medium">{previewTemplate.framework}</p>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Description</p>
+                <p className="text-sm">{previewTemplate.description}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Column Structure ({previewTemplate.columns.length} columns)</p>
+                <div className="flex flex-wrap gap-2">
+                  {previewTemplate.columns.map((col, idx) => (
+                    <Badge key={idx} variant="secondary">{col}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              {previewTemplate.sampleData && previewTemplate.sampleData.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Sample Data Preview</p>
+                  <Card>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              {previewTemplate.columns.map((col, idx) => (
+                                <TableHead key={idx} className="whitespace-nowrap text-xs font-semibold">{col}</TableHead>
+                              ))}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {previewTemplate.sampleData.map((row, rowIdx) => (
+                              <TableRow key={rowIdx}>
+                                {previewTemplate.columns.map((col, colIdx) => (
+                                  <TableCell key={colIdx} className="whitespace-nowrap text-sm">
+                                    {typeof row[col] === "number" 
+                                      ? row[col].toLocaleString()
+                                      : row[col] || "-"}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplatePreview(false)} data-testid="button-close-preview">
+              Close Preview
+            </Button>
+            <Button data-testid="button-use-template">
+              <Plus className="h-4 w-4 mr-2" />
+              Use This Template
             </Button>
           </DialogFooter>
         </DialogContent>
