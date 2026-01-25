@@ -1083,48 +1083,22 @@ function OrgChart({ entities }: { entities: Entity[] }) {
   );
 }
 
-const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi", "shareholders", "captable", "equity-events", "dividends", "funding-rounds", "convertibles", "options"];
+const validTabs = ["dashboard", "entity-registry", "obligations", "board-governance", "startup-equity"];
 
 const sectionToTab: Record<string, string> = {
-  "dashboard": "overview",
-  "entities": "entities",
+  "dashboard": "dashboard",
+  "entity-registry": "entity-registry",
   "obligations": "obligations",
-  "governance": "governance",
-  "authority": "authority",
-  "risks": "risks",
-  "policies": "policies",
-  "advisors": "advisors",
-  "audit": "audit",
-  "insights": "insights",
-  "roi": "roi",
-  "shareholders": "shareholders",
-  "captable": "captable",
-  "equity-events": "equity-events",
-  "dividends": "dividends",
-  "funding-rounds": "funding-rounds",
-  "convertibles": "convertibles",
-  "options": "options",
+  "board-governance": "board-governance",
+  "startup-equity": "startup-equity",
 };
 
 const tabToSection: Record<string, string> = {
-  "overview": "dashboard",
-  "entities": "entities",
+  "dashboard": "dashboard",
+  "entity-registry": "entity-registry",
   "obligations": "obligations",
-  "governance": "governance",
-  "authority": "authority",
-  "risks": "risks",
-  "policies": "policies",
-  "advisors": "advisors",
-  "audit": "audit",
-  "insights": "insights",
-  "roi": "roi",
-  "shareholders": "shareholders",
-  "captable": "captable",
-  "equity-events": "equity-events",
-  "dividends": "dividends",
-  "funding-rounds": "funding-rounds",
-  "convertibles": "convertibles",
-  "options": "options",
+  "board-governance": "board-governance",
+  "startup-equity": "startup-equity",
 };
 
 export default function OneCompliancePage() {
@@ -1132,13 +1106,13 @@ export default function OneCompliancePage() {
   const [, setLocation] = useLocation();
   
   const sectionFromUrl = params?.section || "";
-  const initialTab = sectionToTab[sectionFromUrl] || "overview";
+  const initialTab = sectionToTab[sectionFromUrl] || "dashboard";
   
   const [selectedTab, setSelectedTab] = useState(initialTab);
   const [selectedEntity, setSelectedEntity] = useState<string>("");
 
   useEffect(() => {
-    const newTab = sectionToTab[sectionFromUrl] || "overview";
+    const newTab = sectionToTab[sectionFromUrl] || "dashboard";
     if (newTab !== selectedTab) {
       setSelectedTab(newTab);
     }
@@ -1147,11 +1121,7 @@ export default function OneCompliancePage() {
   const handleTabChange = (tab: string) => {
     setSelectedTab(tab);
     const section = tabToSection[tab] || "dashboard";
-    if (section === "dashboard") {
-      setLocation("/compliance");
-    } else {
-      setLocation(`/compliance/${section}`);
-    }
+    setLocation(`/compliance/${section}`);
   };
 
   const metrics = getComplianceMetrics();
@@ -1216,79 +1186,26 @@ export default function OneCompliancePage() {
           </div>
 
           <Tabs value={selectedTab} onValueChange={handleTabChange}>
-            <TabsList className="w-full justify-start overflow-x-auto" data-testid="main-tabs">
-              <TabsTrigger value="overview" data-testid="tab-overview">
+            <TabsList className="w-full justify-start gap-1" data-testid="main-tabs">
+              <TabsTrigger value="dashboard" data-testid="tab-dashboard">
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                Overview
+                Dashboard
               </TabsTrigger>
-              <TabsTrigger value="entities" data-testid="tab-entities">
+              <TabsTrigger value="entity-registry" data-testid="tab-entity-registry">
                 <Building2 className="h-4 w-4 mr-2" />
-                Entities
+                Entity Registry
               </TabsTrigger>
               <TabsTrigger value="obligations" data-testid="tab-obligations">
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Obligations
               </TabsTrigger>
-              <TabsTrigger value="governance" data-testid="tab-governance">
+              <TabsTrigger value="board-governance" data-testid="tab-board-governance">
                 <Gavel className="h-4 w-4 mr-2" />
-                Governance
+                Board & Governance
               </TabsTrigger>
-              <TabsTrigger value="authority" data-testid="tab-authority">
-                <UserCheck className="h-4 w-4 mr-2" />
-                Authority
-              </TabsTrigger>
-              <TabsTrigger value="risks" data-testid="tab-risks">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Risks
-              </TabsTrigger>
-              <TabsTrigger value="policies" data-testid="tab-policies">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Policies
-              </TabsTrigger>
-              <TabsTrigger value="advisors" data-testid="tab-advisors">
-                <Briefcase className="h-4 w-4 mr-2" />
-                Advisors
-              </TabsTrigger>
-              <TabsTrigger value="audit" data-testid="tab-audit">
-                <Shield className="h-4 w-4 mr-2" />
-                Audit
-              </TabsTrigger>
-              <TabsTrigger value="insights" data-testid="tab-insights">
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI Insights
-              </TabsTrigger>
-              <TabsTrigger value="roi" data-testid="tab-roi">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                ROI
-              </TabsTrigger>
-              <Separator orientation="vertical" className="h-6 mx-2" />
-              <TabsTrigger value="shareholders" data-testid="tab-shareholders">
-                <Users className="h-4 w-4 mr-2" />
-                Shareholders
-              </TabsTrigger>
-              <TabsTrigger value="captable" data-testid="tab-captable">
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Cap Table
-              </TabsTrigger>
-              <TabsTrigger value="equity-events" data-testid="tab-equity-events">
-                <Coins className="h-4 w-4 mr-2" />
-                Equity Events
-              </TabsTrigger>
-              <TabsTrigger value="dividends" data-testid="tab-dividends">
-                <CircleDollarSign className="h-4 w-4 mr-2" />
-                Dividends
-              </TabsTrigger>
-              <TabsTrigger value="funding-rounds" data-testid="tab-funding-rounds">
+              <TabsTrigger value="startup-equity" data-testid="tab-startup-equity">
                 <Rocket className="h-4 w-4 mr-2" />
-                Funding Rounds
-              </TabsTrigger>
-              <TabsTrigger value="convertibles" data-testid="tab-convertibles">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Convertibles
-              </TabsTrigger>
-              <TabsTrigger value="options" data-testid="tab-options">
-                <Award className="h-4 w-4 mr-2" />
-                Options
+                Startup Equity
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1298,7 +1215,8 @@ export default function OneCompliancePage() {
       <ScrollArea className="flex-1">
         <div className="container py-6">
           <Tabs value={selectedTab} onValueChange={handleTabChange}>
-            <TabsContent value="overview" className="mt-0 space-y-6">
+            {/* DASHBOARD TAB - Consolidated overview, insights, ROI */}
+            <TabsContent value="dashboard" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   title="Health Score"
@@ -1348,11 +1266,11 @@ export default function OneCompliancePage() {
                     <HealthScoreGauge score={metrics.healthScore} />
                     <div className="grid grid-cols-2 gap-4 mt-4 text-center text-sm">
                       <div>
-                        <p className="text-2xl font-bold text-green-600">{entities.filter(e => e.status === "ACTIVE").length}</p>
+                        <p className="text-2xl font-bold">{entities.filter(e => e.status === "ACTIVE").length}</p>
                         <p className="text-muted-foreground">Active</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-yellow-600">{entities.filter(e => e.status === "DORMANT").length}</p>
+                        <p className="text-2xl font-bold">{entities.filter(e => e.status === "DORMANT").length}</p>
                         <p className="text-muted-foreground">Dormant</p>
                       </div>
                     </div>
@@ -1362,7 +1280,7 @@ export default function OneCompliancePage() {
 
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2">
                     <div>
                       <CardTitle>90-Day Timeline</CardTitle>
                       <CardDescription>Upcoming obligations and deadlines</CardDescription>
@@ -1377,7 +1295,7 @@ export default function OneCompliancePage() {
                 </Card>
 
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2">
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-purple-500" />
@@ -1387,15 +1305,19 @@ export default function OneCompliancePage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[400px]">
+                    <ScrollArea className="h-[300px]">
                       <AIInsightsPanel insights={insights} />
                     </ScrollArea>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* ROI Metrics Section */}
+              <ROIMetricsPanel />
             </TabsContent>
 
-            <TabsContent value="entities" className="mt-0 space-y-6">
+            {/* ENTITY REGISTRY TAB - Consolidated entities, shareholders, cap table, equity events, dividends */}
+            <TabsContent value="entity-registry" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-4">
                 <MetricCard
                   title="Total Entities"
@@ -1434,283 +1356,8 @@ export default function OneCompliancePage() {
               </Card>
 
               <EntityGrid entities={filteredEntities} />
-            </TabsContent>
 
-            <TabsContent value="obligations" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Total Obligations"
-                  value={obligations.length}
-                  icon={ClipboardList}
-                />
-                <MetricCard
-                  title="Filed"
-                  value={obligations.filter(o => o.filingStatus === "FILED").length}
-                  icon={CheckCircle2}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Pending"
-                  value={obligations.filter(o => o.filingStatus === "PENDING").length}
-                  icon={Clock}
-                />
-                <MetricCard
-                  title="Overdue"
-                  value={obligations.filter(o => o.filingStatus === "OVERDUE").length}
-                  icon={AlertTriangle}
-                  variant="danger"
-                />
-              </div>
-
-              <ObligationsTable obligations={obligations} />
-            </TabsContent>
-
-            <TabsContent value="governance" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Scheduled Meetings"
-                  value={meetings.filter(m => m.status === "SCHEDULED").length}
-                  icon={Calendar}
-                />
-                <MetricCard
-                  title="Pending Resolutions"
-                  value={resolutions.filter(r => r.status === "PENDING" || r.status === "DRAFT").length}
-                  icon={FileText}
-                />
-                <MetricCard
-                  title="Approved"
-                  value={resolutions.filter(r => r.status === "APPROVED" || r.status === "EXECUTED").length}
-                  icon={CheckCircle2}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Pending Changes"
-                  value={changes.filter(c => c.status === "PENDING").length}
-                  icon={Activity}
-                />
-              </div>
-
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Meetings</CardTitle>
-                    <CardDescription>Board and shareholder meetings</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <MeetingsPanel meetings={meetings} />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Resolutions</CardTitle>
-                    <CardDescription>Board and shareholder resolutions</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResolutionsPanel resolutions={resolutions} />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lifecycle Changes</CardTitle>
-                  <CardDescription>Entity changes and approvals</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ChangesPanel changes={changes} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="authority" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Authorized Signatories"
-                  value={signatories.length}
-                  icon={UserCheck}
-                />
-                <MetricCard
-                  title="Active"
-                  value={signatories.filter(s => s.isActive).length}
-                  icon={CheckCircle2}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Unlimited Authority"
-                  value={signatories.filter(s => !s.signingLimit).length}
-                  icon={Scale}
-                />
-                <MetricCard
-                  title="Requires Co-Signer"
-                  value={signatories.filter(s => s.requiresCoSigner).length}
-                  icon={Users}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Authority & Delegation Register</CardTitle>
-                  <CardDescription>Authorized signatories and signing limits</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SignatoriesPanel signatories={signatories} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="risks" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Open Risks"
-                  value={risks.filter(r => r.status === "OPEN").length}
-                  icon={AlertTriangle}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Critical/High"
-                  value={risks.filter(r => r.severity === "CRITICAL" || r.severity === "HIGH").length}
-                  icon={AlertCircle}
-                  variant="danger"
-                />
-                <MetricCard
-                  title="Mitigated"
-                  value={risks.filter(r => r.status === "MITIGATED").length}
-                  icon={Shield}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Accepted"
-                  value={risks.filter(r => r.status === "ACCEPTED").length}
-                  icon={CheckCircle2}
-                />
-              </div>
-
-              <RisksPanel risks={risks} />
-            </TabsContent>
-
-            <TabsContent value="policies" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Policies"
-                  value={policies.filter(p => p.status === "ACTIVE").length}
-                  icon={BookOpen}
-                />
-                <MetricCard
-                  title="Under Review"
-                  value={policies.filter(p => p.status === "UNDER_REVIEW").length}
-                  icon={Eye}
-                />
-                <MetricCard
-                  title="Pending Acknowledgement"
-                  value={policies.filter(p => p.requiresAcknowledgement && p.acknowledgementCount < p.totalApplicable).length}
-                  icon={Clock}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Categories"
-                  value={new Set(policies.map(p => p.category)).size}
-                  icon={Layers}
-                />
-              </div>
-
-              <PoliciesPanel policies={policies} />
-            </TabsContent>
-
-            <TabsContent value="advisors" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Advisors"
-                  value={advisors.filter(a => a.status === "ACTIVE").length}
-                  icon={Briefcase}
-                />
-                <MetricCard
-                  title="Expiring Soon"
-                  value={advisors.filter(a => a.status === "EXPIRING_SOON").length}
-                  icon={Clock}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Annual Spend"
-                  value={formatCurrency(advisors.reduce((sum, a) => sum + a.annualFee, 0))}
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Jurisdictions"
-                  value={new Set(advisors.map(a => a.jurisdiction)).size}
-                  icon={Globe}
-                />
-              </div>
-
-              <AdvisorsPanel advisors={advisors} />
-            </TabsContent>
-
-            <TabsContent value="audit" className="mt-0">
-              <AuditReadinessCenter />
-            </TabsContent>
-
-            <TabsContent value="insights" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Insights"
-                  value={insights.length}
-                  icon={Sparkles}
-                />
-                <MetricCard
-                  title="Risks Identified"
-                  value={insights.filter(i => i.type === "RISK").length}
-                  icon={AlertTriangle}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Opportunities"
-                  value={insights.filter(i => i.type === "OPPORTUNITY").length}
-                  icon={Lightbulb}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Avg Confidence"
-                  value={`${Math.round(insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length)}%`}
-                  icon={Target}
-                />
-              </div>
-
-              <AIInsightsPanel insights={insights} />
-            </TabsContent>
-
-            <TabsContent value="roi" className="mt-0">
-              <ROIMetricsPanel />
-            </TabsContent>
-
-            {/* Equity Tracker Tabs */}
-            <TabsContent value="shareholders" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Shareholders"
-                  value={shareholders.length}
-                  subtitle="Across all share classes"
-                  icon={Users}
-                />
-                <MetricCard
-                  title="Share Classes"
-                  value={shareClasses.length}
-                  subtitle="Defined share types"
-                  icon={Layers}
-                />
-                <MetricCard
-                  title="Total Issued Shares"
-                  value={equityMetrics.totalIssuedShares.toLocaleString()}
-                  subtitle={`${equityMetrics.utilizationRate}% of authorized`}
-                  icon={PieChart}
-                />
-                <MetricCard
-                  title="Entities with Equity"
-                  value={equityMetrics.entitiesWithEquity}
-                  subtitle="With share structure"
-                  icon={Building2}
-                />
-              </div>
-
+              {/* Shareholders Section */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1759,41 +1406,13 @@ export default function OneCompliancePage() {
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="captable" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Authorized Shares"
-                  value={equityMetrics.totalAuthorizedShares.toLocaleString()}
-                  subtitle="Total authorized across entities"
-                  icon={Target}
-                />
-                <MetricCard
-                  title="Issued Shares"
-                  value={equityMetrics.totalIssuedShares.toLocaleString()}
-                  subtitle={`${equityMetrics.utilizationRate}% utilization`}
-                  icon={PieChart}
-                />
-                <MetricCard
-                  title="Available Shares"
-                  value={(equityMetrics.totalAuthorizedShares - equityMetrics.totalIssuedShares).toLocaleString()}
-                  subtitle="Unissued authorized shares"
-                  icon={Layers}
-                />
-                <MetricCard
-                  title="Share Classes"
-                  value={equityMetrics.totalShareClasses}
-                  subtitle="Distinct share types"
-                  icon={LayoutGrid}
-                />
-              </div>
-
+              {/* Share Class Definitions */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <LayoutGrid className="h-5 w-5" />
-                    Share Class Definitions
+                    Cap Table - Share Classes
                   </CardTitle>
                   <CardDescription>
                     Detailed share class structure with rights, preferences, and restrictions
@@ -1811,7 +1430,6 @@ export default function OneCompliancePage() {
                         <TableHead className="text-right">Par Value</TableHead>
                         <TableHead className="text-right">Voting/Share</TableHead>
                         <TableHead>Dividend Rights</TableHead>
-                        <TableHead>Convertible</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1841,13 +1459,6 @@ export default function OneCompliancePage() {
                                 {sc.dividendRights}
                               </Badge>
                             </TableCell>
-                            <TableCell>
-                              {sc.isConvertible ? (
-                                <Badge variant="default">Yes ({sc.conversionRatio}:1)</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">No</span>
-                              )}
-                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -1855,36 +1466,8 @@ export default function OneCompliancePage() {
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="equity-events" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Events"
-                  value={equityEvents.length}
-                  subtitle="Equity transactions recorded"
-                  icon={Coins}
-                />
-                <MetricCard
-                  title="Issuances"
-                  value={equityEvents.filter(e => e.eventType === "ISSUANCE").length}
-                  subtitle="Share issuance events"
-                  icon={TrendingUp}
-                />
-                <MetricCard
-                  title="Capital Contributions"
-                  value={equityEvents.filter(e => e.eventType === "CAPITAL_CONTRIBUTION").length}
-                  subtitle="Additional capital injected"
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Pending Approvals"
-                  value={equityEvents.filter(e => e.approvalStatus === "PENDING_APPROVAL").length}
-                  subtitle="Awaiting approval"
-                  icon={Clock}
-                />
-              </div>
-
+              {/* Equity Events */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1892,7 +1475,7 @@ export default function OneCompliancePage() {
                     Equity Event History
                   </CardTitle>
                   <CardDescription>
-                    Complete audit trail of equity transactions, issuances, transfers, and capital events
+                    Complete audit trail of equity transactions, issuances, and capital events
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1905,19 +1488,18 @@ export default function OneCompliancePage() {
                         <TableHead>Share Class</TableHead>
                         <TableHead className="text-right">Shares</TableHead>
                         <TableHead className="text-right">Value</TableHead>
-                        <TableHead>Parties</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {equityEvents.map((event) => {
+                      {equityEvents.slice(0, 5).map((event) => {
                         const entity = entities.find(e => e.id === event.entityId);
                         return (
                           <TableRow key={event.id} data-testid={`row-equityevent-${event.id}`}>
                             <TableCell className="text-muted-foreground">{formatDate(event.eventDate)}</TableCell>
                             <TableCell className="font-medium">{entity?.name || event.entityId}</TableCell>
                             <TableCell>
-                              <Badge variant={event.eventType === "ISSUANCE" ? "default" : event.eventType === "CAPITAL_CONTRIBUTION" ? "secondary" : "outline"}>
+                              <Badge variant={event.eventType === "ISSUANCE" ? "default" : "secondary"}>
                                 {event.eventType.replace(/_/g, " ")}
                               </Badge>
                             </TableCell>
@@ -1929,14 +1511,6 @@ export default function OneCompliancePage() {
                               {formatCurrency(event.totalValue, event.currency)}
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-col">
-                                {event.fromParty && (
-                                  <span className="text-xs text-muted-foreground">From: {event.fromParty}</span>
-                                )}
-                                <span className="text-xs">To: {event.toParty}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
                               <StatusBadge status={event.approvalStatus} />
                             </TableCell>
                           </TableRow>
@@ -1946,37 +1520,8 @@ export default function OneCompliancePage() {
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="dividends" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Paid"
-                  value={formatCurrency(equityMetrics.totalDividendsPaid, "USD")}
-                  subtitle="Dividends distributed"
-                  icon={CircleDollarSign}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Pending"
-                  value={equityMetrics.pendingDividendsCount}
-                  subtitle={`${formatCurrency(equityMetrics.pendingDividendsTotal, "USD")} awaiting payment`}
-                  icon={Clock}
-                />
-                <MetricCard
-                  title="Intercompany"
-                  value={dividendsData.filter(d => d.isIntercompany).length}
-                  subtitle="Intercompany dividends"
-                  icon={Network}
-                />
-                <MetricCard
-                  title="Proposed"
-                  value={dividendsData.filter(d => d.status === "PROPOSED").length}
-                  subtitle="Awaiting board approval"
-                  icon={FileText}
-                />
-              </div>
-
+              {/* Dividends */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -1984,7 +1529,7 @@ export default function OneCompliancePage() {
                     Dividend Register
                   </CardTitle>
                   <CardDescription>
-                    Dividend declarations, approvals, and payment tracking with intercompany visibility
+                    Dividend declarations, approvals, and payment tracking
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1995,15 +1540,12 @@ export default function OneCompliancePage() {
                         <TableHead>Type</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Declaration Date</TableHead>
-                        <TableHead>Payment Date</TableHead>
-                        <TableHead className="text-right">Per Share</TableHead>
                         <TableHead className="text-right">Total Amount</TableHead>
-                        <TableHead className="text-right">Net Amount</TableHead>
                         <TableHead>Recipient</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dividendsData.map((div) => {
+                      {dividendsData.slice(0, 5).map((div) => {
                         const entity = entities.find(e => e.id === div.entityId);
                         const recipient = div.recipientEntityId ? entities.find(e => e.id === div.recipientEntityId) : null;
                         return (
@@ -2016,20 +1558,8 @@ export default function OneCompliancePage() {
                               <StatusBadge status={div.status} />
                             </TableCell>
                             <TableCell className="text-muted-foreground">{formatDate(div.declarationDate)}</TableCell>
-                            <TableCell className="text-muted-foreground">{formatDate(div.paymentDate)}</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatCurrency(div.amountPerShare, div.currency)}
-                            </TableCell>
                             <TableCell className="text-right font-mono">
                               {formatCurrency(div.totalAmount, div.currency)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex flex-col items-end">
-                                <span className="font-mono">{formatCurrency(div.netAmount, div.currency)}</span>
-                                {div.witholdingTaxRate && (
-                                  <span className="text-xs text-muted-foreground">WHT: {div.witholdingTaxRate}%</span>
-                                )}
-                              </div>
                             </TableCell>
                             <TableCell>
                               {div.isIntercompany && recipient ? (
@@ -2037,8 +1567,6 @@ export default function OneCompliancePage() {
                                   <Network className="h-3 w-3 mr-1" />
                                   {recipient.name}
                                 </Badge>
-                              ) : div.isIntercompany ? (
-                                <Badge variant="secondary">Intercompany</Badge>
                               ) : (
                                 <span className="text-muted-foreground">External</span>
                               )}
@@ -2052,8 +1580,120 @@ export default function OneCompliancePage() {
               </Card>
             </TabsContent>
 
-            {/* Funding Rounds Tab */}
-            <TabsContent value="funding-rounds" className="mt-0 space-y-6">
+            {/* OBLIGATIONS TAB - Consolidated obligations, policies, audit, risks */}
+            <TabsContent value="obligations" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-4">
+                <MetricCard
+                  title="Total Obligations"
+                  value={obligations.length}
+                  icon={ClipboardList}
+                />
+                <MetricCard
+                  title="Filed"
+                  value={obligations.filter(o => o.filingStatus === "FILED").length}
+                  icon={CheckCircle2}
+                  variant="success"
+                />
+                <MetricCard
+                  title="Open Risks"
+                  value={risks.filter(r => r.status === "OPEN").length}
+                  icon={AlertTriangle}
+                  variant="warning"
+                />
+                <MetricCard
+                  title="Overdue"
+                  value={obligations.filter(o => o.filingStatus === "OVERDUE").length}
+                  icon={AlertCircle}
+                  variant="danger"
+                />
+              </div>
+
+              <ObligationsTable obligations={obligations} />
+
+              {/* Risks Section */}
+              <RisksPanel risks={risks} />
+
+              {/* Policies Section */}
+              <PoliciesPanel policies={policies} />
+
+              {/* Audit Readiness */}
+              <AuditReadinessCenter />
+            </TabsContent>
+
+            {/* BOARD & GOVERNANCE TAB - Consolidated governance, authority, advisors */}
+            <TabsContent value="board-governance" className="mt-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-4">
+                <MetricCard
+                  title="Scheduled Meetings"
+                  value={meetings.filter(m => m.status === "SCHEDULED").length}
+                  icon={Calendar}
+                />
+                <MetricCard
+                  title="Pending Resolutions"
+                  value={resolutions.filter(r => r.status === "PENDING" || r.status === "DRAFT").length}
+                  icon={FileText}
+                />
+                <MetricCard
+                  title="Authorized Signatories"
+                  value={signatories.filter(s => s.isActive).length}
+                  icon={UserCheck}
+                />
+                <MetricCard
+                  title="Active Advisors"
+                  value={advisors.filter(a => a.status === "ACTIVE").length}
+                  icon={Briefcase}
+                />
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Meetings</CardTitle>
+                    <CardDescription>Board and shareholder meetings</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <MeetingsPanel meetings={meetings} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Resolutions</CardTitle>
+                    <CardDescription>Board and shareholder resolutions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResolutionsPanel resolutions={resolutions} />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lifecycle Changes</CardTitle>
+                  <CardDescription>Entity changes and approvals</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChangesPanel changes={changes} />
+                </CardContent>
+              </Card>
+
+              {/* Authority & Signatories Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Authority & Delegation Register</CardTitle>
+                  <CardDescription>Authorized signatories and signing limits</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SignatoriesPanel signatories={signatories} />
+                </CardContent>
+              </Card>
+
+              {/* Advisors Section */}
+              <AdvisorsPanel advisors={advisors} />
+            </TabsContent>
+
+            {/* STARTUP EQUITY TAB - Funding rounds, convertibles, options */}
+            <TabsContent value="startup-equity" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   title="Total Raised"
@@ -2069,28 +1709,28 @@ export default function OneCompliancePage() {
                   icon={TrendingUp}
                 />
                 <MetricCard
-                  title="Active Rounds"
-                  value={startupMetrics.activeRoundsCount}
-                  subtitle="Currently fundraising"
-                  icon={Rocket}
-                  variant={startupMetrics.activeRoundsCount > 0 ? "warning" : "default"}
+                  title="Active Convertibles"
+                  value={startupMetrics.activeConvertiblesCount}
+                  subtitle={formatCurrency(startupMetrics.totalConvertiblePrincipal, "USD")}
+                  icon={FileSpreadsheet}
                 />
                 <MetricCard
-                  title="Total Rounds"
-                  value={startupMetrics.totalFundingRounds}
-                  subtitle="Funding history"
-                  icon={BarChart3}
+                  title="Options Issued"
+                  value={startupMetrics.totalOptionsIssued.toLocaleString()}
+                  subtitle={`${startupMetrics.totalVestedOptions.toLocaleString()} vested`}
+                  icon={Award}
                 />
               </div>
 
+              {/* Funding Rounds */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Rocket className="h-5 w-5" />
-                    Funding Round History
+                    Funding Rounds
                   </CardTitle>
                   <CardDescription>
-                    Track fundraising rounds with valuations, investor participation, and terms
+                    Track fundraising rounds with valuations and investor participation
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -2100,9 +1740,7 @@ export default function OneCompliancePage() {
                         <TableHead>Round</TableHead>
                         <TableHead>Entity</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Target</TableHead>
                         <TableHead className="text-right">Raised</TableHead>
-                        <TableHead className="text-right">Pre-Money</TableHead>
                         <TableHead className="text-right">Post-Money</TableHead>
                         <TableHead>Lead Investor</TableHead>
                         <TableHead>Close Date</TableHead>
@@ -2135,13 +1773,7 @@ export default function OneCompliancePage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {formatCurrency(round.targetAmount, round.currency)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
                               {formatCurrency(round.raisedAmount, round.currency)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-muted-foreground">
-                              {formatCurrency(round.preMoneyValuation, round.currency)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
                               {formatCurrency(round.postMoneyValuation, round.currency)}
@@ -2171,38 +1803,8 @@ export default function OneCompliancePage() {
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            {/* Convertibles Tab */}
-            <TabsContent value="convertibles" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Active Convertibles"
-                  value={startupMetrics.activeConvertiblesCount}
-                  subtitle="SAFEs & Notes outstanding"
-                  icon={FileSpreadsheet}
-                  variant={startupMetrics.activeConvertiblesCount > 0 ? "warning" : "default"}
-                />
-                <MetricCard
-                  title="Outstanding Principal"
-                  value={formatCurrency(startupMetrics.totalConvertiblePrincipal, "USD")}
-                  subtitle="Total unconverted amount"
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="SAFEs"
-                  value={convertibles.filter(c => c.instrumentType === "SAFE").length}
-                  subtitle="Simple agreements"
-                  icon={FileText}
-                />
-                <MetricCard
-                  title="Conv. Notes"
-                  value={convertibles.filter(c => c.instrumentType === "CONVERTIBLE_NOTE").length}
-                  subtitle="With interest accrual"
-                  icon={Receipt}
-                />
-              </div>
-
+              {/* Convertible Instruments */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -2224,8 +1826,6 @@ export default function OneCompliancePage() {
                         <TableHead className="text-right">Principal</TableHead>
                         <TableHead className="text-right">Val Cap</TableHead>
                         <TableHead className="text-right">Discount</TableHead>
-                        <TableHead>Issue Date</TableHead>
-                        <TableHead>Converted</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2265,27 +1865,6 @@ export default function OneCompliancePage() {
                                 </span>
                               ) : "—"}
                             </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {formatDate(conv.issueDate)}
-                            </TableCell>
-                            <TableCell>
-                              {conv.status === "CONVERTED" && conv.convertedDate ? (
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium">
-                                    {conv.convertedShares?.toLocaleString()} shares
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatDate(conv.convertedDate)}
-                                  </span>
-                                </div>
-                              ) : conv.instrumentType === "CONVERTIBLE_NOTE" && conv.maturityDate ? (
-                                <span className="text-xs text-muted-foreground">
-                                  Matures: {formatDate(conv.maturityDate)}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -2293,37 +1872,6 @@ export default function OneCompliancePage() {
                   </Table>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            {/* Options Tab */}
-            <TabsContent value="options" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Pool Authorized"
-                  value={startupMetrics.totalOptionsAuthorized.toLocaleString()}
-                  subtitle={`${startupMetrics.optionPoolUtilization}% utilized`}
-                  icon={Layers}
-                />
-                <MetricCard
-                  title="Options Issued"
-                  value={startupMetrics.totalOptionsIssued.toLocaleString()}
-                  subtitle={`${startupMetrics.totalOptionsAvailable.toLocaleString()} available`}
-                  icon={Award}
-                />
-                <MetricCard
-                  title="Vested"
-                  value={startupMetrics.totalVestedOptions.toLocaleString()}
-                  subtitle={`${startupMetrics.totalExercisedOptions.toLocaleString()} exercised`}
-                  icon={CheckCircle2}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Active Grantees"
-                  value={startupMetrics.activeGrantees}
-                  subtitle="Team members with options"
-                  icon={Users}
-                />
-              </div>
 
               {/* Option Pools */}
               <Card>
@@ -2344,10 +1892,8 @@ export default function OneCompliancePage() {
                         <TableHead>Entity</TableHead>
                         <TableHead className="text-right">Authorized</TableHead>
                         <TableHead className="text-right">Issued</TableHead>
-                        <TableHead className="text-right">Reserved</TableHead>
                         <TableHead className="text-right">Available</TableHead>
                         <TableHead>Utilization</TableHead>
-                        <TableHead>Expiration</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -2366,9 +1912,6 @@ export default function OneCompliancePage() {
                             <TableCell className="text-right font-mono">
                               {pool.issuedShares.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right font-mono text-muted-foreground">
-                              {pool.reservedShares.toLocaleString()}
-                            </TableCell>
                             <TableCell className="text-right font-mono font-medium">
                               {pool.availableShares.toLocaleString()}
                             </TableCell>
@@ -2377,9 +1920,6 @@ export default function OneCompliancePage() {
                                 <Progress value={utilization} className="w-16 h-2" />
                                 <span className="text-sm text-muted-foreground">{utilization}%</span>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {pool.expirationDate ? formatDate(pool.expirationDate) : "—"}
                             </TableCell>
                           </TableRow>
                         );
@@ -2409,9 +1949,7 @@ export default function OneCompliancePage() {
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Granted</TableHead>
                         <TableHead className="text-right">Vested</TableHead>
-                        <TableHead className="text-right">Exercised</TableHead>
                         <TableHead className="text-right">Strike Price</TableHead>
-                        <TableHead>Vesting</TableHead>
                         <TableHead>Grant Date</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -2446,22 +1984,7 @@ export default function OneCompliancePage() {
                               </div>
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                              {grant.sharesExercised > 0 ? (
-                                <span className="font-medium">
-                                  {grant.sharesExercised.toLocaleString()}
-                                </span>
-                              ) : "—"}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
                               {formatCurrency(grant.exercisePrice, "USD")}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Timer className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-sm">
-                                  {grant.vestingSchedule.replace(/_/g, " ").toLowerCase()}
-                                </span>
-                              </div>
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {formatDate(grant.grantDate)}
