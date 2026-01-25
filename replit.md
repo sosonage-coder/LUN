@@ -101,6 +101,23 @@ The application follows a client-server architecture.
 - **Period-Aware Rolling Window**: 12-month columns dynamically generated ending at the selected period, with year-aware alignment for cross-year data
 - **Conditional UI**: When templateVariant is ACCRUAL_12M_ROLLFORWARD, standard section cards are replaced with the specialized grid view
 
+**Prepaid Balance Sheet Reconciliation Template (Schedule-Anchored):**
+- **Template Variant**: PREPAID_SCHEDULE_ANCHORED - schedule-first workflow where approved schedules serve as primary reconciliation support
+- **Account Classification**: Non-monetary, no FX revaluation needed
+- **Design Philosophy**: Approved prepaid schedules in Schedule Studio automatically flow to reconciliation, no month-by-month grid needed
+- **Prepaid Line Structure**: Each row represents one prepaid schedule with:
+  - Description, Vendor/Supplier, Start/End Date, Term (months amortized/remaining)
+  - Total Prepaid Amount, Amount Amortized, Amount Remaining
+  - Approval status (schedules must be approved before certification)
+- **PrepaidLineDetail Interface**: scheduleId, vendorSupplier, expenseAccount, prepaidAccount, startDate, endDate, totalTermMonths, monthsAmortized, monthsRemaining, totalPrepaidAmount, amountAmortizedToDate, amountRemaining, isApproved, approvedAt, approvedBy
+- **Tie-Out Equation**: Total Remaining (sum of all schedule remaining amounts) = GL Balance (from trial balance)
+- **No Reconciling Items**: Direct tie-out with no adjustments - schedules are the source of truth
+- **Certification Requirements**: All linked schedules must be approved before reconciliation can be certified
+- **UI Component**: PrepaidScheduleGrid renders table with columns: Description, Vendor, Dates, Term Progress, Amounts, Status
+- **Expand/Collapse**: Rows expandable to show Expense Account, Prepaid Account, approval details
+- **View Schedule Link**: Each row links to the corresponding schedule in Schedule Studio
+- **Conditional UI**: When templateVariant is PREPAID_SCHEDULE_ANCHORED, standard section cards are replaced with the specialized grid view
+
 ## External Dependencies
 - **React**: Frontend UI library.
 - **TypeScript**: Statically typed superset of JavaScript.
