@@ -47,10 +47,16 @@ The application uses a client-server architecture.
     - **Prepaid Reconciliation**: Anchored directly to approved prepaid schedules from Schedule Studio, providing a direct tie-out to GL balance.
     - **Workflow**: Reconciliation lifecycle from NOT_STARTED to LOCKED, including multi-level certification.
 - **One Compliance (Entity Governance & Compliance System)**:
-    - Manages entity profiles, obligation registry, authority register, board governance, and lifecycle changes.
-    - Features interactive org charts, risk register, policy mapping, and advisor registry.
-    - Includes audit readiness tools and AI insights for recommendations.
-    - UI is tab-based with deep linking.
+    - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
+    - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.
+    - **Entity Registry**: Entity profiles, organizational structure, and ownership details.
+    - **Obligations**: Filing requirements library with 50+ regulatory filings across USA, Canada, EU, UK, UAE; supports Financial Services, Healthcare, Manufacturing, Technology, Energy, Retail, and Insurance industries.
+    - **Board & Governance**: Meeting management, resolutions, authority register, and lifecycle changes.
+    - **Startup Equity** (nested tabs):
+        - **Funding Rounds**: Track fundraising with valuations, investor participation, and terms.
+        - **Convertibles**: SAFE/Note management with conversion tracking and cap details.
+        - **Options**: Option pool and grant management with vesting schedules.
+    - Filing requirements include penalty levels (Critical/High/Medium), lead times, frequencies, and responsible departments.
 
 ## External Dependencies
 - **React**: Frontend UI library.

@@ -91,6 +91,8 @@ import {
   getOptionPools,
   getOptionGrants,
   getStartupEquityMetrics,
+  getFilingRequirements,
+  getFilingRequirementMetrics,
   type Entity,
   type Obligation,
   type TimelineItem,
@@ -103,6 +105,7 @@ import {
   type AuthorizedSignatory,
   type EntityChange,
   type JurisdictionHeatmapCell,
+  type FilingRequirement,
 } from "@/lib/one-compliance-data";
 
 function formatCurrency(value: number, currency: string = "USD"): string {
@@ -1083,48 +1086,22 @@ function OrgChart({ entities }: { entities: Entity[] }) {
   );
 }
 
-const validTabs = ["overview", "entities", "obligations", "governance", "authority", "risks", "policies", "advisors", "audit", "insights", "roi", "shareholders", "captable", "equity-events", "dividends", "funding-rounds", "convertibles", "options"];
+const validTabs = ["dashboard", "entity-registry", "obligations", "governance", "startup-equity"];
 
 const sectionToTab: Record<string, string> = {
-  "dashboard": "overview",
-  "entities": "entities",
+  "dashboard": "dashboard",
+  "entity-registry": "entity-registry",
   "obligations": "obligations",
   "governance": "governance",
-  "authority": "authority",
-  "risks": "risks",
-  "policies": "policies",
-  "advisors": "advisors",
-  "audit": "audit",
-  "insights": "insights",
-  "roi": "roi",
-  "shareholders": "shareholders",
-  "captable": "captable",
-  "equity-events": "equity-events",
-  "dividends": "dividends",
-  "funding-rounds": "funding-rounds",
-  "convertibles": "convertibles",
-  "options": "options",
+  "startup-equity": "startup-equity",
 };
 
 const tabToSection: Record<string, string> = {
-  "overview": "dashboard",
-  "entities": "entities",
+  "dashboard": "dashboard",
+  "entity-registry": "entity-registry",
   "obligations": "obligations",
   "governance": "governance",
-  "authority": "authority",
-  "risks": "risks",
-  "policies": "policies",
-  "advisors": "advisors",
-  "audit": "audit",
-  "insights": "insights",
-  "roi": "roi",
-  "shareholders": "shareholders",
-  "captable": "captable",
-  "equity-events": "equity-events",
-  "dividends": "dividends",
-  "funding-rounds": "funding-rounds",
-  "convertibles": "convertibles",
-  "options": "options",
+  "startup-equity": "startup-equity",
 };
 
 export default function OneCompliancePage() {
@@ -1132,13 +1109,13 @@ export default function OneCompliancePage() {
   const [, setLocation] = useLocation();
   
   const sectionFromUrl = params?.section || "";
-  const initialTab = sectionToTab[sectionFromUrl] || "overview";
+  const initialTab = sectionToTab[sectionFromUrl] || "dashboard";
   
   const [selectedTab, setSelectedTab] = useState(initialTab);
   const [selectedEntity, setSelectedEntity] = useState<string>("");
 
   useEffect(() => {
-    const newTab = sectionToTab[sectionFromUrl] || "overview";
+    const newTab = sectionToTab[sectionFromUrl] || "dashboard";
     if (newTab !== selectedTab) {
       setSelectedTab(newTab);
     }
@@ -1216,14 +1193,14 @@ export default function OneCompliancePage() {
           </div>
 
           <Tabs value={selectedTab} onValueChange={handleTabChange}>
-            <TabsList className="w-full justify-start overflow-x-auto" data-testid="main-tabs">
-              <TabsTrigger value="overview" data-testid="tab-overview">
+            <TabsList className="w-full justify-start gap-1" data-testid="main-tabs">
+              <TabsTrigger value="dashboard" data-testid="tab-dashboard">
                 <LayoutDashboard className="h-4 w-4 mr-2" />
-                Overview
+                Dashboard
               </TabsTrigger>
-              <TabsTrigger value="entities" data-testid="tab-entities">
+              <TabsTrigger value="entity-registry" data-testid="tab-entity-registry">
                 <Building2 className="h-4 w-4 mr-2" />
-                Entities
+                Entity Registry
               </TabsTrigger>
               <TabsTrigger value="obligations" data-testid="tab-obligations">
                 <ClipboardList className="h-4 w-4 mr-2" />
@@ -1231,64 +1208,11 @@ export default function OneCompliancePage() {
               </TabsTrigger>
               <TabsTrigger value="governance" data-testid="tab-governance">
                 <Gavel className="h-4 w-4 mr-2" />
-                Governance
+                Board & Governance
               </TabsTrigger>
-              <TabsTrigger value="authority" data-testid="tab-authority">
-                <UserCheck className="h-4 w-4 mr-2" />
-                Authority
-              </TabsTrigger>
-              <TabsTrigger value="risks" data-testid="tab-risks">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Risks
-              </TabsTrigger>
-              <TabsTrigger value="policies" data-testid="tab-policies">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Policies
-              </TabsTrigger>
-              <TabsTrigger value="advisors" data-testid="tab-advisors">
-                <Briefcase className="h-4 w-4 mr-2" />
-                Advisors
-              </TabsTrigger>
-              <TabsTrigger value="audit" data-testid="tab-audit">
-                <Shield className="h-4 w-4 mr-2" />
-                Audit
-              </TabsTrigger>
-              <TabsTrigger value="insights" data-testid="tab-insights">
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI Insights
-              </TabsTrigger>
-              <TabsTrigger value="roi" data-testid="tab-roi">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                ROI
-              </TabsTrigger>
-              <Separator orientation="vertical" className="h-6 mx-2" />
-              <TabsTrigger value="shareholders" data-testid="tab-shareholders">
-                <Users className="h-4 w-4 mr-2" />
-                Shareholders
-              </TabsTrigger>
-              <TabsTrigger value="captable" data-testid="tab-captable">
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                Cap Table
-              </TabsTrigger>
-              <TabsTrigger value="equity-events" data-testid="tab-equity-events">
-                <Coins className="h-4 w-4 mr-2" />
-                Equity Events
-              </TabsTrigger>
-              <TabsTrigger value="dividends" data-testid="tab-dividends">
-                <CircleDollarSign className="h-4 w-4 mr-2" />
-                Dividends
-              </TabsTrigger>
-              <TabsTrigger value="funding-rounds" data-testid="tab-funding-rounds">
+              <TabsTrigger value="startup-equity" data-testid="tab-startup-equity">
                 <Rocket className="h-4 w-4 mr-2" />
-                Funding Rounds
-              </TabsTrigger>
-              <TabsTrigger value="convertibles" data-testid="tab-convertibles">
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Convertibles
-              </TabsTrigger>
-              <TabsTrigger value="options" data-testid="tab-options">
-                <Award className="h-4 w-4 mr-2" />
-                Options
+                Startup Equity
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -1297,8 +1221,8 @@ export default function OneCompliancePage() {
 
       <ScrollArea className="flex-1">
         <div className="container py-6">
-          <Tabs value={selectedTab} onValueChange={handleTabChange}>
-            <TabsContent value="overview" className="mt-0 space-y-6">
+          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
+            <TabsContent value="dashboard" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
                   title="Health Score"
@@ -1395,7 +1319,7 @@ export default function OneCompliancePage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="entities" className="mt-0 space-y-6">
+            <TabsContent value="entity-registry" className="mt-0 space-y-6">
               <div className="grid gap-4 md:grid-cols-4">
                 <MetricCard
                   title="Total Entities"
@@ -1523,565 +1447,88 @@ export default function OneCompliancePage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="authority" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Authorized Signatories"
-                  value={signatories.length}
-                  icon={UserCheck}
-                />
-                <MetricCard
-                  title="Active"
-                  value={signatories.filter(s => s.isActive).length}
-                  icon={CheckCircle2}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Unlimited Authority"
-                  value={signatories.filter(s => !s.signingLimit).length}
-                  icon={Scale}
-                />
-                <MetricCard
-                  title="Requires Co-Signer"
-                  value={signatories.filter(s => s.requiresCoSigner).length}
-                  icon={Users}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Authority & Delegation Register</CardTitle>
-                  <CardDescription>Authorized signatories and signing limits</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SignatoriesPanel signatories={signatories} />
-                </CardContent>
-              </Card>
+            {/* Startup Equity Tab */}
+            <TabsContent value="startup-equity" className="mt-0 space-y-6">
+              <StartupEquitySection 
+                fundingRounds={fundingRounds}
+                convertibles={convertibles}
+                optionPools={optionPools}
+                optionGrants={optionGrants}
+                startupMetrics={startupMetrics}
+                entities={entities}
+              />
             </TabsContent>
+          </Tabs>
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
 
-            <TabsContent value="risks" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Open Risks"
-                  value={risks.filter(r => r.status === "OPEN").length}
-                  icon={AlertTriangle}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Critical/High"
-                  value={risks.filter(r => r.severity === "CRITICAL" || r.severity === "HIGH").length}
-                  icon={AlertCircle}
-                  variant="danger"
-                />
-                <MetricCard
-                  title="Mitigated"
-                  value={risks.filter(r => r.status === "MITIGATED").length}
-                  icon={Shield}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Accepted"
-                  value={risks.filter(r => r.status === "ACCEPTED").length}
-                  icon={CheckCircle2}
-                />
-              </div>
+function StartupEquitySection({
+  fundingRounds,
+  convertibles,
+  optionPools,
+  optionGrants,
+  startupMetrics,
+  entities,
+}: {
+  fundingRounds: ReturnType<typeof getFundingRounds>;
+  convertibles: ReturnType<typeof getConvertibleInstruments>;
+  optionPools: ReturnType<typeof getOptionPools>;
+  optionGrants: ReturnType<typeof getOptionGrants>;
+  startupMetrics: ReturnType<typeof getStartupEquityMetrics>;
+  entities: Entity[];
+}) {
+  const [subTab, setSubTab] = useState("funding-rounds");
 
-              <RisksPanel risks={risks} />
-            </TabsContent>
+  return (
+    <div className="space-y-6">
+      <Tabs value={subTab} onValueChange={setSubTab}>
+        <TabsList className="mb-4" data-testid="startup-equity-subtabs">
+          <TabsTrigger value="funding-rounds" data-testid="subtab-funding-rounds">
+            <Rocket className="h-4 w-4 mr-2" />
+            Funding Rounds
+          </TabsTrigger>
+          <TabsTrigger value="convertibles" data-testid="subtab-convertibles">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Convertibles
+          </TabsTrigger>
+          <TabsTrigger value="options" data-testid="subtab-options">
+            <Award className="h-4 w-4 mr-2" />
+            Options
+          </TabsTrigger>
+        </TabsList>
 
-            <TabsContent value="policies" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Policies"
-                  value={policies.filter(p => p.status === "ACTIVE").length}
-                  icon={BookOpen}
-                />
-                <MetricCard
-                  title="Under Review"
-                  value={policies.filter(p => p.status === "UNDER_REVIEW").length}
-                  icon={Eye}
-                />
-                <MetricCard
-                  title="Pending Acknowledgement"
-                  value={policies.filter(p => p.requiresAcknowledgement && p.acknowledgementCount < p.totalApplicable).length}
-                  icon={Clock}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Categories"
-                  value={new Set(policies.map(p => p.category)).size}
-                  icon={Layers}
-                />
-              </div>
-
-              <PoliciesPanel policies={policies} />
-            </TabsContent>
-
-            <TabsContent value="advisors" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Advisors"
-                  value={advisors.filter(a => a.status === "ACTIVE").length}
-                  icon={Briefcase}
-                />
-                <MetricCard
-                  title="Expiring Soon"
-                  value={advisors.filter(a => a.status === "EXPIRING_SOON").length}
-                  icon={Clock}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Annual Spend"
-                  value={formatCurrency(advisors.reduce((sum, a) => sum + a.annualFee, 0))}
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Jurisdictions"
-                  value={new Set(advisors.map(a => a.jurisdiction)).size}
-                  icon={Globe}
-                />
-              </div>
-
-              <AdvisorsPanel advisors={advisors} />
-            </TabsContent>
-
-            <TabsContent value="audit" className="mt-0">
-              <AuditReadinessCenter />
-            </TabsContent>
-
-            <TabsContent value="insights" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard
-                  title="Active Insights"
-                  value={insights.length}
-                  icon={Sparkles}
-                />
-                <MetricCard
-                  title="Risks Identified"
-                  value={insights.filter(i => i.type === "RISK").length}
-                  icon={AlertTriangle}
-                  variant="warning"
-                />
-                <MetricCard
-                  title="Opportunities"
-                  value={insights.filter(i => i.type === "OPPORTUNITY").length}
-                  icon={Lightbulb}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Avg Confidence"
-                  value={`${Math.round(insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length)}%`}
-                  icon={Target}
-                />
-              </div>
-
-              <AIInsightsPanel insights={insights} />
-            </TabsContent>
-
-            <TabsContent value="roi" className="mt-0">
-              <ROIMetricsPanel />
-            </TabsContent>
-
-            {/* Equity Tracker Tabs */}
-            <TabsContent value="shareholders" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Shareholders"
-                  value={shareholders.length}
-                  subtitle="Across all share classes"
-                  icon={Users}
-                />
-                <MetricCard
-                  title="Share Classes"
-                  value={shareClasses.length}
-                  subtitle="Defined share types"
-                  icon={Layers}
-                />
-                <MetricCard
-                  title="Total Issued Shares"
-                  value={equityMetrics.totalIssuedShares.toLocaleString()}
-                  subtitle={`${equityMetrics.utilizationRate}% of authorized`}
-                  icon={PieChart}
-                />
-                <MetricCard
-                  title="Entities with Equity"
-                  value={equityMetrics.entitiesWithEquity}
-                  subtitle="With share structure"
-                  icon={Building2}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Shareholder Registry
-                  </CardTitle>
-                  <CardDescription>
-                    Complete list of shareholders across all entities with ownership details
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Shareholder</TableHead>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Share Class</TableHead>
-                        <TableHead className="text-right">Shares Held</TableHead>
-                        <TableHead className="text-right">Ownership %</TableHead>
-                        <TableHead className="text-right">Voting Rights %</TableHead>
-                        <TableHead>Acquisition Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shareholders.map((sh) => {
-                        const entity = entities.find(e => e.id === sh.entityId);
-                        return (
-                          <TableRow key={sh.id} data-testid={`row-shareholder-${sh.id}`}>
-                            <TableCell className="font-medium">{sh.name}</TableCell>
-                            <TableCell>{entity?.name || sh.entityId}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{sh.shareholderType}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{sh.shareClass}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">{sh.sharesHeld.toLocaleString()}</TableCell>
-                            <TableCell className="text-right font-mono">{sh.ownershipPercentage}%</TableCell>
-                            <TableCell className="text-right font-mono">{sh.votingRights}%</TableCell>
-                            <TableCell className="text-muted-foreground">{formatDate(sh.acquisitionDate)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="captable" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Authorized Shares"
-                  value={equityMetrics.totalAuthorizedShares.toLocaleString()}
-                  subtitle="Total authorized across entities"
-                  icon={Target}
-                />
-                <MetricCard
-                  title="Issued Shares"
-                  value={equityMetrics.totalIssuedShares.toLocaleString()}
-                  subtitle={`${equityMetrics.utilizationRate}% utilization`}
-                  icon={PieChart}
-                />
-                <MetricCard
-                  title="Available Shares"
-                  value={(equityMetrics.totalAuthorizedShares - equityMetrics.totalIssuedShares).toLocaleString()}
-                  subtitle="Unissued authorized shares"
-                  icon={Layers}
-                />
-                <MetricCard
-                  title="Share Classes"
-                  value={equityMetrics.totalShareClasses}
-                  subtitle="Distinct share types"
-                  icon={LayoutGrid}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <LayoutGrid className="h-5 w-5" />
-                    Share Class Definitions
-                  </CardTitle>
-                  <CardDescription>
-                    Detailed share class structure with rights, preferences, and restrictions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Class Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Authorized</TableHead>
-                        <TableHead className="text-right">Issued</TableHead>
-                        <TableHead className="text-right">Par Value</TableHead>
-                        <TableHead className="text-right">Voting/Share</TableHead>
-                        <TableHead>Dividend Rights</TableHead>
-                        <TableHead>Convertible</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shareClasses.map((sc) => {
-                        const entity = entities.find(e => e.id === sc.entityId);
-                        const utilization = Math.round((sc.issuedShares / sc.authorizedShares) * 100);
-                        return (
-                          <TableRow key={sc.id} data-testid={`row-shareclass-${sc.id}`}>
-                            <TableCell className="font-medium">{entity?.name || sc.entityId}</TableCell>
-                            <TableCell>{sc.className}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{sc.classCode}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">{sc.authorizedShares.toLocaleString()}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex flex-col items-end">
-                                <span className="font-mono">{sc.issuedShares.toLocaleString()}</span>
-                                <span className="text-xs text-muted-foreground">{utilization}% used</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatCurrency(sc.parValue, sc.currency)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">{sc.votingRightsPerShare}</TableCell>
-                            <TableCell>
-                              <Badge variant={sc.dividendRights === "PREFERRED" ? "default" : "outline"}>
-                                {sc.dividendRights}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {sc.isConvertible ? (
-                                <Badge variant="default">Yes ({sc.conversionRatio}:1)</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">No</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="equity-events" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Events"
-                  value={equityEvents.length}
-                  subtitle="Equity transactions recorded"
-                  icon={Coins}
-                />
-                <MetricCard
-                  title="Issuances"
-                  value={equityEvents.filter(e => e.eventType === "ISSUANCE").length}
-                  subtitle="Share issuance events"
-                  icon={TrendingUp}
-                />
-                <MetricCard
-                  title="Capital Contributions"
-                  value={equityEvents.filter(e => e.eventType === "CAPITAL_CONTRIBUTION").length}
-                  subtitle="Additional capital injected"
-                  icon={DollarSign}
-                />
-                <MetricCard
-                  title="Pending Approvals"
-                  value={equityEvents.filter(e => e.approvalStatus === "PENDING_APPROVAL").length}
-                  subtitle="Awaiting approval"
-                  icon={Clock}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Coins className="h-5 w-5" />
-                    Equity Event History
-                  </CardTitle>
-                  <CardDescription>
-                    Complete audit trail of equity transactions, issuances, transfers, and capital events
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Event Type</TableHead>
-                        <TableHead>Share Class</TableHead>
-                        <TableHead className="text-right">Shares</TableHead>
-                        <TableHead className="text-right">Value</TableHead>
-                        <TableHead>Parties</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {equityEvents.map((event) => {
-                        const entity = entities.find(e => e.id === event.entityId);
-                        return (
-                          <TableRow key={event.id} data-testid={`row-equityevent-${event.id}`}>
-                            <TableCell className="text-muted-foreground">{formatDate(event.eventDate)}</TableCell>
-                            <TableCell className="font-medium">{entity?.name || event.entityId}</TableCell>
-                            <TableCell>
-                              <Badge variant={event.eventType === "ISSUANCE" ? "default" : event.eventType === "CAPITAL_CONTRIBUTION" ? "secondary" : "outline"}>
-                                {event.eventType.replace(/_/g, " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{event.shareClassName}</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {event.numberOfShares > 0 ? event.numberOfShares.toLocaleString() : "-"}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatCurrency(event.totalValue, event.currency)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                {event.fromParty && (
-                                  <span className="text-xs text-muted-foreground">From: {event.fromParty}</span>
-                                )}
-                                <span className="text-xs">To: {event.toParty}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <StatusBadge status={event.approvalStatus} />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="dividends" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Paid"
-                  value={formatCurrency(equityMetrics.totalDividendsPaid, "USD")}
-                  subtitle="Dividends distributed"
-                  icon={CircleDollarSign}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Pending"
-                  value={equityMetrics.pendingDividendsCount}
-                  subtitle={`${formatCurrency(equityMetrics.pendingDividendsTotal, "USD")} awaiting payment`}
-                  icon={Clock}
-                />
-                <MetricCard
-                  title="Intercompany"
-                  value={dividendsData.filter(d => d.isIntercompany).length}
-                  subtitle="Intercompany dividends"
-                  icon={Network}
-                />
-                <MetricCard
-                  title="Proposed"
-                  value={dividendsData.filter(d => d.status === "PROPOSED").length}
-                  subtitle="Awaiting board approval"
-                  icon={FileText}
-                />
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CircleDollarSign className="h-5 w-5" />
-                    Dividend Register
-                  </CardTitle>
-                  <CardDescription>
-                    Dividend declarations, approvals, and payment tracking with intercompany visibility
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Declaration Date</TableHead>
-                        <TableHead>Payment Date</TableHead>
-                        <TableHead className="text-right">Per Share</TableHead>
-                        <TableHead className="text-right">Total Amount</TableHead>
-                        <TableHead className="text-right">Net Amount</TableHead>
-                        <TableHead>Recipient</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dividendsData.map((div) => {
-                        const entity = entities.find(e => e.id === div.entityId);
-                        const recipient = div.recipientEntityId ? entities.find(e => e.id === div.recipientEntityId) : null;
-                        return (
-                          <TableRow key={div.id} data-testid={`row-dividend-${div.id}`}>
-                            <TableCell className="font-medium">{entity?.name || div.entityId}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{div.dividendType}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <StatusBadge status={div.status} />
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{formatDate(div.declarationDate)}</TableCell>
-                            <TableCell className="text-muted-foreground">{formatDate(div.paymentDate)}</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatCurrency(div.amountPerShare, div.currency)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatCurrency(div.totalAmount, div.currency)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex flex-col items-end">
-                                <span className="font-mono">{formatCurrency(div.netAmount, div.currency)}</span>
-                                {div.witholdingTaxRate && (
-                                  <span className="text-xs text-muted-foreground">WHT: {div.witholdingTaxRate}%</span>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {div.isIntercompany && recipient ? (
-                                <Badge variant="secondary">
-                                  <Network className="h-3 w-3 mr-1" />
-                                  {recipient.name}
-                                </Badge>
-                              ) : div.isIntercompany ? (
-                                <Badge variant="secondary">Intercompany</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">External</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Funding Rounds Tab */}
-            <TabsContent value="funding-rounds" className="mt-0 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Raised"
-                  value={formatCurrency(startupMetrics.totalRaised, "USD")}
-                  subtitle={`${startupMetrics.closedRounds} closed rounds`}
-                  icon={Wallet}
-                  variant="success"
-                />
-                <MetricCard
-                  title="Latest Valuation"
-                  value={formatCurrency(startupMetrics.latestValuation, "USD")}
-                  subtitle="Post-money valuation"
-                  icon={TrendingUp}
-                />
-                <MetricCard
-                  title="Active Rounds"
-                  value={startupMetrics.activeRoundsCount}
-                  subtitle="Currently fundraising"
-                  icon={Rocket}
-                  variant={startupMetrics.activeRoundsCount > 0 ? "warning" : "default"}
-                />
-                <MetricCard
-                  title="Total Rounds"
-                  value={startupMetrics.totalFundingRounds}
-                  subtitle="Funding history"
-                  icon={BarChart3}
-                />
-              </div>
+        <TabsContent value="funding-rounds" className="mt-0 space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Raised"
+              value={formatCurrency(startupMetrics.totalRaised, "USD")}
+              subtitle={`${startupMetrics.closedRounds} closed rounds`}
+              icon={Wallet}
+              variant="success"
+            />
+            <MetricCard
+              title="Latest Valuation"
+              value={formatCurrency(startupMetrics.latestValuation, "USD")}
+              subtitle="Post-money valuation"
+              icon={TrendingUp}
+            />
+            <MetricCard
+              title="Active Rounds"
+              value={startupMetrics.activeRoundsCount}
+              subtitle="Currently fundraising"
+              icon={Rocket}
+              variant={startupMetrics.activeRoundsCount > 0 ? "warning" : "default"}
+            />
+            <MetricCard
+              title="Total Rounds"
+              value={startupMetrics.totalFundingRounds}
+              subtitle="Funding history"
+              icon={BarChart3}
+            />
+          </div>
 
               <Card>
                 <CardHeader>
@@ -2475,8 +1922,6 @@ export default function OneCompliancePage() {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
-      </ScrollArea>
     </div>
   );
 }

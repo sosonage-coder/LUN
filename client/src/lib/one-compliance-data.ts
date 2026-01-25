@@ -314,6 +314,28 @@ export interface Filing {
 }
 
 // ================================
+// Filing Requirements (Regulatory Library)
+// ================================
+
+export type FilingIndustry = "Financial Services" | "Healthcare" | "Manufacturing" | "Technology" | "Energy" | "Retail" | "Insurance" | "All";
+export type FilingFrequency = "Annual" | "Quarterly" | "Biennial" | "Monthly" | "As Needed" | "Triennial" | "Continuous";
+export type PenaltyLevel = "Critical" | "High" | "Medium" | "Low";
+
+export interface FilingRequirement {
+  id: string;
+  filingName: string;
+  jurisdiction: string;
+  industry: FilingIndustry;
+  regulation: string;
+  frequency: FilingFrequency;
+  deadline: string;
+  leadTimeDays: number | "Immediate" | "Scheduled";
+  responsibleDepartment: string;
+  penaltyLevel: PenaltyLevel;
+  keyContent: string;
+}
+
+// ================================
 // Authority & Delegation
 // ================================
 
@@ -752,6 +774,70 @@ const snapshots: PeriodSnapshot[] = [
 ];
 
 // ================================
+// Filing Requirements Library (from regulatory databases)
+// ================================
+
+const filingRequirements: FilingRequirement[] = [
+  // US Financial Services
+  { id: "US-FS-001", filingName: "Form 10-K", jurisdiction: "USA", industry: "Financial Services", regulation: "SEC", frequency: "Annual", deadline: "60-90 days after fiscal year-end", leadTimeDays: 60, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "High", keyContent: "Financial statements, MD&A, risk factors" },
+  { id: "US-FS-002", filingName: "Form 10-Q", jurisdiction: "USA", industry: "Financial Services", regulation: "SEC", frequency: "Quarterly", deadline: "40-90 days after quarter-end", leadTimeDays: 35, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "High", keyContent: "Unaudited financials, MD&A updates" },
+  { id: "US-FS-003", filingName: "Form 8-K", jurisdiction: "USA", industry: "Financial Services", regulation: "SEC", frequency: "As Needed", deadline: "4 business days after event", leadTimeDays: "Immediate", responsibleDepartment: "Legal/Investor Relations", penaltyLevel: "High", keyContent: "Material agreements, acquisitions, changes" },
+  { id: "US-FS-004", filingName: "Form 20-F", jurisdiction: "USA", industry: "Financial Services", regulation: "SEC", frequency: "Annual", deadline: "120 days after fiscal year-end", leadTimeDays: 100, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "High", keyContent: "Annual report for foreign private issuers" },
+  { id: "US-FS-005", filingName: "Proxy Statement", jurisdiction: "USA", industry: "Financial Services", regulation: "SEC", frequency: "Annual", deadline: "Before shareholder meeting", leadTimeDays: 90, responsibleDepartment: "Investor Relations/Legal", penaltyLevel: "High", keyContent: "Executive compensation, director nominees" },
+  { id: "US-FS-006", filingName: "Call Report", jurisdiction: "USA", industry: "Financial Services", regulation: "Banking", frequency: "Quarterly", deadline: "30 days after quarter-end", leadTimeDays: 25, responsibleDepartment: "Finance/Regulatory Affairs", penaltyLevel: "High", keyContent: "Assets, liabilities, capital, income" },
+  { id: "US-FS-007", filingName: "Suspicious Activity Report", jurisdiction: "USA", industry: "Financial Services", regulation: "Banking", frequency: "As Needed", deadline: "30 days after detection", leadTimeDays: "Immediate", responsibleDepartment: "Compliance/AML", penaltyLevel: "Critical", keyContent: "Activity details, parties, suspected violation" },
+  { id: "US-FS-008", filingName: "Form ADV", jurisdiction: "USA", industry: "Financial Services", regulation: "Investment Adviser", frequency: "Annual", deadline: "90 days after fiscal year-end", leadTimeDays: 75, responsibleDepartment: "Compliance/Legal", penaltyLevel: "High", keyContent: "Firm information, services, fees, conflicts" },
+  
+  // US Healthcare
+  { id: "US-HC-001", filingName: "Medicare Cost Report", jurisdiction: "USA", industry: "Healthcare", regulation: "CMS", frequency: "Annual", deadline: "5 months after fiscal year-end", leadTimeDays: 120, responsibleDepartment: "Finance/Compliance", penaltyLevel: "High", keyContent: "Costs by department, patient statistics" },
+  { id: "US-HC-002", filingName: "HIPAA Breach Notification", jurisdiction: "USA", industry: "Healthcare", regulation: "HIPAA", frequency: "As Needed", deadline: "60 days for large breaches", leadTimeDays: "Immediate", responsibleDepartment: "Compliance/Privacy", penaltyLevel: "Critical", keyContent: "Breach description, individuals affected" },
+  { id: "US-HC-003", filingName: "Annual HIPAA Audit", jurisdiction: "USA", industry: "Healthcare", regulation: "HIPAA", frequency: "Continuous", deadline: "Ongoing", leadTimeDays: "Scheduled", responsibleDepartment: "Compliance/IT Security", penaltyLevel: "High", keyContent: "Privacy controls, security safeguards" },
+  { id: "US-HC-004", filingName: "State Facility Licensing", jurisdiction: "USA", industry: "Healthcare", regulation: "State", frequency: "Annual", deadline: "30-90 days before expiration", leadTimeDays: 90, responsibleDepartment: "Compliance/Operations", penaltyLevel: "Critical", keyContent: "Facility info, compliance certifications" },
+  
+  // US Manufacturing
+  { id: "US-MF-001", filingName: "OSHA Form 300A", jurisdiction: "USA", industry: "Manufacturing", regulation: "OSHA", frequency: "Annual", deadline: "February 1 - April 30", leadTimeDays: 30, responsibleDepartment: "Safety/HR", penaltyLevel: "Medium", keyContent: "Injury/illness summary, hours worked" },
+  { id: "US-MF-002", filingName: "EPA Biennial Hazardous Waste", jurisdiction: "USA", industry: "Manufacturing", regulation: "EPA", frequency: "Biennial", deadline: "March 1 (even years)", leadTimeDays: 45, responsibleDepartment: "Environmental/EHS", penaltyLevel: "High", keyContent: "Waste type, quantity, management method" },
+  { id: "US-MF-003", filingName: "EPCRA Tier II Report", jurisdiction: "USA", industry: "Manufacturing", regulation: "EPCRA", frequency: "Annual", deadline: "March 1", leadTimeDays: 45, responsibleDepartment: "Environmental/EHS", penaltyLevel: "High", keyContent: "Chemical inventory, storage location" },
+  { id: "US-MF-004", filingName: "TRI Report", jurisdiction: "USA", industry: "Manufacturing", regulation: "EPCRA", frequency: "Annual", deadline: "July 1", leadTimeDays: 60, responsibleDepartment: "Environmental/EHS", penaltyLevel: "High", keyContent: "Chemical releases, transfers, waste" },
+  
+  // US Technology
+  { id: "US-TK-001", filingName: "GDPR Breach Notification", jurisdiction: "USA", industry: "Technology", regulation: "GDPR", frequency: "As Needed", deadline: "72 hours to authority", leadTimeDays: "Immediate", responsibleDepartment: "Privacy/Legal", penaltyLevel: "Critical", keyContent: "Breach description, affected individuals" },
+  { id: "US-TK-002", filingName: "CCPA Breach Notification", jurisdiction: "USA", industry: "Technology", regulation: "CCPA", frequency: "As Needed", deadline: "Without unreasonable delay", leadTimeDays: "Immediate", responsibleDepartment: "Privacy/Legal", penaltyLevel: "High", keyContent: "Breach description, affected individuals" },
+  { id: "US-TK-003", filingName: "SOC 2 Type II Audit", jurisdiction: "USA", industry: "Technology", regulation: "SOC 2", frequency: "Annual", deadline: "30-60 days after audit", leadTimeDays: 180, responsibleDepartment: "IT Security/Compliance", penaltyLevel: "High", keyContent: "Security controls, availability, integrity" },
+  { id: "US-TK-004", filingName: "ISO 27001 Certification", jurisdiction: "USA", industry: "Technology", regulation: "ISO", frequency: "Triennial", deadline: "3 years", leadTimeDays: 90, responsibleDepartment: "IT Security/Compliance", penaltyLevel: "High", keyContent: "Security policies, controls, audit results" },
+  
+  // Canada
+  { id: "CA-FS-001", filingName: "Annual Financial Statements", jurisdiction: "Canada", industry: "Financial Services", regulation: "OSC", frequency: "Annual", deadline: "90-120 days after year-end", leadTimeDays: 60, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "High", keyContent: "Audited financials, MD&A, filed on SEDAR+" },
+  { id: "CA-FS-002", filingName: "Interim Financial Reports", jurisdiction: "Canada", industry: "Financial Services", regulation: "OSC", frequency: "Quarterly", deadline: "45-60 days after quarter-end", leadTimeDays: 30, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "High", keyContent: "Unaudited financials, MD&A, filed on SEDAR+" },
+  { id: "CA-FS-003", filingName: "Annual Information Form", jurisdiction: "Canada", industry: "Financial Services", regulation: "OSC", frequency: "Annual", deadline: "Same as AFS", leadTimeDays: 60, responsibleDepartment: "Legal/Investor Relations", penaltyLevel: "Medium", keyContent: "Comprehensive overview of the company" },
+  
+  // EU
+  { id: "EU-ALL-001", filingName: "CSRD Reporting", jurisdiction: "EU", industry: "All", regulation: "CSRD", frequency: "Annual", deadline: "Varies (starting 2025)", leadTimeDays: 180, responsibleDepartment: "Sustainability/Finance", penaltyLevel: "High", keyContent: "Detailed sustainability and ESG reporting" },
+  { id: "EU-ALL-002", filingName: "ESEF Filing", jurisdiction: "EU", industry: "All", regulation: "ESMA", frequency: "Annual", deadline: "Varies by member state", leadTimeDays: 60, responsibleDepartment: "Finance/Investor Relations", penaltyLevel: "Medium", keyContent: "Annual financial reports in xHTML/iXBRL" },
+  
+  // UK
+  { id: "UK-ALL-001", filingName: "Annual Accounts", jurisdiction: "UK", industry: "All", regulation: "Companies House", frequency: "Annual", deadline: "6-9 months after year-end", leadTimeDays: 90, responsibleDepartment: "Finance/Legal", penaltyLevel: "High", keyContent: "Filed with Companies House" },
+  { id: "UK-ALL-002", filingName: "Confirmation Statement", jurisdiction: "UK", industry: "All", regulation: "Companies House", frequency: "Annual", deadline: "14 days after review period", leadTimeDays: 14, responsibleDepartment: "Legal/Corporate Secretary", penaltyLevel: "Medium", keyContent: "Confirms company details are correct" },
+  
+  // UAE
+  { id: "AE-ALL-001", filingName: "Corporate Tax Return", jurisdiction: "UAE", industry: "All", regulation: "FTA", frequency: "Annual", deadline: "9 months after year-end", leadTimeDays: 90, responsibleDepartment: "Finance/Tax", penaltyLevel: "High", keyContent: "Filed with the Federal Tax Authority" },
+  { id: "AE-ALL-002", filingName: "ESR Report", jurisdiction: "UAE", industry: "All", regulation: "ESR", frequency: "Annual", deadline: "12 months after year-end", leadTimeDays: 90, responsibleDepartment: "Legal/Compliance", penaltyLevel: "High", keyContent: "Demonstrates economic substance" },
+  { id: "AE-ALL-003", filingName: "UBO Filing", jurisdiction: "UAE", industry: "All", regulation: "UBO", frequency: "Annual", deadline: "Varies", leadTimeDays: 30, responsibleDepartment: "Legal/Corporate Secretary", penaltyLevel: "Medium", keyContent: "Disclosure of ultimate beneficial owners" },
+  
+  // Energy
+  { id: "US-EN-001", filingName: "FERC Form 1", jurisdiction: "USA", industry: "Energy", regulation: "FERC", frequency: "Annual", deadline: "April 18", leadTimeDays: 60, responsibleDepartment: "Finance/Regulatory", penaltyLevel: "High", keyContent: "Financial statements, operational data" },
+  { id: "US-EN-002", filingName: "Annual Compliance Certification", jurisdiction: "USA", industry: "Energy", regulation: "EPA", frequency: "Annual", deadline: "March 1", leadTimeDays: 60, responsibleDepartment: "Environmental/EHS", penaltyLevel: "High", keyContent: "Permit conditions, compliance status" },
+  
+  // Insurance
+  { id: "US-IN-001", filingName: "Annual Financial Statement", jurisdiction: "USA", industry: "Insurance", regulation: "State", frequency: "Annual", deadline: "March 31", leadTimeDays: 60, responsibleDepartment: "Finance/Regulatory", penaltyLevel: "Critical", keyContent: "Assets, liabilities, capital, income" },
+  { id: "US-IN-002", filingName: "Quarterly Financial Statement", jurisdiction: "USA", industry: "Insurance", regulation: "State", frequency: "Quarterly", deadline: "45 days after quarter-end", leadTimeDays: 20, responsibleDepartment: "Finance/Regulatory", penaltyLevel: "High", keyContent: "Unaudited financials, key metrics" },
+  { id: "US-IN-003", filingName: "Annual Actuarial Opinion", jurisdiction: "USA", industry: "Insurance", regulation: "State", frequency: "Annual", deadline: "March 1", leadTimeDays: 60, responsibleDepartment: "Finance/Actuarial", penaltyLevel: "Critical", keyContent: "Reserve adequacy, assumptions, certification" },
+  
+  // Retail
+  { id: "US-RT-001", filingName: "PCI DSS Assessment", jurisdiction: "USA", industry: "Retail", regulation: "PCI DSS", frequency: "Annual", deadline: "30-60 days after assessment", leadTimeDays: 90, responsibleDepartment: "IT Security/Compliance", penaltyLevel: "High", keyContent: "Security controls, vulnerability assessment" },
+];
+
+// ================================
 // Export Functions
 // ================================
 
@@ -779,6 +865,49 @@ export function getObligations(entityId?: string): Obligation[] {
     return obligations.filter(o => o.entityId === entityId);
   }
   return obligations;
+}
+
+export function getFilingRequirements(filters?: { jurisdiction?: string; industry?: string; penaltyLevel?: PenaltyLevel }): FilingRequirement[] {
+  let requirements = filingRequirements;
+  if (filters?.jurisdiction) {
+    requirements = requirements.filter(r => r.jurisdiction === filters.jurisdiction);
+  }
+  if (filters?.industry) {
+    requirements = requirements.filter(r => r.industry === filters.industry || r.industry === "All");
+  }
+  if (filters?.penaltyLevel) {
+    requirements = requirements.filter(r => r.penaltyLevel === filters.penaltyLevel);
+  }
+  return requirements;
+}
+
+export function getFilingRequirementsByJurisdiction(): Record<string, FilingRequirement[]> {
+  const grouped: Record<string, FilingRequirement[]> = {};
+  for (const req of filingRequirements) {
+    if (!grouped[req.jurisdiction]) {
+      grouped[req.jurisdiction] = [];
+    }
+    grouped[req.jurisdiction].push(req);
+  }
+  return grouped;
+}
+
+export function getFilingRequirementMetrics() {
+  const jurisdictions = Array.from(new Set(filingRequirements.map(r => r.jurisdiction)));
+  const industries = Array.from(new Set(filingRequirements.map(r => r.industry).filter(i => i !== "All")));
+  const criticalCount = filingRequirements.filter(r => r.penaltyLevel === "Critical").length;
+  const highCount = filingRequirements.filter(r => r.penaltyLevel === "High").length;
+  return {
+    totalRequirements: filingRequirements.length,
+    jurisdictionCount: jurisdictions.length,
+    jurisdictions,
+    industryCount: industries.length,
+    industries,
+    criticalFilings: criticalCount,
+    highPriorityFilings: highCount,
+    annualFilings: filingRequirements.filter(r => r.frequency === "Annual").length,
+    quarterlyFilings: filingRequirements.filter(r => r.frequency === "Quarterly").length,
+  };
 }
 
 export function getPolicies(): Policy[] {
