@@ -616,17 +616,7 @@ export function AppSidebar() {
     </>
   );
 
-  const netToolNav = [
-    { title: "Dashboard", url: "/nettool", icon: LayoutDashboard },
-    { title: "Disclosures", url: "/nettool/disclosures", icon: FileText },
-    { title: "Schedules", url: "/nettool/schedules", icon: FileSpreadsheet },
-    { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
-    { title: "Narratives", url: "/nettool/narratives", icon: BookOpen },
-    { title: "Review", url: "/nettool/review", icon: ClipboardCheck },
-    { title: "Audit View", url: "/nettool/audit", icon: Users },
-    { title: "Exports", url: "/nettool/exports", icon: FileCheck },
-  ];
-
+  // Financial Statements section
   const financialStatementsNav = [
     { title: "Company Profile", url: "/nettool/fs/company-profile", icon: Building2 },
     { title: "Auditor's Opinion", url: "/nettool/fs/auditor-opinion", icon: FileCheck },
@@ -635,47 +625,71 @@ export function AppSidebar() {
     { title: "Comprehensive Income", url: "/nettool/fs/comprehensive-income", icon: Activity },
     { title: "Changes in Equity", url: "/nettool/fs/equity-statement", icon: Users },
     { title: "Cash Flow Statement", url: "/nettool/fs/cash-flow", icon: ArrowDownUp },
-    { title: "Trial Balance", url: "/nettool/fs/trial-balance", icon: Calculator },
   ];
   
-  const disclosureNotesNav = [
+  // Working Papers & Data section
+  const workingPapersNav = [
+    { title: "Trial Balance", url: "/nettool/fs/trial-balance", icon: Calculator },
+    { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
+    { title: "Disclosures", url: "/nettool/disclosures", icon: FileText },
+    { title: "Schedules", url: "/nettool/schedules", icon: FileSpreadsheet },
+    { title: "Narratives", url: "/nettool/narratives", icon: BookOpen },
+  ];
+
+  // Notes & Policies section
+  const notesPoliciesNav = [
     { title: "Basis of Preparation", url: "/nettool/notes/basis-of-preparation", icon: FileText },
     { title: "Accounting Policies", url: "/nettool/notes/accounting-policies", icon: BookOpen },
     { title: "MD&A", url: "/nettool/notes/mda", icon: Briefcase },
   ];
+  
+  // Review & Finalize section
+  const reviewFinalizeNav = [
+    { title: "Review", url: "/nettool/review", icon: ClipboardCheck },
+    { title: "Audit View", url: "/nettool/audit", icon: Users },
+    { title: "Exports", url: "/nettool/exports", icon: FileCheck },
+  ];
 
-  const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs"));
+  const [fsExpanded, setFsExpanded] = useState(location.startsWith("/nettool/fs") && !location.includes("trial-balance"));
+  const [wpExpanded, setWpExpanded] = useState(
+    location.includes("trial-balance") || 
+    location.includes("working-papers") || 
+    location.includes("disclosures") || 
+    location.includes("schedules") || 
+    location.includes("narratives")
+  );
+  const [notesExpanded, setNotesExpanded] = useState(location.startsWith("/nettool/notes"));
+  const [reviewExpanded, setReviewExpanded] = useState(
+    location.includes("review") || 
+    location.includes("audit") || 
+    location.includes("exports")
+  );
 
   const renderNetTool = () => (
     <>
+      {/* Dashboard */}
       <SidebarGroup>
-        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+        <SidebarGroupLabel>Overview</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {netToolNav.map((item) => {
-              const isActive = location === item.url || 
-                (item.url !== "/nettool" && location.startsWith(item.url) && !location.startsWith("/nettool/fs"));
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive}
-                    data-testid={`nav-nettool-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                asChild 
+                isActive={location === "/nettool"}
+                data-testid="nav-nettool-dashboard"
+              >
+                <Link href="/nettool">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 
+      {/* Financial Statements - Collapsible */}
       <SidebarGroup>
-        <SidebarGroupLabel>Financial Statements</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <Collapsible open={fsExpanded} onOpenChange={setFsExpanded}>
@@ -685,7 +699,7 @@ export function AppSidebar() {
                     data-testid="nav-nettool-financial-statements"
                     className="w-full"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
+                    <Scale className="h-4 w-4" />
                     <span className="flex-1 text-left">Financial Statements</span>
                     {fsExpanded ? (
                       <ChevronDown className="h-4 w-4" />
@@ -721,27 +735,144 @@ export function AppSidebar() {
         </SidebarGroupContent>
       </SidebarGroup>
 
+      {/* Working Papers & Data - Collapsible */}
       <SidebarGroup>
-        <SidebarGroupLabel>Disclosure Notes</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {disclosureNotesNav.map((item) => {
-              const isActive = location === item.url || location.startsWith(item.url);
-              return (
-                <SidebarMenuItem key={item.title}>
+            <Collapsible open={wpExpanded} onOpenChange={setWpExpanded}>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
                   <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive}
-                    data-testid={`nav-nettool-notes-${item.title.toLowerCase().replace(/[&'\s]+/g, '-')}`}
+                    data-testid="nav-nettool-working-papers-section"
+                    className="w-full"
                   >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
+                    <Table2 className="h-4 w-4" />
+                    <span className="flex-1 text-left">Working Papers & Data</span>
+                    {wpExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {workingPapersNav.map((item) => {
+                      const isActive = location === item.url || 
+                        (item.url !== "/nettool" && location.startsWith(item.url));
+                      return (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={isActive}
+                            data-testid={`nav-nettool-wp-${item.title.toLowerCase().replace(/['\s]+/g, '-')}`}
+                          >
+                            <Link href={item.url}>
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      {/* Notes & Policies - Collapsible */}
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <Collapsible open={notesExpanded} onOpenChange={setNotesExpanded}>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton 
+                    data-testid="nav-nettool-notes-section"
+                    className="w-full"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span className="flex-1 text-left">Notes & Policies</span>
+                    {notesExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {notesPoliciesNav.map((item) => {
+                      const isActive = location === item.url || location.startsWith(item.url);
+                      return (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={isActive}
+                            data-testid={`nav-nettool-notes-${item.title.toLowerCase().replace(/[&'\s]+/g, '-')}`}
+                          >
+                            <Link href={item.url}>
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      {/* Review & Finalize - Collapsible */}
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <Collapsible open={reviewExpanded} onOpenChange={setReviewExpanded}>
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton 
+                    data-testid="nav-nettool-review-section"
+                    className="w-full"
+                  >
+                    <ClipboardCheck className="h-4 w-4" />
+                    <span className="flex-1 text-left">Review & Finalize</span>
+                    {reviewExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {reviewFinalizeNav.map((item) => {
+                      const isActive = location === item.url || location.startsWith(item.url);
+                      return (
+                        <SidebarMenuSubItem key={item.title}>
+                          <SidebarMenuSubButton 
+                            asChild 
+                            isActive={isActive}
+                            data-testid={`nav-nettool-review-${item.title.toLowerCase().replace(/['\s]+/g, '-')}`}
+                          >
+                            <Link href={item.url}>
+                              <item.icon className="h-3.5 w-3.5" />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
