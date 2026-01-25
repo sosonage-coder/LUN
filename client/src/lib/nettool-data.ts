@@ -16,6 +16,12 @@ import type {
   FSBasisOfPreparation,
   AccountingPolicy,
   MDADocument,
+  TBAdjustmentEntry,
+  TBAdjustmentColumn,
+  TBAdjustmentAccountLine,
+  TBAdjustmentsWorkspace,
+  FinalTBLine,
+  FinalTBView,
 } from "@shared/schema";
 
 // Sample Periods
@@ -1429,4 +1435,267 @@ Management expects revenue growth in the range of 8-12% for fiscal 2025, with co
   isLocked: false,
   updatedAt: "2024-12-20T10:00:00Z",
   updatedBy: "CFO",
+};
+
+// ========================
+// TB Adjustments Workspace Sample Data
+// ========================
+
+// RJE Columns (Reclassification Journal Entries)
+export const sampleRJEColumns: TBAdjustmentColumn[] = [
+  { columnId: "rje-1", entryType: "RJE", entryNumber: 1, columnLabel: "RJE-1", isVisible: true, orderIndex: 0 },
+  { columnId: "rje-2", entryType: "RJE", entryNumber: 2, columnLabel: "RJE-2", isVisible: true, orderIndex: 1 },
+];
+
+// AJE Columns (Adjusting Journal Entries)
+export const sampleAJEColumns: TBAdjustmentColumn[] = [
+  { columnId: "aje-1", entryType: "AJE", entryNumber: 1, columnLabel: "AJE-1", isVisible: true, orderIndex: 0 },
+  { columnId: "aje-2", entryType: "AJE", entryNumber: 2, columnLabel: "AJE-2", isVisible: true, orderIndex: 1 },
+  { columnId: "aje-3", entryType: "AJE", entryNumber: 3, columnLabel: "AJE-3", isVisible: true, orderIndex: 2 },
+];
+
+// Adjustment Entries (the actual journal entries)
+export const sampleAdjustmentEntries: TBAdjustmentEntry[] = [
+  {
+    entryId: "entry-rje-1",
+    entryType: "RJE",
+    entryNumber: 1,
+    entryLabel: "RJE-1",
+    description: "Reclass prepaid to other current assets",
+    debitAccountId: "gl-1350",
+    creditAccountId: "gl-1300",
+    amount: 50000,
+    reference: "WP-RECLASS-001",
+    preparedBy: "Staff Accountant",
+    reviewedBy: "Senior Accountant",
+    status: "APPROVED",
+    createdAt: "2024-12-15T10:00:00Z",
+    approvedAt: "2024-12-16T09:00:00Z",
+  },
+  {
+    entryId: "entry-rje-2",
+    entryType: "RJE",
+    entryNumber: 2,
+    entryLabel: "RJE-2",
+    description: "Reclass current portion of long-term debt",
+    debitAccountId: "gl-2500",
+    creditAccountId: "gl-2250",
+    amount: 200000,
+    reference: "WP-RECLASS-002",
+    preparedBy: "Staff Accountant",
+    reviewedBy: "Controller",
+    status: "APPROVED",
+    createdAt: "2024-12-15T11:00:00Z",
+    approvedAt: "2024-12-17T14:00:00Z",
+  },
+  {
+    entryId: "entry-aje-1",
+    entryType: "AJE",
+    entryNumber: 1,
+    entryLabel: "AJE-1",
+    description: "Adjust bad debt provision",
+    debitAccountId: "gl-6400",
+    creditAccountId: "gl-1150",
+    amount: 25000,
+    reference: "WP-ADJ-001",
+    preparedBy: "Staff Accountant",
+    reviewedBy: "Senior Accountant",
+    status: "APPROVED",
+    createdAt: "2024-12-18T09:00:00Z",
+    approvedAt: "2024-12-18T15:00:00Z",
+  },
+  {
+    entryId: "entry-aje-2",
+    entryType: "AJE",
+    entryNumber: 2,
+    entryLabel: "AJE-2",
+    description: "Accrue year-end bonus",
+    debitAccountId: "gl-6100",
+    creditAccountId: "gl-2100",
+    amount: 75000,
+    reference: "WP-ADJ-002",
+    preparedBy: "Senior Accountant",
+    reviewedBy: "Controller",
+    status: "APPROVED",
+    createdAt: "2024-12-19T10:00:00Z",
+    approvedAt: "2024-12-20T11:00:00Z",
+  },
+  {
+    entryId: "entry-aje-3",
+    entryType: "AJE",
+    entryNumber: 3,
+    entryLabel: "AJE-3",
+    description: "Correct depreciation expense",
+    debitAccountId: "gl-6300",
+    creditAccountId: "gl-1550",
+    amount: 15000,
+    reference: "WP-ADJ-003",
+    preparedBy: "Staff Accountant",
+    reviewedBy: null,
+    status: "PENDING_REVIEW",
+    createdAt: "2024-12-21T14:00:00Z",
+    approvedAt: null,
+  },
+];
+
+// TB Adjustment Account Lines (all accounts with adjustments applied)
+export const sampleAdjustmentLines: TBAdjustmentAccountLine[] = [
+  // Current Assets
+  { lineId: "adj-1010", accountId: "gl-1010", accountCode: "1010", accountName: "Cash and Cash Equivalents", fsCategory: "CURRENT_ASSETS", footnoteIds: ["fn-1"], normalBalance: "DEBIT", initialBalance: 2850000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 2850000, orderIndex: 1 },
+  { lineId: "adj-1100", accountId: "gl-1100", accountCode: "1100", accountName: "Accounts Receivable", fsCategory: "CURRENT_ASSETS", footnoteIds: ["fn-2"], normalBalance: "DEBIT", initialBalance: 3600000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 3600000, orderIndex: 2 },
+  { lineId: "adj-1150", accountId: "gl-1150", accountCode: "1150", accountName: "Allowance for Doubtful Accounts", fsCategory: "CURRENT_ASSETS", footnoteIds: [], normalBalance: "CREDIT", initialBalance: -150000, adjustments: { "aje-1": -25000 }, totalRJE: 0, totalAJE: -25000, netMovement: -25000, finalBalance: -175000, orderIndex: 3 },
+  { lineId: "adj-1200", accountId: "gl-1200", accountCode: "1200", accountName: "Inventory", fsCategory: "CURRENT_ASSETS", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 890000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 890000, orderIndex: 4 },
+  { lineId: "adj-1300", accountId: "gl-1300", accountCode: "1300", accountName: "Prepaid Expenses", fsCategory: "CURRENT_ASSETS", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 625000, adjustments: { "rje-1": -50000 }, totalRJE: -50000, totalAJE: 0, netMovement: -50000, finalBalance: 575000, orderIndex: 5 },
+  { lineId: "adj-1350", accountId: "gl-1350", accountCode: "1350", accountName: "Other Current Assets", fsCategory: "CURRENT_ASSETS", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 550000, adjustments: { "rje-1": 50000 }, totalRJE: 50000, totalAJE: 0, netMovement: 50000, finalBalance: 600000, orderIndex: 6 },
+  // Non-Current Assets
+  { lineId: "adj-1500", accountId: "gl-1500", accountCode: "1500", accountName: "Property, Plant & Equipment", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-3"], normalBalance: "DEBIT", initialBalance: 8750000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 8750000, orderIndex: 7 },
+  { lineId: "adj-1550", accountId: "gl-1550", accountCode: "1550", accountName: "Accumulated Depreciation - PPE", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-3"], normalBalance: "CREDIT", initialBalance: -3480000, adjustments: { "aje-3": -15000 }, totalRJE: 0, totalAJE: -15000, netMovement: -15000, finalBalance: -3495000, orderIndex: 8 },
+  { lineId: "adj-1600", accountId: "gl-1600", accountCode: "1600", accountName: "Intangible Assets", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-4"], normalBalance: "DEBIT", initialBalance: 2375000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 2375000, orderIndex: 9 },
+  { lineId: "adj-1650", accountId: "gl-1650", accountCode: "1650", accountName: "Accumulated Amortization - Intangibles", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-4"], normalBalance: "CREDIT", initialBalance: -625000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -625000, orderIndex: 10 },
+  { lineId: "adj-1700", accountId: "gl-1700", accountCode: "1700", accountName: "Right-of-Use Assets", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-5"], normalBalance: "DEBIT", initialBalance: 2600000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 2600000, orderIndex: 11 },
+  { lineId: "adj-1750", accountId: "gl-1750", accountCode: "1750", accountName: "Accumulated Depreciation - ROU", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-5"], normalBalance: "CREDIT", initialBalance: -500000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -500000, orderIndex: 12 },
+  { lineId: "adj-1800", accountId: "gl-1800", accountCode: "1800", accountName: "Deferred Tax Assets", fsCategory: "NON_CURRENT_ASSETS", footnoteIds: ["fn-7"], normalBalance: "DEBIT", initialBalance: 300000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 300000, orderIndex: 13 },
+  // Current Liabilities
+  { lineId: "adj-2010", accountId: "gl-2010", accountCode: "2010", accountName: "Accounts Payable", fsCategory: "CURRENT_LIABILITIES", footnoteIds: [], normalBalance: "CREDIT", initialBalance: -1480000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -1480000, orderIndex: 14 },
+  { lineId: "adj-2100", accountId: "gl-2100", accountCode: "2100", accountName: "Accrued Expenses", fsCategory: "CURRENT_LIABILITIES", footnoteIds: [], normalBalance: "CREDIT", initialBalance: -700000, adjustments: { "aje-2": -75000 }, totalRJE: 0, totalAJE: -75000, netMovement: -75000, finalBalance: -775000, orderIndex: 15 },
+  { lineId: "adj-2150", accountId: "gl-2150", accountCode: "2150", accountName: "Income Taxes Payable", fsCategory: "CURRENT_LIABILITIES", footnoteIds: ["fn-7"], normalBalance: "CREDIT", initialBalance: -225000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -225000, orderIndex: 16 },
+  { lineId: "adj-2200", accountId: "gl-2200", accountCode: "2200", accountName: "Deferred Revenue - Current", fsCategory: "CURRENT_LIABILITIES", footnoteIds: ["fn-2"], normalBalance: "CREDIT", initialBalance: -700000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -700000, orderIndex: 17 },
+  { lineId: "adj-2250", accountId: "gl-2250", accountCode: "2250", accountName: "Current Portion of Long-Term Debt", fsCategory: "CURRENT_LIABILITIES", footnoteIds: ["fn-6"], normalBalance: "CREDIT", initialBalance: -500000, adjustments: { "rje-2": -200000 }, totalRJE: -200000, totalAJE: 0, netMovement: -200000, finalBalance: -700000, orderIndex: 18 },
+  { lineId: "adj-2300", accountId: "gl-2300", accountCode: "2300", accountName: "Current Lease Liabilities", fsCategory: "CURRENT_LIABILITIES", footnoteIds: ["fn-5"], normalBalance: "CREDIT", initialBalance: -185000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -185000, orderIndex: 19 },
+  // Non-Current Liabilities
+  { lineId: "adj-2500", accountId: "gl-2500", accountCode: "2500", accountName: "Long-Term Debt", fsCategory: "NON_CURRENT_LIABILITIES", footnoteIds: ["fn-6"], normalBalance: "CREDIT", initialBalance: -4000000, adjustments: { "rje-2": 200000 }, totalRJE: 200000, totalAJE: 0, netMovement: 200000, finalBalance: -3800000, orderIndex: 20 },
+  { lineId: "adj-2600", accountId: "gl-2600", accountCode: "2600", accountName: "Long-Term Lease Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", footnoteIds: ["fn-5"], normalBalance: "CREDIT", initialBalance: -1615000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -1615000, orderIndex: 21 },
+  { lineId: "adj-2700", accountId: "gl-2700", accountCode: "2700", accountName: "Deferred Tax Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", footnoteIds: ["fn-7"], normalBalance: "CREDIT", initialBalance: -600000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -600000, orderIndex: 22 },
+  { lineId: "adj-2800", accountId: "gl-2800", accountCode: "2800", accountName: "Other Long-Term Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", footnoteIds: [], normalBalance: "CREDIT", initialBalance: -300000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -300000, orderIndex: 23 },
+  // Equity
+  { lineId: "adj-3010", accountId: "gl-3010", accountCode: "3010", accountName: "Common Stock", fsCategory: "EQUITY", footnoteIds: ["fn-8"], normalBalance: "CREDIT", initialBalance: -50000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -50000, orderIndex: 24 },
+  { lineId: "adj-3100", accountId: "gl-3100", accountCode: "3100", accountName: "Additional Paid-in Capital", fsCategory: "EQUITY", footnoteIds: ["fn-8"], normalBalance: "CREDIT", initialBalance: -3500000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -3500000, orderIndex: 25 },
+  { lineId: "adj-3200", accountId: "gl-3200", accountCode: "3200", accountName: "Retained Earnings", fsCategory: "EQUITY", footnoteIds: ["fn-8"], normalBalance: "CREDIT", initialBalance: -3580000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -3580000, orderIndex: 26 },
+  { lineId: "adj-3300", accountId: "gl-3300", accountCode: "3300", accountName: "Accumulated OCI", fsCategory: "EQUITY", footnoteIds: [], normalBalance: "CREDIT", initialBalance: 100000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 100000, orderIndex: 27 },
+  // Revenue
+  { lineId: "adj-4010", accountId: "gl-4010", accountCode: "4010", accountName: "Product Revenue", fsCategory: "REVENUE", footnoteIds: ["fn-2"], normalBalance: "CREDIT", initialBalance: -9500000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -9500000, orderIndex: 28 },
+  { lineId: "adj-4100", accountId: "gl-4100", accountCode: "4100", accountName: "Service Revenue", fsCategory: "REVENUE", footnoteIds: ["fn-2"], normalBalance: "CREDIT", initialBalance: -2850000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -2850000, orderIndex: 29 },
+  { lineId: "adj-4200", accountId: "gl-4200", accountCode: "4200", accountName: "Other Revenue", fsCategory: "OTHER_INCOME", footnoteIds: [], normalBalance: "CREDIT", initialBalance: -150000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: -150000, orderIndex: 30 },
+  // Cost of Sales
+  { lineId: "adj-5010", accountId: "gl-5010", accountCode: "5010", accountName: "Cost of Goods Sold", fsCategory: "COST_OF_SALES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 5700000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 5700000, orderIndex: 31 },
+  { lineId: "adj-5100", accountId: "gl-5100", accountCode: "5100", accountName: "Cost of Services", fsCategory: "COST_OF_SALES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 1650000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 1650000, orderIndex: 32 },
+  // Operating Expenses
+  { lineId: "adj-6010", accountId: "gl-6010", accountCode: "6010", accountName: "Salaries & Wages", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 1850000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 1850000, orderIndex: 33 },
+  { lineId: "adj-6100", accountId: "gl-6100", accountCode: "6100", accountName: "Employee Benefits", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 425000, adjustments: { "aje-2": 75000 }, totalRJE: 0, totalAJE: 75000, netMovement: 75000, finalBalance: 500000, orderIndex: 34 },
+  { lineId: "adj-6200", accountId: "gl-6200", accountCode: "6200", accountName: "Rent Expense", fsCategory: "OPERATING_EXPENSES", footnoteIds: ["fn-5"], normalBalance: "DEBIT", initialBalance: 180000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 180000, orderIndex: 35 },
+  { lineId: "adj-6300", accountId: "gl-6300", accountCode: "6300", accountName: "Depreciation & Amortization", fsCategory: "OPERATING_EXPENSES", footnoteIds: ["fn-3", "fn-4"], normalBalance: "DEBIT", initialBalance: 875000, adjustments: { "aje-3": 15000 }, totalRJE: 0, totalAJE: 15000, netMovement: 15000, finalBalance: 890000, orderIndex: 36 },
+  { lineId: "adj-6400", accountId: "gl-6400", accountCode: "6400", accountName: "Professional Fees", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 215000, adjustments: { "aje-1": 25000 }, totalRJE: 0, totalAJE: 25000, netMovement: 25000, finalBalance: 240000, orderIndex: 37 },
+  { lineId: "adj-6500", accountId: "gl-6500", accountCode: "6500", accountName: "Marketing & Advertising", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 275000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 275000, orderIndex: 38 },
+  { lineId: "adj-6600", accountId: "gl-6600", accountCode: "6600", accountName: "Utilities", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 72000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 72000, orderIndex: 39 },
+  { lineId: "adj-6700", accountId: "gl-6700", accountCode: "6700", accountName: "Insurance", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 95000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 95000, orderIndex: 40 },
+  { lineId: "adj-6800", accountId: "gl-6800", accountCode: "6800", accountName: "Travel & Entertainment", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 58000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 58000, orderIndex: 41 },
+  { lineId: "adj-6900", accountId: "gl-6900", accountCode: "6900", accountName: "Office Supplies & Expenses", fsCategory: "OPERATING_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 35000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 35000, orderIndex: 42 },
+  // Other Expenses
+  { lineId: "adj-7010", accountId: "gl-7010", accountCode: "7010", accountName: "Interest Expense", fsCategory: "OTHER_EXPENSES", footnoteIds: ["fn-6"], normalBalance: "DEBIT", initialBalance: 280000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 280000, orderIndex: 43 },
+  { lineId: "adj-7100", accountId: "gl-7100", accountCode: "7100", accountName: "Other Expense", fsCategory: "OTHER_EXPENSES", footnoteIds: [], normalBalance: "DEBIT", initialBalance: 15000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 15000, orderIndex: 44 },
+  // Tax
+  { lineId: "adj-8010", accountId: "gl-8010", accountCode: "8010", accountName: "Income Tax Expense", fsCategory: "TAX_EXPENSE", footnoteIds: ["fn-7"], normalBalance: "DEBIT", initialBalance: 325000, adjustments: {}, totalRJE: 0, totalAJE: 0, netMovement: 0, finalBalance: 325000, orderIndex: 45 },
+];
+
+// Calculate adjustment workspace totals
+const calculateAdjWorkspaceTotals = (lines: TBAdjustmentAccountLine[]) => {
+  let totalInitial = 0;
+  let totalFinal = 0;
+  
+  lines.forEach(line => {
+    totalInitial += line.initialBalance;
+    totalFinal += line.finalBalance;
+  });
+  
+  return { totalInitial, totalFinal };
+};
+
+const adjTotals = calculateAdjWorkspaceTotals(sampleAdjustmentLines);
+
+// Complete TB Adjustments Workspace
+export const sampleTBAdjustmentsWorkspace: TBAdjustmentsWorkspace = {
+  workspaceId: "adj-ws-fy2024",
+  periodId: "FY2024",
+  periodLabel: "FY 2024",
+  entityName: "Lunari Corporation",
+  reportingCurrency: "USD",
+  footnotes: sampleTBFootnotes,
+  rjeColumns: sampleRJEColumns,
+  ajeColumns: sampleAJEColumns,
+  entries: sampleAdjustmentEntries,
+  lines: sampleAdjustmentLines,
+  totalInitialBalance: adjTotals.totalInitial,
+  totalFinalBalance: adjTotals.totalFinal,
+  isBalanced: Math.abs(adjTotals.totalFinal) < 0.01,
+  lastUpdated: "2024-12-21T16:00:00Z",
+  updatedBy: "Controller",
+};
+
+// Final TB View - Read-only comparative (Prior Year vs Current Year)
+export const sampleFinalTBLines: FinalTBLine[] = [
+  // Current Assets
+  { lineId: "ftb-1010", accountId: "gl-1010", accountCode: "1010", accountName: "Cash and Cash Equivalents", fsCategory: "CURRENT_ASSETS", priorYearClosing: 2450000, currentYearFinal: 2850000, variance: 400000, variancePercent: 16.33 },
+  { lineId: "ftb-1100", accountId: "gl-1100", accountCode: "1100", accountName: "Accounts Receivable", fsCategory: "CURRENT_ASSETS", priorYearClosing: 3200000, currentYearFinal: 3600000, variance: 400000, variancePercent: 12.50 },
+  { lineId: "ftb-1150", accountId: "gl-1150", accountCode: "1150", accountName: "Allowance for Doubtful Accounts", fsCategory: "CURRENT_ASSETS", priorYearClosing: -135000, currentYearFinal: -175000, variance: -40000, variancePercent: 29.63 },
+  { lineId: "ftb-1200", accountId: "gl-1200", accountCode: "1200", accountName: "Inventory", fsCategory: "CURRENT_ASSETS", priorYearClosing: 815000, currentYearFinal: 890000, variance: 75000, variancePercent: 9.20 },
+  { lineId: "ftb-1300", accountId: "gl-1300", accountCode: "1300", accountName: "Prepaid Expenses", fsCategory: "CURRENT_ASSETS", priorYearClosing: 580000, currentYearFinal: 575000, variance: -5000, variancePercent: -0.86 },
+  { lineId: "ftb-1350", accountId: "gl-1350", accountCode: "1350", accountName: "Other Current Assets", fsCategory: "CURRENT_ASSETS", priorYearClosing: 500000, currentYearFinal: 600000, variance: 100000, variancePercent: 20.00 },
+  // Non-Current Assets
+  { lineId: "ftb-1500", accountId: "gl-1500", accountCode: "1500", accountName: "Property, Plant & Equipment", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: 8200000, currentYearFinal: 8750000, variance: 550000, variancePercent: 6.71 },
+  { lineId: "ftb-1550", accountId: "gl-1550", accountCode: "1550", accountName: "Accumulated Depreciation - PPE", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: -2850000, currentYearFinal: -3495000, variance: -645000, variancePercent: 22.63 },
+  { lineId: "ftb-1600", accountId: "gl-1600", accountCode: "1600", accountName: "Intangible Assets", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: 2200000, currentYearFinal: 2375000, variance: 175000, variancePercent: 7.95 },
+  { lineId: "ftb-1650", accountId: "gl-1650", accountCode: "1650", accountName: "Accumulated Amortization - Intangibles", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: -400000, currentYearFinal: -625000, variance: -225000, variancePercent: 56.25 },
+  { lineId: "ftb-1700", accountId: "gl-1700", accountCode: "1700", accountName: "Right-of-Use Assets", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: 2500000, currentYearFinal: 2600000, variance: 100000, variancePercent: 4.00 },
+  { lineId: "ftb-1750", accountId: "gl-1750", accountCode: "1750", accountName: "Accumulated Depreciation - ROU", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: -350000, currentYearFinal: -500000, variance: -150000, variancePercent: 42.86 },
+  { lineId: "ftb-1800", accountId: "gl-1800", accountCode: "1800", accountName: "Deferred Tax Assets", fsCategory: "NON_CURRENT_ASSETS", priorYearClosing: 285000, currentYearFinal: 300000, variance: 15000, variancePercent: 5.26 },
+  // Current Liabilities
+  { lineId: "ftb-2010", accountId: "gl-2010", accountCode: "2010", accountName: "Accounts Payable", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -1280000, currentYearFinal: -1480000, variance: -200000, variancePercent: 15.63 },
+  { lineId: "ftb-2100", accountId: "gl-2100", accountCode: "2100", accountName: "Accrued Expenses", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -630000, currentYearFinal: -775000, variance: -145000, variancePercent: 23.02 },
+  { lineId: "ftb-2150", accountId: "gl-2150", accountCode: "2150", accountName: "Income Taxes Payable", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -210000, currentYearFinal: -225000, variance: -15000, variancePercent: 7.14 },
+  { lineId: "ftb-2200", accountId: "gl-2200", accountCode: "2200", accountName: "Deferred Revenue - Current", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -660000, currentYearFinal: -700000, variance: -40000, variancePercent: 6.06 },
+  { lineId: "ftb-2250", accountId: "gl-2250", accountCode: "2250", accountName: "Current Portion of Long-Term Debt", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -500000, currentYearFinal: -700000, variance: -200000, variancePercent: 40.00 },
+  { lineId: "ftb-2300", accountId: "gl-2300", accountCode: "2300", accountName: "Current Lease Liabilities", fsCategory: "CURRENT_LIABILITIES", priorYearClosing: -175000, currentYearFinal: -185000, variance: -10000, variancePercent: 5.71 },
+  // Non-Current Liabilities
+  { lineId: "ftb-2500", accountId: "gl-2500", accountCode: "2500", accountName: "Long-Term Debt", fsCategory: "NON_CURRENT_LIABILITIES", priorYearClosing: -4500000, currentYearFinal: -3800000, variance: 700000, variancePercent: -15.56 },
+  { lineId: "ftb-2600", accountId: "gl-2600", accountCode: "2600", accountName: "Long-Term Lease Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", priorYearClosing: -1700000, currentYearFinal: -1615000, variance: 85000, variancePercent: -5.00 },
+  { lineId: "ftb-2700", accountId: "gl-2700", accountCode: "2700", accountName: "Deferred Tax Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", priorYearClosing: -565000, currentYearFinal: -600000, variance: -35000, variancePercent: 6.19 },
+  { lineId: "ftb-2800", accountId: "gl-2800", accountCode: "2800", accountName: "Other Long-Term Liabilities", fsCategory: "NON_CURRENT_LIABILITIES", priorYearClosing: -280000, currentYearFinal: -300000, variance: -20000, variancePercent: 7.14 },
+  // Equity
+  { lineId: "ftb-3010", accountId: "gl-3010", accountCode: "3010", accountName: "Common Stock", fsCategory: "EQUITY", priorYearClosing: -50000, currentYearFinal: -50000, variance: 0, variancePercent: 0 },
+  { lineId: "ftb-3100", accountId: "gl-3100", accountCode: "3100", accountName: "Additional Paid-in Capital", fsCategory: "EQUITY", priorYearClosing: -3200000, currentYearFinal: -3500000, variance: -300000, variancePercent: 9.38 },
+  { lineId: "ftb-3200", accountId: "gl-3200", accountCode: "3200", accountName: "Retained Earnings", fsCategory: "EQUITY", priorYearClosing: -3345000, currentYearFinal: -3580000, variance: -235000, variancePercent: 7.03 },
+  { lineId: "ftb-3300", accountId: "gl-3300", accountCode: "3300", accountName: "Accumulated OCI", fsCategory: "EQUITY", priorYearClosing: 100000, currentYearFinal: 100000, variance: 0, variancePercent: 0 },
+];
+
+// Calculate Final TB totals (balance sheet accounts only for this view)
+const calculateFinalTBTotals = (lines: FinalTBLine[]) => {
+  // Filter to balance sheet accounts only (assets, liabilities, equity)
+  const bsCategories = ["CURRENT_ASSETS", "NON_CURRENT_ASSETS", "CURRENT_LIABILITIES", "NON_CURRENT_LIABILITIES", "EQUITY"];
+  const bsLines = lines.filter(l => l.fsCategory && bsCategories.includes(l.fsCategory));
+  
+  let totalPrior = 0;
+  let totalCurrent = 0;
+  
+  bsLines.forEach(line => {
+    totalPrior += line.priorYearClosing;
+    totalCurrent += line.currentYearFinal;
+  });
+  
+  return { totalPrior, totalCurrent };
+};
+
+const finalTBTotals = calculateFinalTBTotals(sampleFinalTBLines);
+
+export const sampleFinalTBView: FinalTBView = {
+  viewId: "ftb-fy2024",
+  currentPeriodId: "FY2024",
+  currentPeriodLabel: "FY 2024",
+  priorPeriodId: "FY2023",
+  priorPeriodLabel: "FY 2023",
+  entityName: "Lunari Corporation",
+  reportingCurrency: "USD",
+  lines: sampleFinalTBLines,
+  totalPriorYear: finalTBTotals.totalPrior,
+  totalCurrentYear: finalTBTotals.totalCurrent,
+  isBalanced: Math.abs(finalTBTotals.totalCurrent) < 0.01,
 };
