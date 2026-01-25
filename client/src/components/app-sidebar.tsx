@@ -188,11 +188,30 @@ const systemItems = [
 ];
 
 const oneComplianceNav = [
-  { title: "Dashboard", url: "/compliance/dashboard", icon: LayoutDashboard },
-  { title: "Entity Registry", url: "/compliance/entity-registry", icon: Building2 },
+  { title: "Dashboard", url: "/compliance", icon: LayoutDashboard },
+  { title: "Entities", url: "/compliance/entities", icon: Building2 },
   { title: "Obligations", url: "/compliance/obligations", icon: ClipboardCheck },
-  { title: "Board & Governance", url: "/compliance/board-governance", icon: Gavel },
-  { title: "Startup Equity", url: "/compliance/startup-equity", icon: Rocket },
+  { title: "Governance", url: "/compliance/governance", icon: Gavel },
+  { title: "Authority", url: "/compliance/authority", icon: UserCheck },
+  { title: "Risks", url: "/compliance/risks", icon: AlertTriangle },
+  { title: "Policies", url: "/compliance/policies", icon: BookOpen },
+  { title: "Advisors", url: "/compliance/advisors", icon: Briefcase },
+  { title: "Audit Readiness", url: "/compliance/audit", icon: Shield },
+  { title: "AI Insights", url: "/compliance/insights", icon: Sparkles },
+  { title: "ROI Metrics", url: "/compliance/roi", icon: Target },
+];
+
+const equityTrackerNav = [
+  { title: "Shareholders", url: "/compliance/shareholders", icon: Users },
+  { title: "Cap Table", url: "/compliance/captable", icon: Layers },
+  { title: "Equity Events", url: "/compliance/equity-events", icon: Coins },
+  { title: "Dividends", url: "/compliance/dividends", icon: CircleDollarSign },
+];
+
+const startupEquityNav = [
+  { title: "Funding Rounds", url: "/compliance/funding-rounds", icon: Rocket },
+  { title: "Convertibles", url: "/compliance/convertibles", icon: FileSpreadsheet },
+  { title: "Options", url: "/compliance/options", icon: Award },
 ];
 
 const productInfo = {
@@ -529,6 +548,55 @@ export function AppSidebar() {
         </SidebarGroupContent>
       </SidebarGroup>
       
+      <SidebarGroup>
+        <SidebarGroupLabel>Equity Tracker</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {equityTrackerNav.map((item) => {
+              const isActive = location === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-equity-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      
+      <SidebarGroup>
+        <SidebarGroupLabel>Startup Equity</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {startupEquityNav.map((item) => {
+              const isActive = location === item.url;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={isActive}
+                    data-testid={`nav-startup-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
     </>
   );
 
