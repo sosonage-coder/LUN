@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Calendar,
@@ -27,8 +27,11 @@ import {
   Check,
   Globe,
   ListChecks,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useProduct, ProductId } from "@/contexts/product-context";
+import { useAuth } from "@/hooks/use-auth";
 
 interface Product {
   id: ProductId;
@@ -126,8 +129,16 @@ export function TopNav() {
   const [location, setLocation] = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const { activeProduct, setActiveProduct } = useProduct();
+  const { user, logout } = useAuth();
   
   const currentProduct = products.find(p => p.id === activeProduct) || products[0];
+  
+  const userInitials = user 
+    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'U'
+    : 'U';
+  const userName = user
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User'
+    : 'User';
 
   const handleProductSelect = (product: Product) => {
     setActiveProduct(product.id);
@@ -248,9 +259,46 @@ export function TopNav() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Avatar className="h-8 w-8 cursor-pointer" data-testid="user-avatar">
-          <AvatarFallback className="text-xs">JD</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="gap-2 px-2" data-testid="user-menu">
+              <Avatar className="h-8 w-8">
+                {user?.profileImageUrl && (
+                  <AvatarImage src={user.profileImageUrl} alt={userName} />
+                )}
+                <AvatarFallback className="text-xs">{userInitials}</AvatarFallback>
+              </Avatar>
+              <span className="hidden sm:inline text-sm">{userName}</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium">{userName}</p>
+              {user?.email && (
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              )}
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
+              <User className="h-4 w-4 mr-2" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer" data-testid="menu-settings">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive focus:text-destructive" 
+              onClick={() => logout()}
+              data-testid="menu-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

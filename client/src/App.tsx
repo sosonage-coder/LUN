@@ -9,8 +9,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { TopNav } from "@/components/top-nav";
 import { ProductProvider } from "@/contexts/product-context";
+import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import Landing from "@/pages/landing";
 import ReconciliationsPage from "@/pages/reconciliations";
 import PoliciesPage from "@/pages/policies";
 import WalkthroughsPage from "@/pages/walkthroughs";
@@ -120,35 +122,59 @@ function Router() {
   );
 }
 
-function App() {
+function AuthenticatedApp() {
   const style = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
 
   return (
+    <ProductProvider>
+      <div className="flex flex-col h-screen w-full">
+        <TopNav />
+        <SidebarProvider style={style as React.CSSProperties}>
+          <div className="flex flex-1 w-full overflow-hidden">
+            <AppSidebar />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+                <SidebarTrigger data-testid="button-sidebar-toggle" />
+                <ThemeToggle />
+              </header>
+              <main className="flex-1 overflow-auto">
+                <Router />
+              </main>
+            </div>
+          </div>
+        </SidebarProvider>
+      </div>
+    </ProductProvider>
+  );
+}
+
+function AppContent() {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen" data-testid="loading-screen">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Landing />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="schedule-engine-theme">
         <TooltipProvider>
-          <ProductProvider>
-            <div className="flex flex-col h-screen w-full">
-              <TopNav />
-              <SidebarProvider style={style as React.CSSProperties}>
-                <div className="flex flex-1 w-full overflow-hidden">
-                  <AppSidebar />
-                  <div className="flex flex-col flex-1 overflow-hidden">
-                    <header className="flex items-center justify-between gap-4 px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-                      <SidebarTrigger data-testid="button-sidebar-toggle" />
-                      <ThemeToggle />
-                    </header>
-                    <main className="flex-1 overflow-auto">
-                      <Router />
-                    </main>
-                  </div>
-                </div>
-              </SidebarProvider>
-            </div>
-          </ProductProvider>
+          <AppContent />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>

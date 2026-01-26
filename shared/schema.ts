@@ -2424,3 +2424,6 @@ export interface GLMasterMappingRegistry {
   lastUpdated: string;
   updatedBy: string;
 }
+
+// Export auth models for Replit Auth integration
+export * from "./models/auth";
