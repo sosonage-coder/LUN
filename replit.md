@@ -1,7 +1,7 @@
 # Lunari
 
 ## Overview
-Lunari is a financial accounting application focused on deterministic and auditable cost allocation over time. It manages financial instruments such as prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system uses an append-only event tracking mechanism and derived FX rates to ensure accurate, time-based allocation. Key modules include Schedule Studio for various financial instruments, Cash Scheduler for cash flow tracking, OneClose for close management with certification workflows, Reconciliations for balance sheet accounts, and One Compliance for entity governance. The project aims to provide comprehensive financial oversight, reporting, and compliance capabilities.
+Lunari is a financial accounting application designed for deterministic and auditable cost allocation over time. It manages various financial instruments, including prepaid expenses, fixed assets, accruals, revenue recognition, investment income, debt amortization, and cash flow tracking. The system utilizes an append-only event tracking mechanism and derived FX rates to ensure accuracy. Key modules include Schedule Studio for financial instrument management, Cash Scheduler for cash flow, OneClose for close management with certification, Reconciliations for balance sheet accounts, and One Compliance for entity governance. Lunari aims to provide comprehensive financial oversight, reporting, and compliance.
 
 ## User Preferences
 - Financial application styling with professional appearance
@@ -10,163 +10,43 @@ Lunari is a financial accounting application focused on deterministic and audita
 - Period state visual indicators (badges with colors)
 
 ## System Architecture
-The application uses a client-server architecture.
+The application employs a client-server architecture.
 
-**Frontend (Client):**
-- Built with React, TypeScript, TanStack Query, Wouter, Tailwind CSS, and shadcn/ui.
-- Provides a professional financial UI with dashboards for all accounting categories.
+**Frontend:**
+- Built with React, TypeScript, TanStack Query, Wouter, Tailwind CSS, and shadcn/ui, providing a professional financial UI with dashboards for various accounting categories.
 - Features include schedule listings, detailed views, creation forms, and specialized calculators.
-- UI/UX prioritizes clear currency formatting, dark mode, and visual indicators for period states.
+- UI/UX emphasizes clear currency formatting, dark mode, and visual indicators for period states.
 
-**Backend (Server):**
+**Backend:**
 - Developed with Express and TypeScript.
-- Manages API endpoints for schedule management and category-specific dashboards.
-- Utilizes an in-memory storage solution for data persistence and real-time processing, with future plans for persistent storage.
-- Core principles include:
-    - **Reporting Currency as Source of Truth**: All calculations are based on reporting currency.
-    - **Derived FX Rates**: FX rates are always calculated (Reporting Amount / Local Amount).
-    - **Append-Only Events**: All schedule modifications are recorded as immutable events for consistent rebuilds.
-    - **Immutable Closed Periods**: Changes to closed periods must be prospective.
+- Manages API endpoints for schedule management and category-specific dashboards, utilizing an in-memory storage solution with plans for persistent storage.
+- Core principles include reporting currency as the source of truth, derived FX rates, append-only events for immutable schedule modifications, and immutable closed periods requiring prospective changes.
 
 **Data Models & Algorithms:**
-- **ScheduleMaster**: Core financial schedule entity.
-- **ScheduleEvent**: Captures immutable changes to schedules.
-- **PeriodLine**: Dynamically calculated period allocations.
-- **Period States**: Defines status and mutability of period allocations (`EXTERNAL`, `SYSTEM_BASE`, `SYSTEM_ADJUSTED`, `CLOSED`).
-- **Rebuild Algorithm**: Deterministically reconstructs period allocations by processing events chronologically and performing a true-up on the last period to eliminate rounding errors.
-- **Prepaid Calculator**: Implements FIRST_FULL_MONTH amortization with `Decimal.js` for precision, supporting various event types and onboarding modes.
+- Core entities include `ScheduleMaster`, `ScheduleEvent`, and `PeriodLine`.
+- `Period States` define the status and mutability of period allocations.
+- A `Rebuild Algorithm` deterministically reconstructs period allocations, processing events chronologically and performing a true-up to eliminate rounding errors.
+- The `Prepaid Calculator` implements FIRST_FULL_MONTH amortization with `Decimal.js` for precision.
 
 **Key Modules & Features:**
-- **Schedule Studio**: Manages prepaid expenses, fixed assets, accruals, revenue recognition, investment income, and debt amortization with a 3-level hierarchy.
+- **Schedule Studio**: Manages various financial instruments with a 3-level hierarchy.
 - **Cash Scheduler**: Provides a leveled architecture for cash flow tracking (Dashboard, Category Summary, Movement Detail).
-- **OneClose (Close Control System)**: Governed close management with certification workflows, segregation of duties (SoD) controls, task lifecycle management, and violation detection.
-- **Reconciliations Module**: Template-driven reconciliation workspace supporting various account types (e.g., CASH, ACCRUAL, PREPAID).
-    - **Template Variants**: Includes specific templates like `ACCRUAL_12M_ROLLFORWARD` for 12-month rollforward views and `PREPAID_SCHEDULE_ANCHORED` which directly integrates with approved Schedule Studio schedules.
-    - **Cash Reconciliation Templates**: Supports single/multi-bank, multi-currency scenarios with FX revaluation.
-    - **Accrual Reconciliation**: Validates ERP-performed FX revaluation and uses a 12-month rolling view for line-based accrual tracking.
-    - **Prepaid Reconciliation**: Anchored directly to approved prepaid schedules from Schedule Studio, providing a direct tie-out to GL balance.
-    - **Workflow**: Reconciliation lifecycle from NOT_STARTED to LOCKED, including multi-level certification.
+- **OneClose (Close Control System)**: Governed close management with certification workflows, segregation of duties, task lifecycle management, and violation detection.
+- **Reconciliations Module**: Template-driven workspace supporting various account types (e.g., CASH, ACCRUAL, PREPAID) with multi-level certification workflows and specific template variants like `ACCRUAL_12M_ROLLFORWARD` and `PREPAID_SCHEDULE_ANCHORED`.
 - **NetTool (Financial Statement Notes Disclosure Engine)**:
-    - Core disclosure management with notes, schedules, narratives, and review workflows.
-    - 6 schedule layout types: Rollforward, Movement by Category, Timing/Maturity, Gross to Net, Composition, Reconciliation.
-    - Spreadsheet-style grids with locked system columns and editable user columns.
-    - **Financial Statements Module** (read-only, comparative):
-        - Company Profile: Entity context and front page information.
-        - Auditor's Opinion: Audit opinion text and signed document upload.
-        - Balance Sheet: Comparative statement of financial position with note links.
-        - Income Statement: Comparative statement of operations with note links.
-        - Statement of Changes in Equity: Equity component movements.
-        - Cash Flow Statement: Indirect method with reconciliation check.
-    - All financial statement values are system-calculated with locked editing.
-    - Statement lines link to disclosure notes for navigation and traceability.
-    - **Trial Balance Workspace**:
-        - Single-column net amount format (DR positive, CR negative in parentheses).
-        - **BS/PL Category**: Dropdown selector classifying accounts as Balance Sheet (BS) or Profit & Loss (PL).
-        - FS Category tagging with dropdown selectors for account classification.
-        - Footnote Number tagging with dropdown selector linking to disclosure notes.
-        - **Footnote Description**: Editable text field in TB Adjustments - flows to WP and Final TB View.
-        - Column visibility toggles for adjustment columns.
-        - Cross-reference hover trails showing source chain (GL → Split → WP → Note) with colored node indicators.
-        - **TB as Source of Truth**: BS/PL and Footnote Description defined in TB Adjustments, read-only in Final TB View.
-    - **Split Declaration Panel**: Right drawer opened by clicking account codes, showing:
-        - TB balance and breakdown with assigned/unassigned tracking.
-        - Component list with source types (DECLARED, GL_BACKED, CALCULATED).
-        - Incomplete balance warnings when unassigned amounts exist.
-    - **Working Papers Module**:
-        - List view showing all working papers with type, status, and linked items.
-        - Grid detail view with spreadsheet-style functionality.
-        - Supports multiple types: Rollforward, Aging, Linear, Custom.
-        - Features: frozen headers, locked columns, formula columns with "fx" badge.
-        - Row types: DATA, HEADER, SUBTOTAL, TOTAL with differentiated styling.
-        - Text blocks for notes and annotations.
-        - Breadcrumb navigation between list and detail views.
-        - **TB Linking & Tie-Out Validation**:
-            - Link to TB button opens account selector dialog.
-            - Auto-populates WP balances from selected TB accounts.
-            - Tie-Out Status Card shows TIED/VARIANCE/INCOMPLETE status with color-coded badges.
-            - Displays TB Source amount, WP Total, and Variance with linked account codes.
-        - **Analyst Notes**: Timestamped notes section with add capability for documenting observations, methodology, and follow-ups.
-        - **Attachments**: Supporting documents section with upload simulation (invoices, contracts, etc.), file list with view/download buttons.
-        - **Comprehensive WP Coverage** (14 working papers):
-            - Revenue Analysis (LINEAR) - revenue stream breakdown
-            - COGS Analysis (LINEAR) - cost category breakdown
-            - Inventory Rollforward (ROLLFORWARD) - raw materials, WIP, finished goods
-            - Operating Expenses Analysis (LINEAR) - SG&A, R&D, D&A breakdown
-            - AR Aging (AGING) - customer aging buckets
-            - AP Aging (AGING) - vendor aging buckets
-            - Accrued Liabilities Rollforward (ROLLFORWARD) - payroll, bonus, PTO
-            - Debt Rollforward (ROLLFORWARD) - term loans with rates/maturity
-            - Equity Rollforward (ROLLFORWARD) - all equity components
-            - Cash Reconciliation (LINEAR) - bank to GL reconciliation
-            - Prepaid Rollforward (ROLLFORWARD) - insurance, software, deposits
-            - Income Tax Provision (CUSTOM) - current/deferred breakdown
-            - PPE Rollforward (ROLLFORWARD) - buildings, equipment, vehicles
-            - Intangible Assets Rollforward (ROLLFORWARD) - software, patents
-    - **Disclosure Notes** (18 notes covering all FS line items):
-        - Note 3: Revenue (product, service, licensing)
-        - Note 4: Cash and Cash Equivalents
-        - Note 5: Trade and Other Receivables
-        - Note 6: Inventories
-        - Note 7: Prepaid Expenses
-        - Note 8: Cost of Goods Sold
-        - Note 9: Operating Expenses
-        - Note 10: Property, Plant & Equipment
-        - Note 11: Intangible Assets
-        - Note 12: Leases
-        - Note 13: Goodwill
-        - Note 15: Trade and Other Payables
-        - Note 16: Accrued Liabilities
-        - Note 17: Borrowings
-        - Note 19: Income Taxes
-        - Note 21: Share Capital and Reserves
-        - Note 22: Other Comprehensive Income
-    - **Schedules** (22 schedules with 6 layout types):
-        - Composition: Cash, COGS, OpEx, Goodwill, Tax Provision, OCI
-        - Rollforward: Prepaid, PPE, Intangibles, Accruals, Debt, Equity, Inventory, ROU Assets
-        - Timing/Maturity: AR Aging, AP Aging, Debt Maturity, Lease Maturity
-        - Gross-to-Net: Deferred Tax Assets/Liabilities
-        - Movement by Category: Equity Components, Intangibles
-        - Reconciliation: Revenue breakdown
-    - **Narratives** (18 narrative blocks):
-        - Each disclosure note has a corresponding narrative explaining accounting policies, significant items, and year-over-year changes
-        - Narratives link to related schedules and movements
-        - Coverage includes all major FS categories: Revenue, COGS, Assets (Cash, AR, Inventory, Prepaid, PPE, Intangibles, ROU, Goodwill), Liabilities (AP, Accruals, Debt, Leases, DTL), and Equity (Capital, Reserves, AOCI)
-    - **Print/Export Engine**:
-        - Generate Financial Statements dialog with format selection (PDF, Excel, Word).
-        - Statement selection toggles for Balance Sheet, Income Statement, Equity, Cash Flow.
-        - Additional content options: Notes, Schedules, Working Papers.
-        - Period lock option to prevent changes after export.
-        - DRAFT watermark option.
-        - Progress indicator during document generation.
-    - **TB Adjustments Workspace**:
-        - Main grid with columns: Initial TB, RJE-1, RJE-2, Total RJE, AJE-1, AJE-2, AJE-3, Total AJE, Net Movement, Final Balance.
-        - Entry summary cards showing RJE/AJE entries with status (DRAFT, PENDING_REVIEW, APPROVED, REJECTED).
-        - Account-level FS Category and Footnote tagging.
-        - Entry detail sheet opens when clicking entry cards.
-    - **Final TB View**:
-        - Read-only comparative view showing Prior Year Closing vs Current Year Final.
-        - Variance columns showing changes year-over-year.
-        - Values looked up from TB Adjustments Workspace.
-    - **Template Repository**:
-        - Central repository for managing all template types.
-        - Four template categories: Disclosure, Working Paper, Reconciliation, Close Control.
-        - Full CRUD operations (add, edit, delete) for disclosure templates.
-        - Template properties: Name, Layout Type (6 options), Framework (IFRS/US GAAP/Both).
-        - Pre-built templates for working papers (Rollforward, Aging, Linear, Custom).
-        - Pre-built templates for reconciliations (Cash, Prepaid, Accrual, Fixed Asset, Intercompany).
-        - Pre-built templates for close control (Month-End, Quarter-End, Year-End, Consolidation, Audit Prep).
-        - **Template Preview**: Eye icon buttons on all template types to preview before use, showing category, type, layout, framework, column structure with badges, and sample data visualization in a scrollable dialog.
-- **One Compliance (Entity Governance & Compliance System)**:
-    - Restructured into 5 purpose-built tabs: Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity.
-    - **Dashboard**: Health scores, risk overview, deadline heatmaps, and AI compliance insights.
-    - **Entity Registry**: Entity profiles, organizational structure, and ownership details.
-    - **Obligations**: Filing requirements library with 50+ regulatory filings across USA, Canada, EU, UK, UAE; supports Financial Services, Healthcare, Manufacturing, Technology, Energy, Retail, and Insurance industries.
-    - **Board & Governance**: Meeting management, resolutions, authority register, and lifecycle changes.
-    - **Startup Equity** (nested tabs):
-        - **Funding Rounds**: Track fundraising with valuations, investor participation, and terms.
-        - **Convertibles**: SAFE/Note management with conversion tracking and cap details.
-        - **Options**: Option pool and grant management with vesting schedules.
-    - Filing requirements include penalty levels (Critical/High/Medium), lead times, frequencies, and responsible departments.
+    - Core disclosure management with notes, schedules, narratives, and review workflows across 6 schedule layout types (Rollforward, Movement by Category, Timing/Maturity, Gross to Net, Composition, Reconciliation).
+    - **Financial Statements Module** (read-only, comparative): Includes Balance Sheet, Income Statement, Statement of Changes in Equity, and Cash Flow Statement, all system-calculated with links to disclosure notes.
+    - **Trial Balance Workspace**: Features single-column net amount format, BS/PL category and FS category tagging, footnote number tagging, editable footnote descriptions, and sub-notes for intelligent WP auto-population. Includes cross-reference hover trails and a Split Declaration Panel for account balance breakdowns. TB is the source of truth for WP auto-population via BS/PL + Sub Note combination lookups.
+    - **Working Papers Module**: Provides a list view and grid detail view with spreadsheet-style functionality, supporting multiple types (Rollforward, Aging, Linear, Custom). Features TB linking and tie-out validation, analyst notes, and attachment support, covering 14 comprehensive working papers.
+    - **Rollforward WP Auto-Population**: Calculates rollforward rows using TB data with formula: Opening + Additions + Disposals + Depreciation + Transfers + Revaluations = Closing. Supports user overrides with balancing figure logic. Internal sign conventions: additions positive, disposals/depreciation negative. User inputs normalized at boundary. hasSignConventionViolation flag detects semantic inconsistencies while maintaining mathematical balance.
+    - **Disclosure Notes**: 18 notes covering all financial statement line items.
+    - **Schedules**: 22 schedules across 6 layout types.
+    - **Narratives**: 18 narrative blocks linked to disclosure notes and schedules.
+    - **Print/Export Engine**: Generates financial statements in various formats (PDF, Excel, Word) with options for notes, schedules, working papers, and period locking.
+    - **TB Adjustments Workspace**: Grid for journal entries (RJE, AJE) with entry summary cards and account-level tagging.
+    - **Final TB View**: Read-only comparative view of prior year vs. current year with variance analysis.
+    - **Template Repository**: Centralized management for Disclosure, Working Paper, Reconciliation, and Close Control templates with CRUD operations and a preview feature.
+- **One Compliance (Entity Governance & Compliance System)**: Structured into Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity tabs. Includes health scores, risk overview, entity profiles, a library of 50+ regulatory filings across various industries, meeting management, and detailed tracking for funding rounds, convertibles, and options.
 
 ## External Dependencies
 - **React**: Frontend UI library.

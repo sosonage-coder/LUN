@@ -3403,6 +3403,12 @@ export default function NetToolPage() {
       ));
     };
 
+    const handleAdjSubNoteUpdate = (lineId: string, subNote: string) => {
+      setAdjLines(lines => lines.map(l => 
+        l.lineId === lineId ? { ...l, subNote: subNote || null } : l
+      ));
+    };
+
     const getEntryStatusBadge = (status: TBAdjustmentEntry["status"]) => {
       switch (status) {
         case "APPROVED":
@@ -3507,6 +3513,7 @@ export default function NetToolPage() {
                     <TableHead className="w-32">FS Category</TableHead>
                     <TableHead className="w-24">Footnote No.</TableHead>
                     <TableHead className="min-w-[150px]">Footnote Desc.</TableHead>
+                    <TableHead className="min-w-[120px]">Sub Note</TableHead>
                     <TableHead className="text-center w-28 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">Initial TB</span>
@@ -3606,6 +3613,16 @@ export default function NetToolPage() {
                           data-testid={`input-adj-fndesc-${line.accountCode}`}
                         />
                       </TableCell>
+                      {/* Sub Note - Editable text input for sub-categorization */}
+                      <TableCell>
+                        <Input 
+                          value={line.subNote || ""}
+                          onChange={(e) => handleAdjSubNoteUpdate(line.lineId, e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Sub note..."
+                          data-testid={`input-adj-subnote-${line.accountCode}`}
+                        />
+                      </TableCell>
                       {/* Initial TB Balance */}
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                         {formatNetAmount(line.initialBalance)}
@@ -3623,6 +3640,7 @@ export default function NetToolPage() {
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
@@ -3790,6 +3808,7 @@ export default function NetToolPage() {
                     <TableHead className="w-32">FS Category</TableHead>
                     <TableHead className="w-24">Footnote No.</TableHead>
                     <TableHead className="min-w-[150px]">Footnote Desc.</TableHead>
+                    <TableHead className="min-w-[100px]">Sub Note</TableHead>
                     <TableHead className="text-center w-32 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">{sampleFinalTBView.priorPeriodLabel}</span>
@@ -3823,6 +3842,7 @@ export default function NetToolPage() {
                     const linkedNote = footnoteId ? notes.find(n => n.noteId === footnoteId) : null;
                     const bsPlCategory = adjLine?.bsPlCategory || line.bsPlCategory;
                     const footnoteDescription = adjLine?.footnoteDescription || line.footnoteDescription;
+                    const subNote = adjLine?.subNote || line.subNote;
                     
                     return (
                     <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-ftb-${line.accountCode}`}>
@@ -3849,6 +3869,10 @@ export default function NetToolPage() {
                       <TableCell className="text-sm text-muted-foreground" data-testid={`cell-ftb-fndesc-${line.accountCode}`}>
                         {footnoteDescription || "-"}
                       </TableCell>
+                      {/* Sub Note - Looked up from TB Adjustments */}
+                      <TableCell className="text-sm text-muted-foreground" data-testid={`cell-ftb-subnote-${line.accountCode}`}>
+                        {subNote || "-"}
+                      </TableCell>
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.priorYearClosing < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                         {formatNetAmount(line.priorYearClosing)}
                       </TableCell>
@@ -3866,6 +3890,7 @@ export default function NetToolPage() {
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>

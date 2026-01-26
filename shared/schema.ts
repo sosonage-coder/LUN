@@ -2318,6 +2318,7 @@ export interface TBAdjustmentAccountLine {
   bsPlCategory: BSPLCategory; // Balance Sheet or Profit & Loss classification
   footnoteIds: string[];
   footnoteDescription: string | null; // Editable description that flows to WP row labels
+  subNote: string | null; // Sub-categorization within footnote (e.g., "Bonus", "Vacation", "Buildings")
   normalBalance: "DEBIT" | "CREDIT";
   initialBalance: number; // from GL import (DR positive, CR negative)
   adjustments: Record<string, number>; // columnId -> amount (DR positive, CR negative)
@@ -2355,6 +2356,7 @@ export interface FinalTBLine {
   fsCategory: FSCategory | null;
   bsPlCategory: BSPLCategory; // looked up from TB Adjustments
   footnoteDescription: string | null; // looked up from TB Adjustments
+  subNote: string | null; // looked up from TB Adjustments - sub-categorization for WP lookup
   priorYearClosing: number; // from prior period
   currentYearFinal: number; // looks up from Adjustments Workspace finalBalance
   variance: number;
