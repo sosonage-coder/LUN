@@ -2376,3 +2376,33 @@ export interface FinalTBView {
   totalCurrentYear: number;
   isBalanced: boolean;
 }
+
+// =============================================
+// GL Master Mapping - Central mapping for account classifications
+// =============================================
+
+/**
+ * GL Master Mapping - Maps GL Description Categories to standardized classifications
+ * This is the single source of truth for account categorization.
+ * TB Adjustments and Final TB lookup values from this mapping.
+ * WP names are filtered from unique Footnote Desc values.
+ */
+export interface GLMasterMapping {
+  mappingId: string;
+  glDescriptionCategory: string; // The GL description pattern/category to match
+  bsPlCategory: BSPLCategory; // Balance Sheet or Profit & Loss
+  footnoteNumber: string | null; // e.g., "1", "2", "3" - the footnote reference
+  footnoteDescription: string; // e.g., "Cash and bank balances", "Trade receivables"
+  subNote: string | null; // Sub-categorization within footnote
+  wpName: string | null; // Working Paper name (derived from footnoteDescription)
+  isActive: boolean;
+  orderIndex: number;
+  // Extensible fields for future mappings
+  customFields?: Record<string, string | number | boolean | null>;
+}
+
+export interface GLMasterMappingRegistry {
+  mappings: GLMasterMapping[];
+  lastUpdated: string;
+  updatedBy: string;
+}

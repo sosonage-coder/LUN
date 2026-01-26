@@ -1709,7 +1709,112 @@ export const financialStatementNavItems = [
 ];
 
 // Trial Balance Sample Data
-import type { GLAccount, TBColumn, TBLine, TBWorkspace, FSCategory } from "@shared/schema";
+import type { GLAccount, TBColumn, TBLine, TBWorkspace, FSCategory, GLMasterMapping, GLMasterMappingRegistry } from "@shared/schema";
+
+// =============================================
+// GL Master Mapping - Central source of truth for account classifications
+// =============================================
+
+export const glMasterMappings: GLMasterMapping[] = [
+  // Current Assets
+  { mappingId: "map-001", glDescriptionCategory: "Cash and Cash Equivalents", bsPlCategory: "BS", footnoteNumber: "1", footnoteDescription: "Cash and bank balances", subNote: "Cash", wpName: "Cash and bank balances", isActive: true, orderIndex: 1 },
+  { mappingId: "map-002", glDescriptionCategory: "Accounts Receivable", bsPlCategory: "BS", footnoteNumber: "2", footnoteDescription: "Trade and other receivables", subNote: "Trade AR", wpName: "Trade and other receivables", isActive: true, orderIndex: 2 },
+  { mappingId: "map-003", glDescriptionCategory: "Allowance for Doubtful Accounts", bsPlCategory: "BS", footnoteNumber: "2", footnoteDescription: "Trade and other receivables", subNote: "Allowance", wpName: "Trade and other receivables", isActive: true, orderIndex: 3 },
+  { mappingId: "map-004", glDescriptionCategory: "Inventory", bsPlCategory: "BS", footnoteNumber: "3", footnoteDescription: "Inventories", subNote: "Inventory", wpName: "Inventories", isActive: true, orderIndex: 4 },
+  { mappingId: "map-005", glDescriptionCategory: "Prepaid Expenses", bsPlCategory: "BS", footnoteNumber: "4", footnoteDescription: "Prepaid expenses", subNote: "Prepaid", wpName: "Prepaid expenses", isActive: true, orderIndex: 5 },
+  { mappingId: "map-006", glDescriptionCategory: "Other Current Assets", bsPlCategory: "BS", footnoteNumber: "5", footnoteDescription: "Other current assets", subNote: "Other CA", wpName: "Other current assets", isActive: true, orderIndex: 6 },
+  // Non-Current Assets
+  { mappingId: "map-007", glDescriptionCategory: "Property, Plant & Equipment", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Property, plant and equipment", subNote: "Buildings", wpName: "Property, plant and equipment", isActive: true, orderIndex: 7 },
+  { mappingId: "map-008", glDescriptionCategory: "Accumulated Depreciation - PPE", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Property, plant and equipment", subNote: "Accum Depr PPE", wpName: "Property, plant and equipment", isActive: true, orderIndex: 8 },
+  { mappingId: "map-009", glDescriptionCategory: "Intangible Assets", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Intangible assets", subNote: "Software", wpName: "Intangible assets", isActive: true, orderIndex: 9 },
+  { mappingId: "map-010", glDescriptionCategory: "Accumulated Amortization - Intangibles", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Intangible assets", subNote: "Accum Amort", wpName: "Intangible assets", isActive: true, orderIndex: 10 },
+  { mappingId: "map-011", glDescriptionCategory: "Right-of-Use Assets", bsPlCategory: "BS", footnoteNumber: "8", footnoteDescription: "Right-of-use assets", subNote: "ROU Assets", wpName: "Right-of-use assets", isActive: true, orderIndex: 11 },
+  { mappingId: "map-012", glDescriptionCategory: "Accumulated Depreciation - ROU", bsPlCategory: "BS", footnoteNumber: "8", footnoteDescription: "Right-of-use assets", subNote: "Accum Depr ROU", wpName: "Right-of-use assets", isActive: true, orderIndex: 12 },
+  { mappingId: "map-013", glDescriptionCategory: "Deferred Tax Assets", bsPlCategory: "BS", footnoteNumber: "9", footnoteDescription: "Deferred tax assets", subNote: "DTA", wpName: "Deferred tax assets", isActive: true, orderIndex: 13 },
+  // Current Liabilities
+  { mappingId: "map-014", glDescriptionCategory: "Accounts Payable", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Trade and other payables", subNote: "Trade AP", wpName: "Trade and other payables", isActive: true, orderIndex: 14 },
+  { mappingId: "map-015", glDescriptionCategory: "Accrued Expenses", bsPlCategory: "BS", footnoteNumber: "11", footnoteDescription: "Accrued expenses", subNote: "Accruals", wpName: "Accrued expenses", isActive: true, orderIndex: 15 },
+  { mappingId: "map-016", glDescriptionCategory: "Income Taxes Payable", bsPlCategory: "BS", footnoteNumber: "12", footnoteDescription: "Current tax liabilities", subNote: "Tax Payable", wpName: "Current tax liabilities", isActive: true, orderIndex: 16 },
+  { mappingId: "map-017", glDescriptionCategory: "Deferred Revenue - Current", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Deferred revenue", subNote: "Deferred Rev", wpName: "Deferred revenue", isActive: true, orderIndex: 17 },
+  { mappingId: "map-018", glDescriptionCategory: "Current Portion of Long-Term Debt", bsPlCategory: "BS", footnoteNumber: "14", footnoteDescription: "Borrowings", subNote: "Current Debt", wpName: "Borrowings", isActive: true, orderIndex: 18 },
+  { mappingId: "map-019", glDescriptionCategory: "Current Lease Liabilities", bsPlCategory: "BS", footnoteNumber: "15", footnoteDescription: "Lease liabilities", subNote: "Current Lease", wpName: "Lease liabilities", isActive: true, orderIndex: 19 },
+  // Non-Current Liabilities
+  { mappingId: "map-020", glDescriptionCategory: "Long-Term Debt", bsPlCategory: "BS", footnoteNumber: "14", footnoteDescription: "Borrowings", subNote: "LT Debt", wpName: "Borrowings", isActive: true, orderIndex: 20 },
+  { mappingId: "map-021", glDescriptionCategory: "Non-Current Lease Liabilities", bsPlCategory: "BS", footnoteNumber: "15", footnoteDescription: "Lease liabilities", subNote: "NC Lease", wpName: "Lease liabilities", isActive: true, orderIndex: 21 },
+  { mappingId: "map-022", glDescriptionCategory: "Deferred Revenue - Non-Current", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Deferred revenue", subNote: "NC Deferred Rev", wpName: "Deferred revenue", isActive: true, orderIndex: 22 },
+  { mappingId: "map-023", glDescriptionCategory: "Deferred Tax Liabilities", bsPlCategory: "BS", footnoteNumber: "16", footnoteDescription: "Deferred tax liabilities", subNote: "DTL", wpName: "Deferred tax liabilities", isActive: true, orderIndex: 23 },
+  // Equity
+  { mappingId: "map-024", glDescriptionCategory: "Common Stock", bsPlCategory: "BS", footnoteNumber: "17", footnoteDescription: "Share capital", subNote: "Common Stock", wpName: "Share capital", isActive: true, orderIndex: 24 },
+  { mappingId: "map-025", glDescriptionCategory: "Retained Earnings", bsPlCategory: "BS", footnoteNumber: "18", footnoteDescription: "Retained earnings", subNote: "RE", wpName: "Retained earnings", isActive: true, orderIndex: 25 },
+  // Revenue
+  { mappingId: "map-026", glDescriptionCategory: "Product Revenue", bsPlCategory: "PL", footnoteNumber: "19", footnoteDescription: "Revenue", subNote: "Product Rev", wpName: "Revenue", isActive: true, orderIndex: 26 },
+  { mappingId: "map-027", glDescriptionCategory: "Service Revenue", bsPlCategory: "PL", footnoteNumber: "19", footnoteDescription: "Revenue", subNote: "Service Rev", wpName: "Revenue", isActive: true, orderIndex: 27 },
+  // Cost of Sales
+  { mappingId: "map-028", glDescriptionCategory: "Cost of Goods Sold", bsPlCategory: "PL", footnoteNumber: "20", footnoteDescription: "Cost of sales", subNote: "COGS", wpName: "Cost of sales", isActive: true, orderIndex: 28 },
+  { mappingId: "map-029", glDescriptionCategory: "Cost of Services", bsPlCategory: "PL", footnoteNumber: "20", footnoteDescription: "Cost of sales", subNote: "COS", wpName: "Cost of sales", isActive: true, orderIndex: 29 },
+  // Operating Expenses
+  { mappingId: "map-030", glDescriptionCategory: "Salaries & Wages", bsPlCategory: "PL", footnoteNumber: "21", footnoteDescription: "Employee benefits expense", subNote: "Salaries", wpName: "Employee benefits expense", isActive: true, orderIndex: 30 },
+  { mappingId: "map-031", glDescriptionCategory: "Employee Benefits", bsPlCategory: "PL", footnoteNumber: "21", footnoteDescription: "Employee benefits expense", subNote: "Benefits", wpName: "Employee benefits expense", isActive: true, orderIndex: 31 },
+  { mappingId: "map-032", glDescriptionCategory: "Depreciation & Amortization", bsPlCategory: "PL", footnoteNumber: "22", footnoteDescription: "Depreciation and amortization", subNote: "Depreciation", wpName: "Depreciation and amortization", isActive: true, orderIndex: 32 },
+  { mappingId: "map-033", glDescriptionCategory: "Rent Expense", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Rent", wpName: "Other operating expenses", isActive: true, orderIndex: 33 },
+  { mappingId: "map-034", glDescriptionCategory: "Utilities", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Utilities", wpName: "Other operating expenses", isActive: true, orderIndex: 34 },
+  { mappingId: "map-035", glDescriptionCategory: "Professional Fees", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Prof Fees", wpName: "Other operating expenses", isActive: true, orderIndex: 35 },
+  { mappingId: "map-036", glDescriptionCategory: "Marketing & Advertising", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Marketing", wpName: "Other operating expenses", isActive: true, orderIndex: 36 },
+  { mappingId: "map-037", glDescriptionCategory: "Insurance", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Insurance", wpName: "Other operating expenses", isActive: true, orderIndex: 37 },
+  { mappingId: "map-038", glDescriptionCategory: "Other Operating Expenses", bsPlCategory: "PL", footnoteNumber: "23", footnoteDescription: "Other operating expenses", subNote: "Other OpEx", wpName: "Other operating expenses", isActive: true, orderIndex: 38 },
+  // Finance
+  { mappingId: "map-039", glDescriptionCategory: "Interest Income", bsPlCategory: "PL", footnoteNumber: "24", footnoteDescription: "Finance income", subNote: "Int Income", wpName: "Finance income", isActive: true, orderIndex: 39 },
+  { mappingId: "map-040", glDescriptionCategory: "Interest Expense", bsPlCategory: "PL", footnoteNumber: "25", footnoteDescription: "Finance costs", subNote: "Int Expense", wpName: "Finance costs", isActive: true, orderIndex: 40 },
+  // Tax
+  { mappingId: "map-041", glDescriptionCategory: "Income Tax Expense", bsPlCategory: "PL", footnoteNumber: "26", footnoteDescription: "Income tax expense", subNote: "Tax Expense", wpName: "Income tax expense", isActive: true, orderIndex: 41 },
+];
+
+export const glMasterMappingRegistry: GLMasterMappingRegistry = {
+  mappings: glMasterMappings,
+  lastUpdated: "2024-12-31T23:59:59Z",
+  updatedBy: "System",
+};
+
+// Helper: Lookup master mapping by GL description (fuzzy match)
+export function lookupMasterMapping(glAccountName: string): GLMasterMapping | null {
+  // Exact match first
+  let match = glMasterMappings.find(m => m.glDescriptionCategory === glAccountName && m.isActive);
+  if (match) return match;
+  
+  // Fuzzy match - check if account name contains the mapping category
+  match = glMasterMappings.find(m => 
+    glAccountName.toLowerCase().includes(m.glDescriptionCategory.toLowerCase()) && m.isActive
+  );
+  if (match) return match;
+  
+  // Reverse fuzzy - check if mapping category contains account name keywords
+  const keywords = glAccountName.toLowerCase().split(/\s+/);
+  match = glMasterMappings.find(m => 
+    keywords.some(kw => kw.length > 3 && m.glDescriptionCategory.toLowerCase().includes(kw)) && m.isActive
+  );
+  
+  return match || null;
+}
+
+// Helper: Get unique WP names from master mapping (for dropdown)
+export function getUniqueWPNames(): string[] {
+  const wpNames = glMasterMappings
+    .filter(m => m.isActive && m.wpName)
+    .map(m => m.wpName!)
+    .filter((v, i, a) => a.indexOf(v) === i) // unique
+    .sort();
+  return wpNames;
+}
+
+// Helper: Get unique footnote descriptions (for dropdown)
+export function getUniqueFootnoteDescriptions(): string[] {
+  const descriptions = glMasterMappings
+    .filter(m => m.isActive && m.footnoteDescription)
+    .map(m => m.footnoteDescription)
+    .filter((v, i, a) => a.indexOf(v) === i) // unique
+    .sort();
+  return descriptions;
+}
 
 // Sample GL Accounts with FS Category Tags
 export const sampleGLAccounts: GLAccount[] = [

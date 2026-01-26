@@ -89,6 +89,7 @@ import {
   sampleFinalTBView,
 } from "@/lib/nettool-data";
 import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, BSPLCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
+import { lookupMasterMapping, getUniqueFootnoteDescriptions } from "@/lib/nettool-data";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EyeOff } from "lucide-react";
 
@@ -3603,25 +3604,19 @@ export default function NetToolPage() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      {/* Footnote Description - Editable text input */}
-                      <TableCell>
-                        <Input 
-                          value={line.footnoteDescription || ""}
-                          onChange={(e) => handleAdjFootnoteDescUpdate(line.lineId, e.target.value)}
-                          className="h-7 text-xs"
-                          placeholder="Description..."
-                          data-testid={`input-adj-fndesc-${line.accountCode}`}
-                        />
+                      {/* Footnote Description - Read-only from master mapping */}
+                      <TableCell className="text-xs text-muted-foreground" data-testid={`cell-adj-fndesc-${line.accountCode}`}>
+                        {(() => {
+                          const mapping = lookupMasterMapping(line.accountName);
+                          return mapping?.footnoteDescription || line.footnoteDescription || "-";
+                        })()}
                       </TableCell>
-                      {/* Sub Note - Editable text input for sub-categorization */}
-                      <TableCell>
-                        <Input 
-                          value={line.subNote || ""}
-                          onChange={(e) => handleAdjSubNoteUpdate(line.lineId, e.target.value)}
-                          className="h-7 text-xs"
-                          placeholder="Sub note..."
-                          data-testid={`input-adj-subnote-${line.accountCode}`}
-                        />
+                      {/* Sub Note - Read-only from master mapping */}
+                      <TableCell className="text-xs text-muted-foreground" data-testid={`cell-adj-subnote-${line.accountCode}`}>
+                        {(() => {
+                          const mapping = lookupMasterMapping(line.accountName);
+                          return mapping?.subNote || line.subNote || "-";
+                        })()}
                       </TableCell>
                       {/* Initial TB Balance */}
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
