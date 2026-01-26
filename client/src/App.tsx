@@ -152,20 +152,6 @@ function AuthenticatedApp() {
 }
 
 function AppContent() {
-  const { isLoading, isAuthenticated } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen" data-testid="loading-screen">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Landing />;
-  }
-
   return <AuthenticatedApp />;
 }
 
