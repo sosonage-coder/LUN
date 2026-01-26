@@ -1,0 +1,198 @@
+This is a **great question** — and you’re thinking about it exactly the *right* way.
+
+If your **Auto Financial Statement Tool** outputs a **print-ready, signable audited (or audit-ready) financial statement package**, then you must structure it the way **auditors, boards, banks, and regulators expect to see it**.
+
+Below is the **correct, defensible order and sectioning** for a **US GAAP consolidated financial statement package**.
+
+---
+
+# 🧾 Print-Ready Financial Statement Package
+
+*(US GAAP | Audit-Ready | Signature-Ready)*
+
+## 🧱 0️⃣ Cover Page
+
+**Required**
+
+* Legal entity name (exact registered name)
+* “Consolidated Financial Statements”
+* Period covered (e.g. “For the Year Ended December 31, 2025”)
+* Prepared in accordance with **US GAAP**
+* Date of issuance
+
+📌 *No signatures here*
+
+---
+
+## 🧾 1️⃣ Independent Auditor’s Report
+
+**Required for audited financials**
+
+Prepared by auditor — **locked / non-editable**
+
+Typical sections:
+
+* Opinion
+* Basis for Opinion
+* Critical Audit Matters (if applicable)
+* Responsibilities of Management
+* Auditor’s Responsibilities
+* Auditor signature, firm name, city, date
+
+📌 **This is the first thing readers look for**
+
+---
+
+## 🧾 2️⃣ Management’s Responsibility Statement *(Optional but recommended)*
+
+Not required by GAAP, but often included.
+
+* Statement that management is responsible for:
+
+  * Preparation and fair presentation
+  * Internal controls
+* Signed by CFO / CEO
+
+📌 Especially useful for boards, banks, investors
+
+---
+
+## 📊 3️⃣ Consolidated Financial Statements
+
+### 3.1 Statement of Financial Position
+
+*(Balance Sheet)*
+
+* As of [date]
+* Comparative periods (if applicable)
+
+---
+
+### 3.2 Statement of Operations
+
+*(Income Statement)*
+
+* For the period ended
+* Comparative periods
+
+---
+
+### 3.3 Statement of Comprehensive Income
+
+* May be combined with Statement of Operations or presented separately
+
+---
+
+### 3.4 Statement of Changes in Equity
+
+* Rollforward of equity accounts
+
+---
+
+### 3.5 Statement of Cash Flows
+
+* Operating / Investing / Financing
+* Direct or indirect method
+
+📌 Each statement must clearly state:
+
+* Entity name
+* Statement title
+* Period covered
+* Currency
+
+---
+
+## 🧾 4️⃣ Notes to the Financial Statements (Disclosures)
+
+**This is a full section, not an appendix**
+
+### Required subsections typically include:
+
+1. **Basis of Presentation & Accounting Policies**
+2. **Significant Accounting Judgments & Estimates**
+3. **Revenue Recognition**
+4. **Cash & Cash Equivalents**
+5. **Accounts Receivable**
+6. **PP&E / Leases**
+7. **Intangible Assets**
+8. **Debt**
+9. **Equity**
+10. **Income Taxes**
+11. **Commitments & Contingencies**
+12. **Related Party Transactions**
+13. **Subsequent Events**
+
+📌 Notes must be **cross-referenced to line items**
+
+---
+
+## 📎 5️⃣ Supplementary Information *(If Applicable)*
+
+Optional, but common:
+
+* Segment reporting
+* Quarterly data
+* Parent-only financials
+* Non-GAAP reconciliations
+
+---
+
+## ✍️ 6️⃣ Management Certification / Signatures
+
+**THIS is what makes it sign-ready**
+
+### Typical signatories:
+
+* Chief Executive Officer
+* Chief Financial Officer
+
+Include:
+
+* Printed name
+* Title
+* Signature line
+* Date
+
+📌 This should be **the final page**
+
+---
+
+# 🧠 How Your Tool Should Think About This
+
+### Structurally:
+
+* Each section = **locked block**
+* Controlled ordering (no reordering by users)
+* Auditor sections locked
+* Signatures only allowed at the end
+
+### UX-wise:
+
+* “Preview as Signed PDF”
+* Validation: no missing required sections
+* Warning if audited financials selected but no auditor report included
+
+---
+
+# ✅ Minimum Required for Signature-Ready Output
+
+If you want the **absolute minimum**:
+
+1. Auditor’s Report (if audited)
+2. Financial Statements (5 statements)
+3. Notes to Financial Statements
+4. Management Signatures
+
+Everything else is **value-add**, not mandatory.
+
+---
+
+If you want next, I can:
+
+* Turn this into a **section schema / JSON model**
+* Map **each disclosure to its owning statement**
+* Design the **final “Print & Sign” UX flow**
+* Create a **regulator-safe validation checklist**
+
+Just say which one 👌
