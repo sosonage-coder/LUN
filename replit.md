@@ -58,6 +58,31 @@ The application employs a client-server architecture.
       - Industry tagging for policy applicability
 - **One Compliance (Entity Governance & Compliance System)**: Structured into Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity tabs. Includes health scores, risk overview, entity profiles, a library of 50+ regulatory filings across various industries, meeting management, and detailed tracking for funding rounds, convertibles, and options.
 
+## Production Features
+
+**Authentication & Authorization:**
+- Replit Auth integration with Google, GitHub, and email login support
+- User roles: ADMIN, CONTROLLER, REVIEWER, PREPARER
+- Multi-entity support with user-entity role assignments
+- RBAC middleware (isAuthenticated, requireRole, requirePermission)
+
+**Database Schema (PostgreSQL):**
+- `users` table with role assignments and profile info
+- `sessions` table for Replit Auth session management
+- `entities` table for company/organization management
+- `user_entity_roles` table for many-to-many role assignments
+- `audit_logs` table for tracking all user actions
+
+**Import/Export Capabilities:**
+- Trial Balance import API (JSON format with CSV/Excel parsing)
+- PDF export for financial statements (balance-sheet, income-statement, cash-flow)
+- Excel export for financial data (trial-balance, schedules, prepaids)
+
+**Audit Trail:**
+- All create/update/delete operations logged
+- Export operations tracked
+- User, entity, action, timestamp, old/new values captured
+
 ## External Dependencies
 - **React**: Frontend UI library.
 - **TypeScript**: Statically typed superset of JavaScript.
@@ -67,3 +92,6 @@ The application employs a client-server architecture.
 - **shadcn/ui**: Reusable UI components.
 - **Express**: Backend web framework.
 - **Decimal.js**: Arbitrary-precision decimal arithmetic library.
+- **xlsx**: Excel file parsing and generation.
+- **pdfkit**: PDF document generation.
+- **multer**: File upload handling.

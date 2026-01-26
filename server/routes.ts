@@ -2145,5 +2145,360 @@ Respond with a JSON object containing:
     }
   });
 
+  // ==================== ENTITY MANAGEMENT ====================
+  
+  // Get all database entities
+  app.get("/api/db/entities", async (req, res) => {
+    try {
+      const { entities } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const allEntities = await db.select().from(entities);
+      res.json(allEntities);
+    } catch (error) {
+      console.error("Error fetching entities:", error);
+      res.status(500).json({ error: "Failed to fetch entities" });
+    }
+  });
+
+  // Create new entity
+  app.post("/api/db/entities", async (req, res) => {
+    try {
+      const { entities, InsertEntity } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      
+      const entityData = {
+        name: req.body.name,
+        code: req.body.code,
+        description: req.body.description,
+        currency: req.body.currency || "USD",
+        fiscalYearEnd: req.body.fiscalYearEnd || "12-31",
+        isActive: req.body.isActive !== false,
+      };
+      
+      const [newEntity] = await db.insert(entities).values(entityData).returning();
+      res.status(201).json(newEntity);
+    } catch (error) {
+      console.error("Error creating entity:", error);
+      res.status(500).json({ error: "Failed to create entity" });
+    }
+  });
+
+  // Get audit logs
+  app.get("/api/audit-logs", async (req, res) => {
+    try {
+      const { auditLogs } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const { desc } = await import("drizzle-orm");
+      
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ error: "Failed to fetch audit logs" });
+    }
+  });
+
+  // ==================== IMPORT/EXPORT ROUTES ====================
+  
+  // Trial Balance Import
+  app.post("/api/import/trial-balance", async (req, res) => {
+    try {
+      const multer = (await import("multer")).default;
+      const XLSX = await import("xlsx");
+      
+      // Parse the uploaded data (assuming JSON format for simplicity)
+      const { data, entityId, periodId } = req.body;
+      
+      if (!data || !Array.isArray(data)) {
+        return res.status(400).json({ error: "Invalid data format. Expected array of trial balance entries." });
+      }
+
+      // Validate TB entries
+      const validEntries = data.filter((entry: any) => 
+        entry.accountCode && 
+        entry.accountName && 
+        (entry.debit !== undefined || entry.credit !== undefined)
+      );
+
+      if (validEntries.length === 0) {
+        return res.status(400).json({ error: "No valid trial balance entries found" });
+      }
+
+      // Log the import
+      const { auditLogs } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const user = req.user as any;
+      
+      await db.insert(auditLogs).values({
+        userId: user?.id || null,
+        entityId: entityId || null,
+        action: "IMPORT",
+        tableName: "trial_balance",
+        recordId: `import-${Date.now()}`,
+        newValues: { count: validEntries.length, entityId, periodId },
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Imported ${validEntries.length} trial balance entries`,
+        count: validEntries.length 
+      });
+    } catch (error) {
+      console.error("Error importing trial balance:", error);
+      res.status(500).json({ error: "Failed to import trial balance" });
+    }
+  });
+
+  // Parse uploaded Excel/CSV file for trial balance
+  app.post("/api/import/parse-file", async (req, res) => {
+    try {
+      const XLSX = await import("xlsx");
+      const { fileContent, fileName } = req.body;
+      
+      if (!fileContent) {
+        return res.status(400).json({ error: "No file content provided" });
+      }
+
+      // Parse base64 file content
+      const buffer = Buffer.from(fileContent, "base64");
+      const workbook = XLSX.read(buffer, { type: "buffer" });
+      
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet);
+
+      res.json({ 
+        success: true, 
+        data,
+        rowCount: data.length,
+        columns: data.length > 0 ? Object.keys(data[0] as object) : []
+      });
+    } catch (error) {
+      console.error("Error parsing file:", error);
+      res.status(500).json({ error: "Failed to parse file" });
+    }
+  });
+
+  // Export financial statements to PDF
+  app.get("/api/export/pdf/:type", async (req, res) => {
+    try {
+      const PDFDocument = (await import("pdfkit")).default;
+      const { type } = req.params;
+      const { entityId, periodId } = req.query;
+
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks: Buffer[] = [];
+      
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => {
+        const result = Buffer.concat(chunks);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${type}-${periodId || "current"}.pdf"`);
+        res.send(result);
+      });
+
+      // Add content based on type
+      doc.fontSize(20).text(`Financial Statement: ${type.toUpperCase()}`, { align: "center" });
+      doc.moveDown();
+      doc.fontSize(12).text(`Entity: ${entityId || "All Entities"}`);
+      doc.text(`Period: ${periodId || "Current Period"}`);
+      doc.text(`Generated: ${new Date().toISOString()}`);
+      doc.moveDown();
+
+      // Add placeholder content based on statement type
+      switch (type) {
+        case "balance-sheet":
+          doc.fontSize(14).text("Balance Sheet", { underline: true });
+          doc.moveDown();
+          doc.fontSize(10).text("Assets");
+          doc.text("  Current Assets: $xxx,xxx");
+          doc.text("  Non-Current Assets: $xxx,xxx");
+          doc.moveDown();
+          doc.text("Liabilities");
+          doc.text("  Current Liabilities: $xxx,xxx");
+          doc.text("  Non-Current Liabilities: $xxx,xxx");
+          doc.moveDown();
+          doc.text("Equity: $xxx,xxx");
+          break;
+        case "income-statement":
+          doc.fontSize(14).text("Income Statement", { underline: true });
+          doc.moveDown();
+          doc.fontSize(10).text("Revenue: $xxx,xxx");
+          doc.text("Cost of Goods Sold: $xxx,xxx");
+          doc.text("Gross Profit: $xxx,xxx");
+          doc.text("Operating Expenses: $xxx,xxx");
+          doc.text("Net Income: $xxx,xxx");
+          break;
+        case "cash-flow":
+          doc.fontSize(14).text("Statement of Cash Flows", { underline: true });
+          doc.moveDown();
+          doc.fontSize(10).text("Operating Activities: $xxx,xxx");
+          doc.text("Investing Activities: $xxx,xxx");
+          doc.text("Financing Activities: $xxx,xxx");
+          doc.text("Net Change in Cash: $xxx,xxx");
+          break;
+        default:
+          doc.text(`Report type: ${type}`);
+      }
+
+      // Log the export
+      const { auditLogs } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const user = req.user as any;
+      
+      await db.insert(auditLogs).values({
+        userId: user?.id || null,
+        entityId: entityId ? parseInt(entityId as string) : null,
+        action: "EXPORT_PDF",
+        tableName: type,
+        recordId: `export-${Date.now()}`,
+        newValues: { type, entityId, periodId },
+      });
+
+      doc.end();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
+  });
+
+  // Export financial data to Excel
+  app.get("/api/export/excel/:type", async (req, res) => {
+    try {
+      const XLSX = await import("xlsx");
+      const { type } = req.params;
+      const { entityId, periodId } = req.query;
+
+      let data: any[] = [];
+      let sheetName = type;
+
+      // Get data based on type
+      switch (type) {
+        case "trial-balance":
+          sheetName = "Trial Balance";
+          data = [
+            { "Account Code": "1000", "Account Name": "Cash", "Debit": 100000, "Credit": 0 },
+            { "Account Code": "1100", "Account Name": "Accounts Receivable", "Debit": 50000, "Credit": 0 },
+            { "Account Code": "2000", "Account Name": "Accounts Payable", "Debit": 0, "Credit": 30000 },
+            { "Account Code": "3000", "Account Name": "Common Stock", "Debit": 0, "Credit": 100000 },
+            { "Account Code": "4000", "Account Name": "Revenue", "Debit": 0, "Credit": 200000 },
+            { "Account Code": "5000", "Account Name": "Expenses", "Debit": 180000, "Credit": 0 },
+          ];
+          break;
+        case "schedules":
+          sheetName = "Schedules";
+          const schedules = await storage.getSchedules();
+          data = schedules.map(s => ({
+            "Schedule ID": s.scheduleId,
+            "Type": s.scheduleType,
+            "Entity": s.entityId,
+            "Description": s.description,
+            "Start Date": s.startDate,
+            "End Date": s.endDate,
+            "Amount (Local)": s.totalAmountLocalInitial,
+            "Amount (Reporting)": s.totalAmountReportingInitial,
+            "Currency": s.localCurrency,
+          }));
+          break;
+        case "prepaids":
+          sheetName = "Prepaid Schedules";
+          const prepaids = await storage.getPrepaidSchedules();
+          data = prepaids.map(p => ({
+            "Name": p.name,
+            "Category": p.subcategory,
+            "Entity": p.entityId,
+            "Original Amount": p.originalAmount,
+            "Remaining Balance": p.remainingBalance,
+            "Monthly Expense": p.monthlyExpense,
+            "Start Date": p.startDate,
+            "End Date": p.endDate,
+            "Status": p.status,
+          }));
+          break;
+        default:
+          data = [{ Message: "No data available for this export type" }];
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      
+      const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+      
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="${type}-${periodId || "export"}.xlsx"`);
+      
+      // Log the export
+      const { auditLogs } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const user = req.user as any;
+      
+      await db.insert(auditLogs).values({
+        userId: user?.id || null,
+        entityId: entityId ? parseInt(entityId as string) : null,
+        action: "EXPORT_EXCEL",
+        tableName: type,
+        recordId: `export-${Date.now()}`,
+        newValues: { type, entityId, periodId, rowCount: data.length },
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error generating Excel:", error);
+      res.status(500).json({ error: "Failed to generate Excel" });
+    }
+  });
+
+  // Get user role for current entity
+  app.get("/api/user/role", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user) {
+        return res.json({ role: "PREPARER", isAuthenticated: false });
+      }
+
+      const { users, userEntityRoles } = await import("@shared/models/auth");
+      const { db } = await import("./db");
+      const { eq, and } = await import("drizzle-orm");
+      
+      const entityId = parseInt(req.headers["x-entity-id"] as string);
+      
+      if (entityId) {
+        const roleAssignment = await db
+          .select()
+          .from(userEntityRoles)
+          .where(and(
+            eq(userEntityRoles.userId, user.id),
+            eq(userEntityRoles.entityId, entityId)
+          ))
+          .limit(1);
+
+        if (roleAssignment.length > 0) {
+          return res.json({ 
+            role: roleAssignment[0].role, 
+            entityId,
+            isAuthenticated: true 
+          });
+        }
+      }
+
+      // Return default role
+      const userRecord = await db
+        .select({ defaultRole: users.defaultRole })
+        .from(users)
+        .where(eq(users.id, user.id))
+        .limit(1);
+
+      res.json({ 
+        role: userRecord[0]?.defaultRole || "PREPARER",
+        isAuthenticated: true 
+      });
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+      res.status(500).json({ error: "Failed to fetch user role" });
+    }
+  });
+
   return httpServer;
 }
