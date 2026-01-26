@@ -3835,9 +3835,10 @@ export default function NetToolPage() {
                     const adjLine = adjLines.find(al => al.accountCode === line.accountCode);
                     const footnoteId = adjLine?.footnoteIds[0];
                     const linkedNote = footnoteId ? notes.find(n => n.noteId === footnoteId) : null;
-                    const bsPlCategory = adjLine?.bsPlCategory || line.bsPlCategory;
-                    const footnoteDescription = adjLine?.footnoteDescription || line.footnoteDescription;
-                    const subNote = adjLine?.subNote || line.subNote;
+                    const mapping = lookupMasterMapping(line.accountName);
+                    const bsPlCategory = mapping?.bsPlCategory || adjLine?.bsPlCategory || line.bsPlCategory;
+                    const footnoteDescription = mapping?.footnoteDescription || adjLine?.footnoteDescription || line.footnoteDescription;
+                    const subNote = mapping?.subNote || adjLine?.subNote || line.subNote;
                     
                     return (
                     <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-ftb-${line.accountCode}`}>
@@ -5597,13 +5598,26 @@ export default function NetToolPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Working Paper</DialogTitle>
-            <DialogDescription>Add a new working paper</DialogDescription>
+            <DialogDescription>Select a working paper name from footnote descriptions or enter a custom name</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="wp-name">Working Paper Name</Label>
+              <Label htmlFor="wp-name">Working Paper Name (from Footnote Desc)</Label>
+              <Select value={newWPName} onValueChange={setNewWPName}>
+                <SelectTrigger data-testid="select-wp-name">
+                  <SelectValue placeholder="Select from footnote descriptions..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {getUniqueFootnoteDescriptions().map((desc, idx) => (
+                    <SelectItem key={`wp-fn-${idx}`} value={desc}>
+                      {desc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Or enter a custom name below:</p>
               <Input
-                id="wp-name"
+                id="wp-name-custom"
                 value={newWPName}
                 onChange={(e) => setNewWPName(e.target.value)}
                 placeholder="e.g., Fixed Assets Rollforward"
