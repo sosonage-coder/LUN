@@ -54,6 +54,7 @@ import {
   ExternalLink,
   AlertTriangle,
   CircleDot,
+  ArrowRight,
 } from "lucide-react";
 import {
   sampleNotes,
@@ -498,13 +499,79 @@ export default function NetToolPage() {
       return sum + (line?.finalBalance || 0);
     }, 0);
     
-    // Get WP total from last TOTAL row
-    const sortedRows = [...selectedWorkingPaper.rows].sort((a, b) => a.orderIndex - b.orderIndex);
+    // Auto-populate WP rows from linked TB accounts using improved matching
+    // Build a map of TB accounts to their matching WP rows with conflict detection
+    const tbToWPMapping: Map<string, { tbLine: typeof adjLines[0], wpRow: WorkingPaperRow }> = new Map();
+    const usedWPRowIds: Set<string> = new Set();
+    
+    for (const accountCode of selectedTBAccounts) {
+      const tbLine = adjLines.find(l => l.accountCode === accountCode);
+      if (!tbLine) continue;
+      
+      const matchingRow = findMatchingWPRow(tbLine, selectedWorkingPaper.rows);
+      if (matchingRow) {
+        // Enforce one-to-one mapping: skip if WP row already mapped
+        if (!usedWPRowIds.has(matchingRow.rowId)) {
+          tbToWPMapping.set(accountCode, { tbLine, wpRow: matchingRow });
+          usedWPRowIds.add(matchingRow.rowId);
+        }
+        // Note: If multiple TB accounts match same WP row, only first is used
+      }
+    }
+    
+    // Apply TB values to matching WP rows
+    const updatedRows = selectedWorkingPaper.rows.map(row => {
+      if (row.rowType !== "DATA") return row;
+      
+      // Check if this row has a TB account mapped to it
+      const mappedEntry = Array.from(tbToWPMapping.values()).find(
+        entry => entry.wpRow.rowId === row.rowId
+      );
+      
+      if (!mappedEntry) return row;
+      
+      const { tbLine } = mappedEntry;
+      const newValues = { ...row.values };
+      
+      // Determine which column(s) to populate based on WP type
+      if (selectedWorkingPaper.type === "ROLLFORWARD") {
+        // For rollforward, populate closing/ending balance column
+        // This represents the "current period ending balance" which ties to GL/TB
+        if ("col-closing" in newValues) {
+          newValues["col-closing"] = tbLine.finalBalance;
+        } else if ("col-cy" in newValues) {
+          newValues["col-cy"] = tbLine.finalBalance;
+        } else if ("col-ending" in newValues) {
+          newValues["col-ending"] = tbLine.finalBalance;
+        }
+      } else if (selectedWorkingPaper.type === "LINEAR" || selectedWorkingPaper.type === "CUSTOM") {
+        // For linear/custom, populate amount or total column
+        if ("col-total" in newValues) {
+          newValues["col-total"] = tbLine.finalBalance;
+        } else if ("col-amount" in newValues) {
+          newValues["col-amount"] = tbLine.finalBalance;
+        } else if ("col-cy" in newValues) {
+          newValues["col-cy"] = tbLine.finalBalance;
+        }
+      } else if (selectedWorkingPaper.type === "AGING") {
+        // For aging, populate the total column (sum of aging buckets)
+        if ("col-total" in newValues) {
+          newValues["col-total"] = tbLine.finalBalance;
+        }
+      }
+      
+      return { ...row, values: newValues };
+    });
+    
+    // Recalculate SUBTOTAL and TOTAL rows based on updated DATA rows
+    const recalculatedRows = recalculateWPTotals(updatedRows, selectedWorkingPaper.type);
+    
+    // Get WP total from recalculated TOTAL row
+    const sortedRows = [...recalculatedRows].sort((a, b) => a.orderIndex - b.orderIndex);
     const totalRow = sortedRows.find(r => r.rowType === "TOTAL");
     let wpTotal = 0;
     if (totalRow) {
-      // Find the closing/total column value
-      const closingCols = ["col-closing", "col-total", "col-cy"];
+      const closingCols = ["col-closing", "col-total", "col-cy", "col-ending", "col-amount"];
       for (const colId of closingCols) {
         if (typeof totalRow.values[colId] === "number") {
           wpTotal = totalRow.values[colId] as number;
@@ -516,12 +583,13 @@ export default function NetToolPage() {
     const variance = totalFromTB - wpTotal;
     const tieOutStatus = selectedTBAccounts.length === 0 
       ? "INCOMPLETE" as const
-      : variance === 0 
+      : Math.abs(variance) < 0.01 
         ? "TIED" as const 
         : "VARIANCE" as const;
     
     const updatedWP = {
       ...selectedWorkingPaper,
+      rows: recalculatedRows,
       linkedAccountCodes: selectedTBAccounts,
       tbSourceAmount: selectedTBAccounts.length > 0 ? totalFromTB : null,
       wpTotalAmount: wpTotal,
@@ -537,8 +605,113 @@ export default function NetToolPage() {
     setShowLinkTBDialog(false);
     toast({ 
       title: "Success", 
-      description: `Linked ${selectedTBAccounts.length} TB account(s). Status: ${tieOutStatus}` 
+      description: `Linked ${selectedTBAccounts.length} TB account(s). WP populated from TB. Status: ${tieOutStatus}` 
     });
+  };
+
+  // Helper function to recalculate SUBTOTAL and TOTAL rows
+  const recalculateWPTotals = (rows: WorkingPaperRow[], wpType: string): WorkingPaperRow[] => {
+    const numericColumns = ["col-closing", "col-total", "col-cy", "col-ending", "col-amount", "col-opening", "col-additions", "col-disposals", "col-depreciation", "col-py"];
+    
+    // Sort rows by orderIndex to process in correct order
+    const sortedRows = [...rows].sort((a, b) => a.orderIndex - b.orderIndex);
+    
+    return sortedRows.map(row => {
+      if (row.rowType === "SUBTOTAL") {
+        const newValues = { ...row.values };
+        
+        // Find DATA rows that precede this SUBTOTAL (until previous SUBTOTAL/HEADER)
+        const rowIndex = sortedRows.findIndex(r => r.rowId === row.rowId);
+        const dataRowsInSection: WorkingPaperRow[] = [];
+        
+        for (let i = rowIndex - 1; i >= 0; i--) {
+          const prevRow = sortedRows[i];
+          if (prevRow.rowType === "SUBTOTAL" || prevRow.rowType === "HEADER") break;
+          if (prevRow.rowType === "DATA") dataRowsInSection.push(prevRow);
+        }
+        
+        // Sum DATA rows in this section for each numeric column
+        for (const colId of numericColumns) {
+          if (colId in newValues) {
+            const sum = dataRowsInSection.reduce((acc, r) => {
+              const val = r.values[colId];
+              return acc + (typeof val === "number" ? val : 0);
+            }, 0);
+            newValues[colId] = sum;
+          }
+        }
+        
+        return { ...row, values: newValues };
+      }
+      
+      if (row.rowType === "TOTAL") {
+        const newValues = { ...row.values };
+        
+        // Sum all DATA rows for each numeric column (grand total)
+        for (const colId of numericColumns) {
+          if (colId in newValues) {
+            const sum = sortedRows
+              .filter(r => r.rowType === "DATA")
+              .reduce((acc, r) => {
+                const val = r.values[colId];
+                return acc + (typeof val === "number" ? val : 0);
+              }, 0);
+            newValues[colId] = sum;
+          }
+        }
+        
+        return { ...row, values: newValues };
+      }
+      
+      return row;
+    });
+  };
+  
+  // Helper function to find matching WP row for a TB account
+  const findMatchingWPRow = (tbLine: { accountCode: string; accountName: string }, wpRows: WorkingPaperRow[]): WorkingPaperRow | null => {
+    const accountCode = tbLine.accountCode.toLowerCase();
+    const accountName = tbLine.accountName.toLowerCase();
+    const accountWords = accountName.split(/\s+/).filter(w => w.length > 2);
+    
+    for (const row of wpRows) {
+      if (row.rowType !== "DATA") continue;
+      
+      const rowLabel = (
+        row.values["col-label"] || 
+        row.values["col-description"] || 
+        row.values["col-item"] || 
+        row.values["col-name"] ||
+        ""
+      ).toString().toLowerCase();
+      
+      if (!rowLabel) continue;
+      
+      // Priority 1: Exact account code match
+      if (rowLabel.includes(accountCode)) {
+        return row;
+      }
+      
+      // Priority 2: Significant word match (at least 2 words matching)
+      const rowWords = rowLabel.split(/\s+/).filter(w => w.length > 2);
+      const matchingWords = accountWords.filter(word => 
+        rowWords.some(rw => rw.includes(word) || word.includes(rw))
+      );
+      
+      if (matchingWords.length >= 2 || (matchingWords.length >= 1 && accountWords.length <= 2)) {
+        return row;
+      }
+      
+      // Priority 3: Key term match for common account types
+      const keyTerms = ["cash", "receivable", "payable", "prepaid", "inventory", "equipment", "building", "land", "vehicle", "software", "patent", "debt", "loan", "accrued", "revenue", "expense"];
+      const accountKeyTerms = keyTerms.filter(term => accountName.includes(term));
+      const rowKeyTerms = keyTerms.filter(term => rowLabel.includes(term));
+      
+      if (accountKeyTerms.length > 0 && accountKeyTerms.some(t => rowKeyTerms.includes(t))) {
+        return row;
+      }
+    }
+    
+    return null;
   };
 
   const renderDashboard = () => (
@@ -5459,17 +5632,17 @@ export default function NetToolPage() {
 
       {/* Link to TB Dialog */}
       <Dialog open={showLinkTBDialog} onOpenChange={setShowLinkTBDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Link to Trial Balance</DialogTitle>
             <DialogDescription>
-              Select TB account codes to link to this working paper. The system will auto-calculate tie-out status.
+              Select TB accounts to link. The system will auto-populate WP rows with matching TB balances and calculate tie-out status.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Available TB Accounts</Label>
-              <ScrollArea className="h-[250px] border rounded-md p-2">
+              <ScrollArea className="h-[200px] border rounded-md p-2">
                 <div className="space-y-2">
                   {adjLines.map((line) => (
                     <div 
@@ -5499,18 +5672,71 @@ export default function NetToolPage() {
                 </div>
               </ScrollArea>
             </div>
+            
+            {/* Mapping Preview */}
+            {selectedTBAccounts.length > 0 && selectedWorkingPaper && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4" />
+                  Auto-Population Preview
+                </Label>
+                <div className="border rounded-md p-3 bg-muted/30 max-h-[150px] overflow-y-auto">
+                  <div className="space-y-2 text-sm">
+                    {selectedTBAccounts.map(accountCode => {
+                      const tbLine = adjLines.find(l => l.accountCode === accountCode);
+                      if (!tbLine) return null;
+                      
+                      // Find matching WP row using improved matching logic
+                      const matchingRow = findMatchingWPRow(tbLine, selectedWorkingPaper.rows);
+                      
+                      const wpRowLabel = matchingRow 
+                        ? (matchingRow.values["col-label"] || matchingRow.values["col-description"] || matchingRow.values["col-item"] || matchingRow.values["col-name"] || "Unknown")
+                        : null;
+                      
+                      return (
+                        <div key={accountCode} className="flex items-center gap-2 p-2 rounded bg-background">
+                          <Badge variant="outline" className="font-mono text-xs">{accountCode}</Badge>
+                          <span className="text-muted-foreground">{tbLine.accountName}</span>
+                          <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                          {matchingRow ? (
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              {wpRowLabel}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-muted-foreground">
+                              No matching row
+                            </Badge>
+                          )}
+                          <span className="ml-auto font-mono text-sm">{formatCurrency(tbLine.finalBalance)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="bg-muted/50 p-3 rounded-md">
-              <p className="text-sm">
-                <strong>Selected:</strong> {selectedTBAccounts.length} account(s)
-              </p>
-              <p className="text-sm font-mono">
-                <strong>Total:</strong> {formatCurrency(
-                  selectedTBAccounts.reduce((sum, code) => {
-                    const line = adjLines.find(l => l.accountCode === code);
-                    return sum + (line?.finalBalance || 0);
-                  }, 0)
-                )}
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">
+                    <strong>Selected:</strong> {selectedTBAccounts.length} account(s)
+                  </p>
+                  <p className="text-sm font-mono">
+                    <strong>TB Total:</strong> {formatCurrency(
+                      selectedTBAccounts.reduce((sum, code) => {
+                        const line = adjLines.find(l => l.accountCode === code);
+                        return sum + (line?.finalBalance || 0);
+                      }, 0)
+                    )}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Matching rows will be auto-populated</p>
+                  <p className="text-xs text-muted-foreground">with TB Final Balance values</p>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -5518,7 +5744,7 @@ export default function NetToolPage() {
               Cancel
             </Button>
             <Button onClick={handleLinkTB} data-testid="button-confirm-link-tb">
-              Link Accounts
+              Link & Populate
             </Button>
           </DialogFooter>
         </DialogContent>
