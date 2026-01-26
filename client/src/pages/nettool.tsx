@@ -47,6 +47,13 @@ import {
   Edit,
   CheckCircle,
   Table2,
+  Link2,
+  Paperclip,
+  FileIcon,
+  Upload,
+  ExternalLink,
+  AlertTriangle,
+  CircleDot,
 } from "lucide-react";
 import {
   sampleNotes,
@@ -166,6 +173,13 @@ export default function NetToolPage() {
   // Working Papers state
   const [workingPapers, setWorkingPapers] = useState<WorkingPaper[]>(sampleWorkingPapers);
   const [selectedWorkingPaper, setSelectedWorkingPaper] = useState<WorkingPaper | null>(null);
+  const [showLinkTBDialog, setShowLinkTBDialog] = useState(false);
+  const [showAddWPNoteDialog, setShowAddWPNoteDialog] = useState(false);
+  const [newWPNoteContent, setNewWPNoteContent] = useState("");
+  const [showAddAttachmentDialog, setShowAddAttachmentDialog] = useState(false);
+  const [newAttachmentName, setNewAttachmentName] = useState("");
+  const [newAttachmentDesc, setNewAttachmentDesc] = useState("");
+  const [selectedTBAccounts, setSelectedTBAccounts] = useState<string[]>([]);
   
   // TB Adjustments Workspace state
   const [adjLines, setAdjLines] = useState<TBAdjustmentAccountLine[]>(sampleTBAdjustmentsWorkspace.lines);
@@ -384,6 +398,13 @@ export default function NetToolPage() {
       linkedNotes: [],
       frozenRows: 0,
       status: "DRAFT",
+      linkedAccountCodes: [],
+      tbSourceAmount: null,
+      wpTotalAmount: null,
+      variance: null,
+      tieOutStatus: "INCOMPLETE",
+      wpNotes: [],
+      attachments: [],
       createdAt: new Date().toISOString(),
       createdBy: "Current User",
       lastUpdated: new Date().toISOString(),
@@ -412,6 +433,112 @@ export default function NetToolPage() {
     setShowDeleteWPDialog(false);
     setWpToDelete(null);
     toast({ title: "Success", description: "Working paper deleted successfully" });
+  };
+
+  const handleAddWPNote = () => {
+    if (!selectedWorkingPaper || !newWPNoteContent.trim()) return;
+    
+    const newNote = {
+      noteId: `wn-${Date.now()}`,
+      content: newWPNoteContent.trim(),
+      createdAt: new Date().toISOString(),
+      createdBy: "Current User",
+    };
+    
+    setWorkingPapers(prev => prev.map(wp => 
+      wp.workingPaperId === selectedWorkingPaper.workingPaperId
+        ? { ...wp, wpNotes: [...(wp.wpNotes || []), newNote] }
+        : wp
+    ));
+    
+    setSelectedWorkingPaper(prev => 
+      prev ? { ...prev, wpNotes: [...(prev.wpNotes || []), newNote] } : null
+    );
+    
+    setNewWPNoteContent("");
+    setShowAddWPNoteDialog(false);
+    toast({ title: "Success", description: "Note added successfully" });
+  };
+
+  const handleAddAttachment = () => {
+    if (!selectedWorkingPaper || !newAttachmentName.trim()) return;
+    
+    const newAttachment = {
+      attachmentId: `att-${Date.now()}`,
+      fileName: newAttachmentName.trim(),
+      fileType: "application/pdf",
+      fileSize: Math.floor(Math.random() * 500000) + 50000,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: "Current User",
+      description: newAttachmentDesc.trim() || undefined,
+    };
+    
+    setWorkingPapers(prev => prev.map(wp => 
+      wp.workingPaperId === selectedWorkingPaper.workingPaperId
+        ? { ...wp, attachments: [...(wp.attachments || []), newAttachment] }
+        : wp
+    ));
+    
+    setSelectedWorkingPaper(prev => 
+      prev ? { ...prev, attachments: [...(prev.attachments || []), newAttachment] } : null
+    );
+    
+    setNewAttachmentName("");
+    setNewAttachmentDesc("");
+    setShowAddAttachmentDialog(false);
+    toast({ title: "Success", description: "Attachment uploaded successfully" });
+  };
+
+  const handleLinkTB = () => {
+    if (!selectedWorkingPaper) return;
+    
+    // Calculate TB source amount from linked accounts
+    const totalFromTB = selectedTBAccounts.reduce((sum, code) => {
+      const line = adjLines.find(l => l.accountCode === code);
+      return sum + (line?.finalBalance || 0);
+    }, 0);
+    
+    // Get WP total from last TOTAL row
+    const sortedRows = [...selectedWorkingPaper.rows].sort((a, b) => a.orderIndex - b.orderIndex);
+    const totalRow = sortedRows.find(r => r.rowType === "TOTAL");
+    let wpTotal = 0;
+    if (totalRow) {
+      // Find the closing/total column value
+      const closingCols = ["col-closing", "col-total", "col-cy"];
+      for (const colId of closingCols) {
+        if (typeof totalRow.values[colId] === "number") {
+          wpTotal = totalRow.values[colId] as number;
+          break;
+        }
+      }
+    }
+    
+    const variance = totalFromTB - wpTotal;
+    const tieOutStatus = selectedTBAccounts.length === 0 
+      ? "INCOMPLETE" as const
+      : variance === 0 
+        ? "TIED" as const 
+        : "VARIANCE" as const;
+    
+    const updatedWP = {
+      ...selectedWorkingPaper,
+      linkedAccountCodes: selectedTBAccounts,
+      tbSourceAmount: selectedTBAccounts.length > 0 ? totalFromTB : null,
+      wpTotalAmount: wpTotal,
+      variance: selectedTBAccounts.length > 0 ? variance : null,
+      tieOutStatus,
+    };
+    
+    setWorkingPapers(prev => prev.map(wp => 
+      wp.workingPaperId === selectedWorkingPaper.workingPaperId ? updatedWP : wp
+    ));
+    
+    setSelectedWorkingPaper(updatedWP);
+    setShowLinkTBDialog(false);
+    toast({ 
+      title: "Success", 
+      description: `Linked ${selectedTBAccounts.length} TB account(s). Status: ${tieOutStatus}` 
+    });
   };
 
   const renderDashboard = () => (
@@ -2692,6 +2819,18 @@ export default function NetToolPage() {
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getWpStatusColor(wp.status)}>{wp.status}</Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setSelectedTBAccounts(wp.linkedAccountCodes || []);
+                setShowLinkTBDialog(true);
+              }}
+              data-testid="button-wp-link-tb"
+            >
+              <Link2 className="w-4 h-4 mr-1" />
+              Link to TB
+            </Button>
             <Button variant="outline" size="sm" data-testid="button-wp-add-row">
               <Plus className="w-4 h-4 mr-1" />
               Add Row
@@ -2702,6 +2841,79 @@ export default function NetToolPage() {
             </Button>
           </div>
         </div>
+
+        {/* Tie-Out Status Card */}
+        <Card className={`border-l-4 ${
+          wp.tieOutStatus === "TIED" ? "border-l-green-500" : 
+          wp.tieOutStatus === "VARIANCE" ? "border-l-red-500" : "border-l-yellow-500"
+        }`} data-testid="card-wp-tieout">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-full ${
+                  wp.tieOutStatus === "TIED" ? "bg-green-100 dark:bg-green-900/30" : 
+                  wp.tieOutStatus === "VARIANCE" ? "bg-red-100 dark:bg-red-900/30" : "bg-yellow-100 dark:bg-yellow-900/30"
+                }`}>
+                  {wp.tieOutStatus === "TIED" ? (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  ) : wp.tieOutStatus === "VARIANCE" ? (
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  ) : (
+                    <CircleDot className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">TB Tie-Out Status:</span>
+                    <Badge 
+                      variant={wp.tieOutStatus === "TIED" ? "default" : wp.tieOutStatus === "VARIANCE" ? "destructive" : "secondary"}
+                      data-testid="badge-wp-tieout-status"
+                    >
+                      {wp.tieOutStatus}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {wp.linkedAccountCodes?.length || 0} TB account(s) linked
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-6 text-sm">
+                <div className="text-center">
+                  <p className="text-muted-foreground">TB Source</p>
+                  <p className="font-mono font-semibold" data-testid="text-wp-tb-source">
+                    {wp.tbSourceAmount !== null ? formatCurrency(wp.tbSourceAmount) : "-"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-muted-foreground">WP Total</p>
+                  <p className="font-mono font-semibold" data-testid="text-wp-total">
+                    {wp.wpTotalAmount !== null ? formatCurrency(wp.wpTotalAmount) : "-"}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-muted-foreground">Variance</p>
+                  <p className={`font-mono font-semibold ${
+                    wp.variance !== null && wp.variance !== 0 ? "text-red-600 dark:text-red-400" : ""
+                  }`} data-testid="text-wp-variance">
+                    {wp.variance !== null ? (wp.variance === 0 ? "-" : formatCurrency(wp.variance)) : "-"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {wp.linkedAccountCodes && wp.linkedAccountCodes.length > 0 && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground mb-1">Linked Account Codes:</p>
+                <div className="flex gap-1 flex-wrap">
+                  {wp.linkedAccountCodes.map((code) => (
+                    <Badge key={code} variant="outline" className="text-xs font-mono">
+                      {code}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Working Paper Grid */}
         <Card>
@@ -2814,6 +3026,128 @@ export default function NetToolPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Analyst Notes Section */}
+        <Card data-testid="card-wp-notes">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Analyst Notes
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAddWPNoteDialog(true)}
+                data-testid="button-wp-add-note"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Note
+              </Button>
+            </div>
+            <CardDescription>
+              {wp.wpNotes?.length || 0} note(s) recorded
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {wp.wpNotes && wp.wpNotes.length > 0 ? (
+              <div className="space-y-3">
+                {wp.wpNotes.map((note) => (
+                  <div 
+                    key={note.noteId} 
+                    className="p-3 bg-muted/30 rounded-md border"
+                    data-testid={`wp-note-${note.noteId}`}
+                  >
+                    <p className="text-sm">{note.content}</p>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                      <span>{note.createdBy}</span>
+                      <span>•</span>
+                      <span>{new Date(note.createdAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No notes yet. Add notes to document observations and methodology.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Attachments Section */}
+        <Card data-testid="card-wp-attachments">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Paperclip className="w-5 h-5" />
+                Supporting Documents
+              </CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAddAttachmentDialog(true)}
+                data-testid="button-wp-add-attachment"
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Upload
+              </Button>
+            </div>
+            <CardDescription>
+              {wp.attachments?.length || 0} attachment(s)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {wp.attachments && wp.attachments.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Uploaded</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {wp.attachments.map((att) => (
+                    <TableRow key={att.attachmentId} data-testid={`wp-attachment-${att.attachmentId}`}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <FileIcon className="w-4 h-4 text-muted-foreground" />
+                          {att.fileName}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {att.description || "-"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {(att.fileSize / 1024).toFixed(1)} KB
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(att.uploadedAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" data-testid={`button-view-attachment-${att.attachmentId}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" data-testid={`button-download-attachment-${att.attachmentId}`}>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No attachments yet. Upload invoices, contracts, or other supporting documents.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Metadata */}
         <Card>
@@ -5095,6 +5429,161 @@ export default function NetToolPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Link to TB Dialog */}
+      <Dialog open={showLinkTBDialog} onOpenChange={setShowLinkTBDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Link to Trial Balance</DialogTitle>
+            <DialogDescription>
+              Select TB account codes to link to this working paper. The system will auto-calculate tie-out status.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Available TB Accounts</Label>
+              <ScrollArea className="h-[250px] border rounded-md p-2">
+                <div className="space-y-2">
+                  {adjLines.map((line) => (
+                    <div 
+                      key={line.accountCode}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
+                      onClick={() => {
+                        setSelectedTBAccounts(prev => 
+                          prev.includes(line.accountCode)
+                            ? prev.filter(c => c !== line.accountCode)
+                            : [...prev, line.accountCode]
+                        );
+                      }}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={selectedTBAccounts.includes(line.accountCode)}
+                        onChange={() => {}}
+                        className="h-4 w-4"
+                      />
+                      <span className="font-mono text-sm">{line.accountCode}</span>
+                      <span className="text-sm flex-1">{line.accountName}</span>
+                      <span className="font-mono text-sm text-right">
+                        {formatCurrency(line.finalBalance)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <p className="text-sm">
+                <strong>Selected:</strong> {selectedTBAccounts.length} account(s)
+              </p>
+              <p className="text-sm font-mono">
+                <strong>Total:</strong> {formatCurrency(
+                  selectedTBAccounts.reduce((sum, code) => {
+                    const line = adjLines.find(l => l.accountCode === code);
+                    return sum + (line?.finalBalance || 0);
+                  }, 0)
+                )}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLinkTBDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleLinkTB} data-testid="button-confirm-link-tb">
+              Link Accounts
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add WP Note Dialog */}
+      <Dialog open={showAddWPNoteDialog} onOpenChange={setShowAddWPNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Note</DialogTitle>
+            <DialogDescription>
+              Add an analyst note to document observations, methodology, or follow-ups.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="wp-note-content">Note Content</Label>
+              <Textarea
+                id="wp-note-content"
+                placeholder="Enter your note..."
+                value={newWPNoteContent}
+                onChange={(e) => setNewWPNoteContent(e.target.value)}
+                rows={4}
+                data-testid="input-wp-note-content"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddWPNoteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddWPNote} 
+              disabled={!newWPNoteContent.trim()}
+              data-testid="button-confirm-add-wp-note"
+            >
+              Add Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Attachment Dialog */}
+      <Dialog open={showAddAttachmentDialog} onOpenChange={setShowAddAttachmentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Attachment</DialogTitle>
+            <DialogDescription>
+              Upload invoices, contracts, or other supporting documents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="attachment-name">File Name</Label>
+              <Input
+                id="attachment-name"
+                placeholder="e.g., Invoice_Dec2024.pdf"
+                value={newAttachmentName}
+                onChange={(e) => setNewAttachmentName(e.target.value)}
+                data-testid="input-attachment-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attachment-desc">Description (optional)</Label>
+              <Input
+                id="attachment-desc"
+                placeholder="Brief description of the document"
+                value={newAttachmentDesc}
+                onChange={(e) => setNewAttachmentDesc(e.target.value)}
+                data-testid="input-attachment-desc"
+              />
+            </div>
+            <div className="border-2 border-dashed rounded-md p-6 text-center text-muted-foreground">
+              <Upload className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm">Drag and drop file here, or click to browse</p>
+              <p className="text-xs mt-1">Supported: PDF, Excel, Images (max 10MB)</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddAttachmentDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddAttachment} 
+              disabled={!newAttachmentName.trim()}
+              data-testid="button-confirm-add-attachment"
+            >
+              Upload
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

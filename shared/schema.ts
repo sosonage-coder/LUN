@@ -2191,6 +2191,24 @@ export interface SplitDeclaration {
 // Working Paper Types
 export type WorkingPaperType = "LINEAR" | "AGING" | "ROLLFORWARD" | "CUSTOM";
 export type WorkingPaperStatus = "DRAFT" | "IN_REVIEW" | "APPROVED" | "LOCKED";
+export type TieOutStatus = "TIED" | "VARIANCE" | "INCOMPLETE";
+
+export interface WorkingPaperNote {
+  noteId: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface WorkingPaperAttachment {
+  attachmentId: string;
+  fileName: string;
+  fileType: string; // e.g., "application/pdf", "image/png"
+  fileSize: number; // in bytes
+  uploadedAt: string;
+  uploadedBy: string;
+  description?: string;
+}
 
 export interface WorkingPaperColumn {
   columnId: string;
@@ -2228,6 +2246,15 @@ export interface WorkingPaper {
   textBlocks: WorkingPaperTextBlock[];
   frozenRows: number; // number of header rows to freeze
   status: WorkingPaperStatus;
+  // TB Linking & Tie-Out fields
+  linkedAccountCodes: string[]; // TB account codes linked to this WP
+  tbSourceAmount: number | null; // Auto-calculated sum from linked TB accounts
+  wpTotalAmount: number | null; // Calculated total from WP rows
+  variance: number | null; // Difference: tbSourceAmount - wpTotalAmount
+  tieOutStatus: TieOutStatus; // TIED, VARIANCE, or INCOMPLETE
+  // Notes and Attachments
+  wpNotes: WorkingPaperNote[]; // Analyst notes with timestamps
+  attachments: WorkingPaperAttachment[]; // Supporting documents
   createdAt: string;
   createdBy: string;
   lastUpdated: string;
