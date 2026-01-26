@@ -2856,19 +2856,16 @@ export default function NetToolPage() {
     const calculateAdjTotals = () => {
       let totalInitial = 0;
       let totalFinal = 0;
-      let totalRJE = 0;
-      let totalAJE = 0;
-      let totalNetMove = 0;
+      let totalSum = 0;
       
       adjLines.forEach(line => {
         totalInitial += line.initialBalance;
         totalFinal += line.finalBalance;
-        totalRJE += line.totalRJE;
-        totalAJE += line.totalAJE;
-        totalNetMove += line.netMovement;
+        // Sum is the total of all adjustments (RJE + AJE = netMovement)
+        totalSum += line.netMovement;
       });
       
-      return { totalInitial, totalFinal, totalRJE, totalAJE, totalNetMove };
+      return { totalInitial, totalFinal, totalSum };
     };
 
     const adjTotals = calculateAdjTotals();
@@ -2988,46 +2985,16 @@ export default function NetToolPage() {
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
-                    <TableHead className="w-28">Footnote</TableHead>
+                    <TableHead className="w-40">Footnote</TableHead>
                     <TableHead className="text-center w-28 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">Initial TB</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
                       </div>
                     </TableHead>
-                    {/* RJE Columns */}
-                    {adjRJEColumns.filter(c => c.isVisible).map(col => (
-                      <TableHead key={col.columnId} className="text-center w-24 bg-blue-50 dark:bg-blue-950">
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs text-blue-700 dark:text-blue-300">{col.columnLabel}</span>
-                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
-                        </div>
-                      </TableHead>
-                    ))}
-                    <TableHead className="text-center w-24 bg-blue-100 dark:bg-blue-900">
+                    <TableHead className="text-center w-28 bg-amber-100 dark:bg-amber-900">
                       <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">Total RJE</span>
-                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
-                      </div>
-                    </TableHead>
-                    {/* AJE Columns */}
-                    {adjAJEColumns.filter(c => c.isVisible).map(col => (
-                      <TableHead key={col.columnId} className="text-center w-24 bg-purple-50 dark:bg-purple-950">
-                        <div className="flex flex-col items-center">
-                          <span className="text-xs text-purple-700 dark:text-purple-300">{col.columnLabel}</span>
-                          <span className="text-[10px] text-muted-foreground">DR(+)/CR(-)</span>
-                        </div>
-                      </TableHead>
-                    ))}
-                    <TableHead className="text-center w-24 bg-purple-100 dark:bg-purple-900">
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Total AJE</span>
-                        <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-center w-24 bg-amber-100 dark:bg-amber-900">
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-semibold">Net Move</span>
+                        <span className="text-xs font-semibold">Sum</span>
                         <Lock className="w-3 h-3 mt-1 text-muted-foreground" />
                       </div>
                     </TableHead>
@@ -3074,19 +3041,21 @@ export default function NetToolPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      {/* Footnote Tag */}
+                      {/* Footnote Tag - Dropdown using disclosure notes */}
                       <TableCell>
                         <Select
                           value={line.footnoteIds[0] || "none"}
                           onValueChange={(value) => handleAdjFootnoteUpdate(line.lineId, value === "none" ? [] : [value])}
                         >
                           <SelectTrigger className="h-7 text-xs" data-testid={`select-adj-fn-${line.accountCode}`}>
-                            <SelectValue placeholder="Select" />
+                            <SelectValue placeholder="Select Note" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">None</SelectItem>
-                            {sampleTBAdjustmentsWorkspace.footnotes.map((fn) => (
-                              <SelectItem key={fn.footnoteId} value={fn.footnoteId}>{fn.footnoteCode}</SelectItem>
+                            {notes.map((note) => (
+                              <SelectItem key={note.noteId} value={note.noteId}>
+                                Note {note.noteNumber}: {note.noteTitle.length > 25 ? note.noteTitle.substring(0, 25) + "..." : note.noteTitle}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -3095,33 +3064,7 @@ export default function NetToolPage() {
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                         {formatNetAmount(line.initialBalance)}
                       </TableCell>
-                      {/* RJE Columns */}
-                      {adjRJEColumns.filter(c => c.isVisible).map(col => {
-                        const amount = line.adjustments[col.columnId] || 0;
-                        return (
-                          <TableCell key={col.columnId} className={`text-right font-mono text-sm bg-blue-50/50 dark:bg-blue-950/50 ${amount < 0 ? "text-red-600 dark:text-red-400" : amount > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                            {formatNetAmount(amount)}
-                          </TableCell>
-                        );
-                      })}
-                      {/* Total RJE */}
-                      <TableCell className={`text-right font-mono text-sm bg-blue-100/50 dark:bg-blue-900/50 font-semibold ${line.totalRJE < 0 ? "text-red-600 dark:text-red-400" : line.totalRJE > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                        {formatNetAmount(line.totalRJE)}
-                      </TableCell>
-                      {/* AJE Columns */}
-                      {adjAJEColumns.filter(c => c.isVisible).map(col => {
-                        const amount = line.adjustments[col.columnId] || 0;
-                        return (
-                          <TableCell key={col.columnId} className={`text-right font-mono text-sm bg-purple-50/50 dark:bg-purple-950/50 ${amount < 0 ? "text-red-600 dark:text-red-400" : amount > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
-                            {formatNetAmount(amount)}
-                          </TableCell>
-                        );
-                      })}
-                      {/* Total AJE */}
-                      <TableCell className={`text-right font-mono text-sm bg-purple-100/50 dark:bg-purple-900/50 font-semibold ${line.totalAJE < 0 ? "text-red-600 dark:text-red-400" : line.totalAJE > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
-                        {formatNetAmount(line.totalAJE)}
-                      </TableCell>
-                      {/* Net Movement */}
+                      {/* Sum (Total of all adjustments) */}
                       <TableCell className={`text-right font-mono text-sm bg-amber-50 dark:bg-amber-950 font-semibold ${line.netMovement < 0 ? "text-red-600 dark:text-red-400" : line.netMovement > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
                         {formatNetAmount(line.netMovement)}
                       </TableCell>
@@ -3139,30 +3082,8 @@ export default function NetToolPage() {
                     <TableCell className={`text-right font-mono ${adjTotals.totalInitial < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-adj-initial-total">
                       {formatNetAmount(adjTotals.totalInitial)}
                     </TableCell>
-                    {adjRJEColumns.filter(c => c.isVisible).map(col => {
-                      const colTotal = adjLines.reduce((sum, line) => sum + (line.adjustments[col.columnId] || 0), 0);
-                      return (
-                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : colTotal > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                          {formatNetAmount(colTotal)}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className={`text-right font-mono bg-blue-100/50 dark:bg-blue-900/50 ${adjTotals.totalRJE < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalRJE > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                      {formatNetAmount(adjTotals.totalRJE)}
-                    </TableCell>
-                    {adjAJEColumns.filter(c => c.isVisible).map(col => {
-                      const colTotal = adjLines.reduce((sum, line) => sum + (line.adjustments[col.columnId] || 0), 0);
-                      return (
-                        <TableCell key={`${col.columnId}-total`} className={`text-right font-mono ${colTotal < 0 ? "text-red-600 dark:text-red-400" : colTotal > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
-                          {formatNetAmount(colTotal)}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className={`text-right font-mono bg-purple-100/50 dark:bg-purple-900/50 ${adjTotals.totalAJE < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalAJE > 0 ? "text-purple-600 dark:text-purple-400" : ""}`}>
-                      {formatNetAmount(adjTotals.totalAJE)}
-                    </TableCell>
-                    <TableCell className={`text-right font-mono bg-amber-100/50 dark:bg-amber-900/50 ${adjTotals.totalNetMove < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalNetMove > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
-                      {formatNetAmount(adjTotals.totalNetMove)}
+                    <TableCell className={`text-right font-mono bg-amber-100/50 dark:bg-amber-900/50 ${adjTotals.totalSum < 0 ? "text-red-600 dark:text-red-400" : adjTotals.totalSum > 0 ? "text-amber-600 dark:text-amber-400" : ""}`} data-testid="text-adj-sum-total">
+                      {formatNetAmount(adjTotals.totalSum)}
                     </TableCell>
                     <TableCell className={`text-right font-mono bg-green-100/50 dark:bg-green-900/50 ${adjTotals.totalFinal < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-adj-final-total">
                       {formatNetAmount(adjTotals.totalFinal)}
