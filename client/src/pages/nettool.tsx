@@ -3319,7 +3319,8 @@ export default function NetToolPage() {
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
-                    <TableHead className="w-40">Footnote</TableHead>
+                    <TableHead className="w-24">Footnote No.</TableHead>
+                    <TableHead className="min-w-[150px]">Footnote Description</TableHead>
                     <TableHead className="text-center w-28 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">Initial TB</span>
@@ -3375,24 +3376,31 @@ export default function NetToolPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      {/* Footnote Tag - Dropdown using disclosure notes */}
+                      {/* Footnote Number - Dropdown using disclosure notes */}
                       <TableCell>
                         <Select
                           value={line.footnoteIds[0] || "none"}
                           onValueChange={(value) => handleAdjFootnoteUpdate(line.lineId, value === "none" ? [] : [value])}
                         >
                           <SelectTrigger className="h-7 text-xs" data-testid={`select-adj-fn-${line.accountCode}`}>
-                            <SelectValue placeholder="Select Note" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">None</SelectItem>
                             {notes.map((note) => (
                               <SelectItem key={note.noteId} value={note.noteId}>
-                                Note {note.noteNumber}: {note.noteTitle.length > 25 ? note.noteTitle.substring(0, 25) + "..." : note.noteTitle}
+                                Note {note.noteNumber}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      {/* Footnote Description - Read-only, looked up from selected footnote */}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {(() => {
+                          const linkedNote = notes.find(n => n.noteId === line.footnoteIds[0]);
+                          return linkedNote ? linkedNote.noteTitle : "-";
+                        })()}
                       </TableCell>
                       {/* Initial TB Balance */}
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
@@ -3411,6 +3419,7 @@ export default function NetToolPage() {
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell className={`text-right font-mono ${adjTotals.totalInitial < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-adj-initial-total">
@@ -3573,6 +3582,8 @@ export default function NetToolPage() {
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
+                    <TableHead className="w-24">Footnote No.</TableHead>
+                    <TableHead className="min-w-[150px]">Footnote Description</TableHead>
                     <TableHead className="text-center w-32 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">{sampleFinalTBView.priorPeriodLabel}</span>
@@ -3599,7 +3610,13 @@ export default function NetToolPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finalTBLines.map(line => (
+                  {finalTBLines.map(line => {
+                    // Look up footnote from adjLines to ensure consistency
+                    const adjLine = adjLines.find(al => al.accountCode === line.accountCode);
+                    const footnoteId = adjLine?.footnoteIds[0];
+                    const linkedNote = footnoteId ? notes.find(n => n.noteId === footnoteId) : null;
+                    
+                    return (
                     <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-ftb-${line.accountCode}`}>
                       <TableCell className="font-mono text-sm sticky left-0 bg-background z-10" data-testid={`cell-ftb-code-${line.accountCode}`}>
                         {line.accountCode}
@@ -3609,6 +3626,14 @@ export default function NetToolPage() {
                         <Badge variant="outline" className={`text-xs ${getFsCategoryColor(line.fsCategory)}`}>
                           {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "-"}
                         </Badge>
+                      </TableCell>
+                      {/* Footnote No. - Looked up from TB Adjustments */}
+                      <TableCell className="text-sm" data-testid={`cell-ftb-fn-${line.accountCode}`}>
+                        {linkedNote ? `Note ${linkedNote.noteNumber}` : "-"}
+                      </TableCell>
+                      {/* Footnote Description - Looked up from TB Adjustments */}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {linkedNote ? linkedNote.noteTitle : "-"}
                       </TableCell>
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.priorYearClosing < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                         {formatNetAmount(line.priorYearClosing)}
@@ -3623,10 +3648,12 @@ export default function NetToolPage() {
                         {line.variancePercent === null || line.variancePercent === 0 ? "-" : `${line.variancePercent.toFixed(1)}%`}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell className={`text-right font-mono bg-slate-100 dark:bg-slate-800 ${totalPrior < 0 ? "text-red-600 dark:text-red-400" : ""}`} data-testid="text-ftb-prior-total">
                       {formatNetAmount(totalPrior)}
