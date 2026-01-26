@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import {
   FileText,
   FileSpreadsheet,
@@ -89,12 +94,57 @@ export default function NetToolPage() {
       ? `notes-${notesParams.notesSection}` 
       : (params?.section || "dashboard");
   
+  const { toast } = useToast();
+  
   const [selectedNote, setSelectedNote] = useState<DisclosureNote | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<DisclosureSchedule | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateNoteDialog, setShowCreateNoteDialog] = useState(false);
   const [showCreateScheduleDialog, setShowCreateScheduleDialog] = useState(false);
+  
+  // CRUD State Management for Schedules, Notes, Narratives
+  const [schedules, setSchedules] = useState<DisclosureSchedule[]>(sampleSchedules);
+  const [notes, setNotes] = useState<DisclosureNote[]>(sampleNotes);
+  const [narratives, setNarratives] = useState<NarrativeBlock[]>(sampleNarratives);
+  
+  // Schedule CRUD dialogs
+  const [showAddScheduleDialog, setShowAddScheduleDialog] = useState(false);
+  const [showEditScheduleDialog, setShowEditScheduleDialog] = useState(false);
+  const [scheduleToEdit, setScheduleToEdit] = useState<DisclosureSchedule | null>(null);
+  const [scheduleToDelete, setScheduleToDelete] = useState<DisclosureSchedule | null>(null);
+  const [showDeleteScheduleDialog, setShowDeleteScheduleDialog] = useState(false);
+  const [newScheduleTitle, setNewScheduleTitle] = useState("");
+  const [newScheduleLayout, setNewScheduleLayout] = useState<ScheduleLayoutType>("ROLLFORWARD");
+  const [newScheduleNoteId, setNewScheduleNoteId] = useState("");
+  
+  // Note CRUD dialogs
+  const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
+  const [showEditNoteDialog, setShowEditNoteDialog] = useState(false);
+  const [noteToEdit, setNoteToEdit] = useState<DisclosureNote | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<DisclosureNote | null>(null);
+  const [showDeleteNoteDialog, setShowDeleteNoteDialog] = useState(false);
+  const [newNoteNumber, setNewNoteNumber] = useState("");
+  const [newNoteTitle, setNewNoteTitle] = useState("");
+  const [newNoteFramework, setNewNoteFramework] = useState<"IFRS" | "US_GAAP" | "BOTH">("BOTH");
+  
+  // Narrative CRUD dialogs
+  const [showAddNarrativeDialog, setShowAddNarrativeDialog] = useState(false);
+  const [showEditNarrativeDialog, setShowEditNarrativeDialog] = useState(false);
+  const [narrativeToEdit, setNarrativeToEdit] = useState<NarrativeBlock | null>(null);
+  const [narrativeToDelete, setNarrativeToDelete] = useState<NarrativeBlock | null>(null);
+  const [showDeleteNarrativeDialog, setShowDeleteNarrativeDialog] = useState(false);
+  const [newNarrativeContent, setNewNarrativeContent] = useState("");
+  const [newNarrativeNoteId, setNewNarrativeNoteId] = useState("");
+  
+  // Working Paper CRUD dialogs
+  const [showAddWPDialog, setShowAddWPDialog] = useState(false);
+  const [showEditWPDialog, setShowEditWPDialog] = useState(false);
+  const [wpToEdit, setWpToEdit] = useState<WorkingPaper | null>(null);
+  const [wpToDelete, setWpToDelete] = useState<WorkingPaper | null>(null);
+  const [showDeleteWPDialog, setShowDeleteWPDialog] = useState(false);
+  const [newWPName, setNewWPName] = useState("");
+  const [newWPType, setNewWPType] = useState<"ROLLFORWARD" | "AGING" | "LINEAR" | "CUSTOM">("ROLLFORWARD");
   
   // Trial Balance state
   const [tbLines, setTbLines] = useState<TBLine[]>(sampleTBWorkspace.lines);
@@ -164,10 +214,10 @@ export default function NetToolPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   
-  const kpis = calculateDashboardKPIs(sampleNotes, sampleSchedules, sampleNarratives, sampleReviews);
+  const kpis = calculateDashboardKPIs(notes, schedules, narratives, sampleReviews);
   const activePeriod = samplePeriods.find(p => p.state !== "FINAL") || samplePeriods[0];
   
-  const filteredNotes = sampleNotes.filter(note => {
+  const filteredNotes = notes.filter(note => {
     const matchesSearch = note.noteTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          note.noteNumber.includes(searchQuery);
     const matchesStatus = statusFilter === "all" || note.status === statusFilter;
@@ -175,11 +225,193 @@ export default function NetToolPage() {
   });
 
   const getScheduleForNote = (noteId: string) => {
-    return sampleSchedules.filter(s => s.noteId === noteId);
+    return schedules.filter(s => s.noteId === noteId);
   };
 
   const getNarrativesForNote = (noteId: string) => {
-    return sampleNarratives.filter(n => n.noteId === noteId);
+    return narratives.filter(n => n.noteId === noteId);
+  };
+
+  // ===== SCHEDULE CRUD HANDLERS =====
+  const handleAddSchedule = () => {
+    if (!newScheduleTitle.trim()) {
+      toast({ title: "Error", description: "Schedule title is required", variant: "destructive" });
+      return;
+    }
+    const newSchedule: DisclosureSchedule = {
+      scheduleId: crypto.randomUUID(),
+      noteId: newScheduleNoteId || notes[0]?.noteId || "",
+      scheduleTitle: newScheduleTitle,
+      layoutType: newScheduleLayout,
+      columns: [],
+      rows: [],
+      textBlocks: [],
+      cellValues: {},
+      templateId: null,
+      supportAttachments: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setSchedules(prev => [...prev, newSchedule]);
+    setShowAddScheduleDialog(false);
+    setNewScheduleTitle("");
+    setNewScheduleLayout("ROLLFORWARD");
+    setNewScheduleNoteId("");
+    toast({ title: "Success", description: "Schedule created successfully" });
+  };
+
+  const handleEditSchedule = () => {
+    if (!scheduleToEdit) return;
+    setSchedules(prev => prev.map(s => 
+      s.scheduleId === scheduleToEdit.scheduleId ? scheduleToEdit : s
+    ));
+    setShowEditScheduleDialog(false);
+    setScheduleToEdit(null);
+    toast({ title: "Success", description: "Schedule updated successfully" });
+  };
+
+  const handleDeleteSchedule = () => {
+    if (!scheduleToDelete) return;
+    setSchedules(prev => prev.filter(s => s.scheduleId !== scheduleToDelete.scheduleId));
+    setShowDeleteScheduleDialog(false);
+    setScheduleToDelete(null);
+    toast({ title: "Success", description: "Schedule deleted successfully" });
+  };
+
+  // ===== NOTE CRUD HANDLERS =====
+  const handleAddNote = () => {
+    if (!newNoteNumber.trim() || !newNoteTitle.trim()) {
+      toast({ title: "Error", description: "Note number and title are required", variant: "destructive" });
+      return;
+    }
+    const newNote: DisclosureNote = {
+      noteId: crypto.randomUUID(),
+      noteNumber: newNoteNumber,
+      noteTitle: newNoteTitle,
+      periodId: activePeriod.periodId,
+      framework: newNoteFramework,
+      status: "DRAFT",
+      owner: "Current User",
+      scheduleIds: [],
+      narrativeBlockIds: [],
+      linkedStatementLines: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setNotes(prev => [...prev, newNote]);
+    setShowAddNoteDialog(false);
+    setNewNoteNumber("");
+    setNewNoteTitle("");
+    setNewNoteFramework("BOTH");
+    toast({ title: "Success", description: "Note created successfully" });
+  };
+
+  const handleEditNote = () => {
+    if (!noteToEdit) return;
+    setNotes(prev => prev.map(n => 
+      n.noteId === noteToEdit.noteId ? noteToEdit : n
+    ));
+    setShowEditNoteDialog(false);
+    setNoteToEdit(null);
+    toast({ title: "Success", description: "Note updated successfully" });
+  };
+
+  const handleDeleteNote = () => {
+    if (!noteToDelete) return;
+    setNotes(prev => prev.filter(n => n.noteId !== noteToDelete.noteId));
+    setShowDeleteNoteDialog(false);
+    setNoteToDelete(null);
+    toast({ title: "Success", description: "Note deleted successfully" });
+  };
+
+  // ===== NARRATIVE CRUD HANDLERS =====
+  const handleAddNarrative = () => {
+    if (!newNarrativeContent.trim()) {
+      toast({ title: "Error", description: "Narrative content is required", variant: "destructive" });
+      return;
+    }
+    const newNarrative: NarrativeBlock = {
+      narrativeId: crypto.randomUUID(),
+      noteId: newNarrativeNoteId || notes[0]?.noteId || "",
+      content: newNarrativeContent,
+      status: "DRAFT",
+      owner: "Current User",
+      linkedScheduleIds: [],
+      linkedMovements: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setNarratives(prev => [...prev, newNarrative]);
+    setShowAddNarrativeDialog(false);
+    setNewNarrativeContent("");
+    setNewNarrativeNoteId("");
+    toast({ title: "Success", description: "Narrative created successfully" });
+  };
+
+  const handleEditNarrative = () => {
+    if (!narrativeToEdit) return;
+    setNarratives(prev => prev.map(n => 
+      n.narrativeId === narrativeToEdit.narrativeId ? narrativeToEdit : n
+    ));
+    setShowEditNarrativeDialog(false);
+    setNarrativeToEdit(null);
+    toast({ title: "Success", description: "Narrative updated successfully" });
+  };
+
+  const handleDeleteNarrative = () => {
+    if (!narrativeToDelete) return;
+    setNarratives(prev => prev.filter(n => n.narrativeId !== narrativeToDelete.narrativeId));
+    setShowDeleteNarrativeDialog(false);
+    setNarrativeToDelete(null);
+    toast({ title: "Success", description: "Narrative deleted successfully" });
+  };
+
+  // ===== WORKING PAPER CRUD HANDLERS =====
+  const handleAddWorkingPaper = () => {
+    if (!newWPName.trim()) {
+      toast({ title: "Error", description: "Working paper name is required", variant: "destructive" });
+      return;
+    }
+    const newWP: WorkingPaper = {
+      workingPaperId: crypto.randomUUID(),
+      name: newWPName,
+      type: newWPType,
+      periodId: activePeriod.periodId,
+      columns: [],
+      rows: [],
+      textBlocks: [],
+      linkedFsLines: [],
+      linkedNotes: [],
+      frozenRows: 0,
+      status: "DRAFT",
+      createdAt: new Date().toISOString(),
+      createdBy: "Current User",
+      lastUpdated: new Date().toISOString(),
+      updatedBy: "Current User",
+    };
+    setWorkingPapers(prev => [...prev, newWP]);
+    setShowAddWPDialog(false);
+    setNewWPName("");
+    setNewWPType("ROLLFORWARD");
+    toast({ title: "Success", description: "Working paper created successfully" });
+  };
+
+  const handleEditWorkingPaper = () => {
+    if (!wpToEdit) return;
+    setWorkingPapers(prev => prev.map(wp => 
+      wp.workingPaperId === wpToEdit.workingPaperId ? wpToEdit : wp
+    ));
+    setShowEditWPDialog(false);
+    setWpToEdit(null);
+    toast({ title: "Success", description: "Working paper updated successfully" });
+  };
+
+  const handleDeleteWorkingPaper = () => {
+    if (!wpToDelete) return;
+    setWorkingPapers(prev => prev.filter(wp => wp.workingPaperId !== wpToDelete.workingPaperId));
+    setShowDeleteWPDialog(false);
+    setWpToDelete(null);
+    toast({ title: "Success", description: "Working paper deleted successfully" });
   };
 
   const renderDashboard = () => (
@@ -389,7 +621,7 @@ export default function NetToolPage() {
           <h1 className="text-2xl font-semibold">Disclosure Notes</h1>
           <p className="text-muted-foreground">Manage notes to financial statements</p>
         </div>
-        <Button onClick={() => setShowCreateNoteDialog(true)} data-testid="button-create-note">
+        <Button onClick={() => setShowAddNoteDialog(true)} data-testid="button-create-note">
           <Plus className="h-4 w-4 mr-2" />
           New Note
         </Button>
@@ -423,18 +655,20 @@ export default function NetToolPage() {
 
       <div className="grid gap-4">
         {filteredNotes.map((note) => {
-          const schedules = getScheduleForNote(note.noteId);
-          const narratives = getNarrativesForNote(note.noteId);
+          const noteSchedules = getScheduleForNote(note.noteId);
+          const noteNarratives = getNarrativesForNote(note.noteId);
           return (
             <Card 
               key={note.noteId} 
               className="hover-elevate cursor-pointer"
-              onClick={() => setSelectedNote(note)}
               data-testid={`card-note-${note.noteNumber}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
+                  <div 
+                    className="flex items-start gap-4 flex-1 cursor-pointer"
+                    onClick={() => setSelectedNote(note)}
+                  >
                     <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary text-lg font-semibold">
                       {note.noteNumber}
                     </div>
@@ -451,11 +685,11 @@ export default function NetToolPage() {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <FileSpreadsheet className="h-3 w-3" />
-                          {schedules.length} schedule{schedules.length !== 1 ? "s" : ""}
+                          {noteSchedules.length} schedule{noteSchedules.length !== 1 ? "s" : ""}
                         </span>
                         <span className="flex items-center gap-1">
                           <BookOpen className="h-3 w-3" />
-                          {narratives.length} narrative{narratives.length !== 1 ? "s" : ""}
+                          {noteNarratives.length} narrative{noteNarratives.length !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
@@ -464,6 +698,30 @@ export default function NetToolPage() {
                     <Badge className={getStatusColor(note.status)}>
                       {note.status.replace("_", " ")}
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNoteToEdit(note);
+                        setShowEditNoteDialog(true);
+                      }}
+                      data-testid={`button-edit-note-${note.noteNumber}`}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setNoteToDelete(note);
+                        setShowDeleteNoteDialog(true);
+                      }}
+                      data-testid={`button-delete-note-${note.noteNumber}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
@@ -650,25 +908,27 @@ export default function NetToolPage() {
           <h1 className="text-2xl font-semibold">Schedules</h1>
           <p className="text-muted-foreground">Disclosure schedule grids</p>
         </div>
-        <Button onClick={() => setShowCreateScheduleDialog(true)} data-testid="button-create-schedule">
+        <Button onClick={() => setShowAddScheduleDialog(true)} data-testid="button-create-schedule">
           <Plus className="h-4 w-4 mr-2" />
           New Schedule
         </Button>
       </div>
 
       <div className="grid gap-4">
-        {sampleSchedules.map((schedule) => {
-          const note = sampleNotes.find(n => n.noteId === schedule.noteId);
+        {schedules.map((schedule) => {
+          const note = notes.find(n => n.noteId === schedule.noteId);
           return (
             <Card 
               key={schedule.scheduleId}
               className="hover-elevate cursor-pointer"
-              onClick={() => setSelectedSchedule(schedule)}
               data-testid={`card-schedule-${schedule.scheduleId}`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                  <div 
+                    className="space-y-1 flex-1 cursor-pointer"
+                    onClick={() => setSelectedSchedule(schedule)}
+                  >
                     <div className="flex items-center gap-2">
                       <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                       <h3 className="font-semibold">{schedule.scheduleTitle}</h3>
@@ -682,7 +942,33 @@ export default function NetToolPage() {
                       <span>{schedule.columns.length} columns</span>
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setScheduleToEdit(schedule);
+                        setShowEditScheduleDialog(true);
+                      }}
+                      data-testid={`button-edit-schedule-${schedule.scheduleId}`}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setScheduleToDelete(schedule);
+                        setShowDeleteScheduleDialog(true);
+                      }}
+                      data-testid={`button-delete-schedule-${schedule.scheduleId}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -801,15 +1087,15 @@ export default function NetToolPage() {
           <h1 className="text-2xl font-semibold">Narratives</h1>
           <p className="text-muted-foreground">MD&A and disclosure text blocks</p>
         </div>
-        <Button data-testid="button-create-narrative">
+        <Button onClick={() => setShowAddNarrativeDialog(true)} data-testid="button-create-narrative">
           <Plus className="h-4 w-4 mr-2" />
           New Narrative
         </Button>
       </div>
 
       <div className="grid gap-4">
-        {sampleNarratives.map((narrative) => {
-          const note = sampleNotes.find(n => n.noteId === narrative.noteId);
+        {narratives.map((narrative) => {
+          const note = notes.find(n => n.noteId === narrative.noteId);
           return (
             <Card key={narrative.narrativeId} data-testid={`card-narrative-${narrative.narrativeId}`}>
               <CardHeader className="pb-2">
@@ -818,9 +1104,33 @@ export default function NetToolPage() {
                     <Badge variant="outline">Note {note?.noteNumber}</Badge>
                     <span className="font-medium">{note?.noteTitle}</span>
                   </div>
-                  <Badge className={getStatusColor(narrative.status)}>
-                    {narrative.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getStatusColor(narrative.status)}>
+                      {narrative.status}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setNarrativeToEdit(narrative);
+                        setShowEditNarrativeDialog(true);
+                      }}
+                      data-testid={`button-edit-narrative-${narrative.narrativeId}`}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setNarrativeToDelete(narrative);
+                        setShowDeleteNarrativeDialog(true);
+                      }}
+                      data-testid={`button-delete-narrative-${narrative.narrativeId}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1893,27 +2203,306 @@ export default function NetToolPage() {
     setIsExporting(true);
     setExportProgress(0);
     
-    const steps = [
-      "Validating data integrity...",
-      "Compiling financial statements...",
-      "Generating disclosure notes...",
-      "Adding schedules and working papers...",
-      "Applying formatting...",
-      "Finalizing document..."
-    ];
-    
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 400));
-      setExportProgress(Math.round(((i + 1) / steps.length) * 100));
+    try {
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+      
+      let yPosition = 20;
+      const pageHeight = pdf.internal.pageSize.height;
+      const marginLeft = 15;
+      const marginRight = 15;
+      const pageWidth = pdf.internal.pageSize.width - marginLeft - marginRight;
+      
+      // Add title
+      pdf.setFontSize(20);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Financial Statements - ${activePeriod.periodLabel}`, marginLeft, yPosition);
+      
+      // Add company name
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      yPosition += 10;
+      pdf.text(sampleCompanyProfile.legalEntityName, marginLeft, yPosition);
+      
+      // Add watermark if requested
+      if (exportOptions.watermark) {
+        pdf.setFontSize(60);
+        pdf.setTextColor(200, 200, 200);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("DRAFT", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
+        pdf.setTextColor(0, 0, 0);
+      }
+      
+      yPosition += 15;
+      
+      // Balance Sheet
+      if (exportOptions.selectedStatements.includes("balance-sheet")) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setExportProgress(20);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Balance Sheet", marginLeft, yPosition);
+        yPosition += 10;
+        
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`As of ${sampleBalanceSheet.currentPeriodLabel}`, marginLeft, yPosition);
+        yPosition += 8;
+        
+        const balanceSheetData: any[] = [];
+        balanceSheetData.push(["", "Current Year", "Prior Year"]);
+        
+        // Assets
+        balanceSheetData.push(["ASSETS", "", ""]);
+        sampleBalanceSheet.sections.currentAssets.forEach(line => {
+          balanceSheetData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        balanceSheetData.push(["", "", ""]);
+        sampleBalanceSheet.sections.nonCurrentAssets.forEach(line => {
+          balanceSheetData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        // Liabilities and Equity
+        balanceSheetData.push(["", "", ""]);
+        balanceSheetData.push(["LIABILITIES", "", ""]);
+        
+        sampleBalanceSheet.sections.currentLiabilities.forEach(line => {
+          balanceSheetData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        balanceSheetData.push(["", "", ""]);
+        sampleBalanceSheet.sections.nonCurrentLiabilities.forEach(line => {
+          balanceSheetData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        // Equity
+        balanceSheetData.push(["", "", ""]);
+        balanceSheetData.push(["STOCKHOLDERS' EQUITY", "", ""]);
+        sampleBalanceSheet.sections.equity.forEach(line => {
+          balanceSheetData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Description", "Current Year", "Prior Year"]],
+          body: balanceSheetData,
+          margin: { left: marginLeft, right: marginRight },
+          columnStyles: {
+            0: { cellWidth: pageWidth * 0.5 },
+            1: { cellWidth: pageWidth * 0.25, halign: "right" },
+            2: { cellWidth: pageWidth * 0.25, halign: "right" }
+          }
+        });
+        
+        yPosition = (pdf as any).lastAutoTable?.finalY + 15 || yPosition + 100;
+      }
+      
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40 && exportOptions.selectedStatements.length > 1) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      // Income Statement
+      if (exportOptions.selectedStatements.includes("income-statement")) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setExportProgress(40);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Income Statement", marginLeft, yPosition);
+        yPosition += 10;
+        
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`For the ${sampleIncomeStatement.currentPeriodLabel}`, marginLeft, yPosition);
+        yPosition += 8;
+        
+        const incomeData: any[] = [];
+        incomeData.push(["", "Current Year", "Prior Year"]);
+        
+        sampleIncomeStatement.lines.forEach(line => {
+          incomeData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Description", "Current Year", "Prior Year"]],
+          body: incomeData,
+          margin: { left: marginLeft, right: marginRight },
+          columnStyles: {
+            0: { cellWidth: pageWidth * 0.5 },
+            1: { cellWidth: pageWidth * 0.25, halign: "right" },
+            2: { cellWidth: pageWidth * 0.25, halign: "right" }
+          }
+        });
+        
+        yPosition = (pdf as any).lastAutoTable?.finalY + 15 || yPosition + 100;
+      }
+      
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40 && exportOptions.selectedStatements.length > 2) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      // Statement of Changes in Equity
+      if (exportOptions.selectedStatements.includes("equity-statement")) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setExportProgress(60);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Statement of Changes in Stockholders' Equity", marginLeft, yPosition);
+        yPosition += 10;
+        
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`For the Year Ended December 31, 2024`, marginLeft, yPosition);
+        yPosition += 8;
+        
+        const equityData: any[] = [];
+        equityData.push(["Component", "2024", "2023"]);
+        
+        sampleEquityStatement.components.forEach(component => {
+          equityData.push([
+            component.componentName,
+            formatCurrency(component.closingBalance.current),
+            formatCurrency(component.closingBalance.prior)
+          ]);
+        });
+        
+        equityData.push(["Total Stockholders' Equity", 
+          formatCurrency(sampleEquityStatement.totalEquity.current),
+          formatCurrency(sampleEquityStatement.totalEquity.prior)
+        ]);
+        
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Component", "2024", "2023"]],
+          body: equityData,
+          margin: { left: marginLeft, right: marginRight },
+          columnStyles: {
+            0: { cellWidth: pageWidth * 0.5 },
+            1: { cellWidth: pageWidth * 0.25, halign: "right" },
+            2: { cellWidth: pageWidth * 0.25, halign: "right" }
+          }
+        });
+        
+        yPosition = (pdf as any).lastAutoTable?.finalY + 15 || yPosition + 100;
+      }
+      
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40 && exportOptions.selectedStatements.length > 3) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      // Cash Flow Statement
+      if (exportOptions.selectedStatements.includes("cash-flow")) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setExportProgress(80);
+        
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Cash Flow Statement", marginLeft, yPosition);
+        yPosition += 10;
+        
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.text(`For the ${sampleCashFlowStatement.currentPeriodLabel}`, marginLeft, yPosition);
+        yPosition += 8;
+        
+        const cashFlowData: any[] = [];
+        cashFlowData.push(["", "Current Year", "Prior Year"]);
+        
+        sampleCashFlowStatement.operatingActivities.forEach(line => {
+          cashFlowData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        sampleCashFlowStatement.investingActivities.forEach(line => {
+          cashFlowData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        sampleCashFlowStatement.financingActivities.forEach(line => {
+          cashFlowData.push([
+            line.lineLabel,
+            line.currentYearAmount ? formatCurrency(line.currentYearAmount) : "",
+            line.priorYearAmount ? formatCurrency(line.priorYearAmount) : ""
+          ]);
+        });
+        
+        autoTable(pdf, {
+          startY: yPosition,
+          head: [["Description", "Current Year", "Prior Year"]],
+          body: cashFlowData,
+          margin: { left: marginLeft, right: marginRight },
+          columnStyles: {
+            0: { cellWidth: pageWidth * 0.5 },
+            1: { cellWidth: pageWidth * 0.25, halign: "right" },
+            2: { cellWidth: pageWidth * 0.25, halign: "right" }
+          }
+        });
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setExportProgress(100);
+      
+      // Generate filename
+      const filename = `Financial_Statements_${activePeriod.periodId}.pdf`;
+      
+      // Download PDF
+      pdf.save(filename);
+      
+      if (exportOptions.lockPeriod) {
+        console.log("Period locked for:", activePeriod.periodLabel);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setIsExporting(false);
+      setShowExportDialog(false);
+      setExportProgress(0);
     }
-    
-    if (exportOptions.lockPeriod) {
-      console.log("Period locked for:", activePeriod.periodLabel);
-    }
-    
-    setIsExporting(false);
-    setShowExportDialog(false);
-    setExportProgress(0);
   };
 
   const toggleStatementSelection = (statement: string) => {
@@ -1938,7 +2527,7 @@ export default function NetToolPage() {
             <p className="text-muted-foreground">Structured calculations and supporting schedules</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" data-testid="button-wp-new">
+            <Button variant="outline" size="sm" onClick={() => setShowAddWPDialog(true)} data-testid="button-wp-new">
               <Plus className="w-4 h-4 mr-1" />
               New Working Paper
             </Button>
@@ -1961,7 +2550,7 @@ export default function NetToolPage() {
                   <TableHead>Linked Notes</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Updated</TableHead>
-                  <TableHead></TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1969,10 +2558,14 @@ export default function NetToolPage() {
                   <TableRow 
                     key={wp.workingPaperId} 
                     className="cursor-pointer hover-elevate"
-                    onClick={() => setSelectedWorkingPaper(wp)}
                     data-testid={`row-wp-${wp.workingPaperId}`}
                   >
-                    <TableCell className="font-medium">{wp.name}</TableCell>
+                    <TableCell 
+                      className="font-medium cursor-pointer"
+                      onClick={() => setSelectedWorkingPaper(wp)}
+                    >
+                      {wp.name}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{getWpTypeLabel(wp.type)}</Badge>
                     </TableCell>
@@ -2008,9 +2601,39 @@ export default function NetToolPage() {
                       {new Date(wp.lastUpdated).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWpToEdit(wp);
+                            setShowEditWPDialog(true);
+                          }}
+                          data-testid={`button-edit-wp-${wp.workingPaperId}`}
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWpToDelete(wp);
+                            setShowDeleteWPDialog(true);
+                          }}
+                          data-testid={`button-delete-wp-${wp.workingPaperId}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setSelectedWorkingPaper(wp)}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -4091,6 +4714,466 @@ export default function NetToolPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ===== CRUD DIALOGS ===== */}
+      
+      {/* Add Schedule Dialog */}
+      <Dialog open={showAddScheduleDialog} onOpenChange={setShowAddScheduleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Schedule</DialogTitle>
+            <DialogDescription>Add a new disclosure schedule</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="schedule-title">Schedule Title</Label>
+              <Input
+                id="schedule-title"
+                value={newScheduleTitle}
+                onChange={(e) => setNewScheduleTitle(e.target.value)}
+                placeholder="e.g., Property, Plant & Equipment Rollforward"
+                data-testid="input-schedule-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schedule-layout">Layout Type</Label>
+              <Select value={newScheduleLayout} onValueChange={(v) => setNewScheduleLayout(v as ScheduleLayoutType)}>
+                <SelectTrigger data-testid="select-schedule-layout">
+                  <SelectValue placeholder="Select layout type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ROLLFORWARD">Rollforward</SelectItem>
+                  <SelectItem value="GROSS_TO_NET">Gross to Net</SelectItem>
+                  <SelectItem value="TIMING_MATURITY">Timing/Maturity</SelectItem>
+                  <SelectItem value="COMPOSITION">Composition</SelectItem>
+                  <SelectItem value="RECONCILIATION">Reconciliation</SelectItem>
+                  <SelectItem value="MOVEMENT_BY_CATEGORY">Movement by Category</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schedule-note">Linked Note</Label>
+              <Select value={newScheduleNoteId} onValueChange={setNewScheduleNoteId}>
+                <SelectTrigger data-testid="select-schedule-note">
+                  <SelectValue placeholder="Select note" />
+                </SelectTrigger>
+                <SelectContent>
+                  {notes.map((note) => (
+                    <SelectItem key={note.noteId} value={note.noteId}>
+                      Note {note.noteNumber}: {note.noteTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddScheduleDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddSchedule} data-testid="button-save-schedule">Create Schedule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Schedule Dialog */}
+      <Dialog open={showEditScheduleDialog} onOpenChange={setShowEditScheduleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Schedule</DialogTitle>
+            <DialogDescription>Update schedule details</DialogDescription>
+          </DialogHeader>
+          {scheduleToEdit && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-schedule-title">Schedule Title</Label>
+                <Input
+                  id="edit-schedule-title"
+                  value={scheduleToEdit.scheduleTitle}
+                  onChange={(e) => setScheduleToEdit({ ...scheduleToEdit, scheduleTitle: e.target.value })}
+                  data-testid="input-edit-schedule-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-schedule-layout">Layout Type</Label>
+                <Select 
+                  value={scheduleToEdit.layoutType} 
+                  onValueChange={(v) => setScheduleToEdit({ ...scheduleToEdit, layoutType: v as ScheduleLayoutType })}
+                >
+                  <SelectTrigger data-testid="select-edit-schedule-layout">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ROLLFORWARD">Rollforward</SelectItem>
+                    <SelectItem value="GROSS_TO_NET">Gross to Net</SelectItem>
+                    <SelectItem value="TIMING_MATURITY">Timing/Maturity</SelectItem>
+                    <SelectItem value="COMPOSITION">Composition</SelectItem>
+                    <SelectItem value="RECONCILIATION">Reconciliation</SelectItem>
+                    <SelectItem value="MOVEMENT_BY_CATEGORY">Movement by Category</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-schedule-note">Linked Note</Label>
+                <Select 
+                  value={scheduleToEdit.noteId} 
+                  onValueChange={(v) => setScheduleToEdit({ ...scheduleToEdit, noteId: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-schedule-note">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {notes.map((note) => (
+                      <SelectItem key={note.noteId} value={note.noteId}>
+                        Note {note.noteNumber}: {note.noteTitle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditScheduleDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditSchedule} data-testid="button-update-schedule">Update Schedule</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Schedule AlertDialog */}
+      <AlertDialog open={showDeleteScheduleDialog} onOpenChange={setShowDeleteScheduleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Schedule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{scheduleToDelete?.scheduleTitle}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-schedule">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSchedule} data-testid="button-confirm-delete-schedule">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Note Dialog */}
+      <Dialog open={showAddNoteDialog} onOpenChange={setShowAddNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Note</DialogTitle>
+            <DialogDescription>Add a new disclosure note</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="note-number">Note Number</Label>
+              <Input
+                id="note-number"
+                value={newNoteNumber}
+                onChange={(e) => setNewNoteNumber(e.target.value)}
+                placeholder="e.g., 15"
+                data-testid="input-note-number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note-title">Note Title</Label>
+              <Input
+                id="note-title"
+                value={newNoteTitle}
+                onChange={(e) => setNewNoteTitle(e.target.value)}
+                placeholder="e.g., Property, Plant and Equipment"
+                data-testid="input-note-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note-framework">Framework</Label>
+              <Select value={newNoteFramework} onValueChange={(v) => setNewNoteFramework(v as "IFRS" | "US_GAAP" | "BOTH")}>
+                <SelectTrigger data-testid="select-note-framework">
+                  <SelectValue placeholder="Select framework" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IFRS">IFRS</SelectItem>
+                  <SelectItem value="US_GAAP">US GAAP</SelectItem>
+                  <SelectItem value="BOTH">Both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddNoteDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNote} data-testid="button-save-note">Create Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Note Dialog */}
+      <Dialog open={showEditNoteDialog} onOpenChange={setShowEditNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+            <DialogDescription>Update note details</DialogDescription>
+          </DialogHeader>
+          {noteToEdit && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-note-number">Note Number</Label>
+                <Input
+                  id="edit-note-number"
+                  value={noteToEdit.noteNumber}
+                  onChange={(e) => setNoteToEdit({ ...noteToEdit, noteNumber: e.target.value })}
+                  data-testid="input-edit-note-number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-note-title">Note Title</Label>
+                <Input
+                  id="edit-note-title"
+                  value={noteToEdit.noteTitle}
+                  onChange={(e) => setNoteToEdit({ ...noteToEdit, noteTitle: e.target.value })}
+                  data-testid="input-edit-note-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-note-framework">Framework</Label>
+                <Select 
+                  value={noteToEdit.framework} 
+                  onValueChange={(v) => setNoteToEdit({ ...noteToEdit, framework: v as "IFRS" | "US_GAAP" | "BOTH" })}
+                >
+                  <SelectTrigger data-testid="select-edit-note-framework">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="IFRS">IFRS</SelectItem>
+                    <SelectItem value="US_GAAP">US GAAP</SelectItem>
+                    <SelectItem value="BOTH">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditNoteDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditNote} data-testid="button-update-note">Update Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Note AlertDialog */}
+      <AlertDialog open={showDeleteNoteDialog} onOpenChange={setShowDeleteNoteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Note {noteToDelete?.noteNumber}: "{noteToDelete?.noteTitle}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-note">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteNote} data-testid="button-confirm-delete-note">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Narrative Dialog */}
+      <Dialog open={showAddNarrativeDialog} onOpenChange={setShowAddNarrativeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Narrative</DialogTitle>
+            <DialogDescription>Add a new narrative block</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="narrative-note">Linked Note</Label>
+              <Select value={newNarrativeNoteId} onValueChange={setNewNarrativeNoteId}>
+                <SelectTrigger data-testid="select-narrative-note">
+                  <SelectValue placeholder="Select note" />
+                </SelectTrigger>
+                <SelectContent>
+                  {notes.map((note) => (
+                    <SelectItem key={note.noteId} value={note.noteId}>
+                      Note {note.noteNumber}: {note.noteTitle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="narrative-content">Content</Label>
+              <Textarea
+                id="narrative-content"
+                value={newNarrativeContent}
+                onChange={(e) => setNewNarrativeContent(e.target.value)}
+                placeholder="Enter narrative content..."
+                rows={6}
+                data-testid="textarea-narrative-content"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddNarrativeDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNarrative} data-testid="button-save-narrative">Create Narrative</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Narrative Dialog */}
+      <Dialog open={showEditNarrativeDialog} onOpenChange={setShowEditNarrativeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Narrative</DialogTitle>
+            <DialogDescription>Update narrative details</DialogDescription>
+          </DialogHeader>
+          {narrativeToEdit && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-narrative-note">Linked Note</Label>
+                <Select 
+                  value={narrativeToEdit.noteId} 
+                  onValueChange={(v) => setNarrativeToEdit({ ...narrativeToEdit, noteId: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-narrative-note">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {notes.map((note) => (
+                      <SelectItem key={note.noteId} value={note.noteId}>
+                        Note {note.noteNumber}: {note.noteTitle}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-narrative-content">Content</Label>
+                <Textarea
+                  id="edit-narrative-content"
+                  value={narrativeToEdit.content}
+                  onChange={(e) => setNarrativeToEdit({ ...narrativeToEdit, content: e.target.value })}
+                  rows={6}
+                  data-testid="textarea-edit-narrative-content"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditNarrativeDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditNarrative} data-testid="button-update-narrative">Update Narrative</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Narrative AlertDialog */}
+      <AlertDialog open={showDeleteNarrativeDialog} onOpenChange={setShowDeleteNarrativeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Narrative</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this narrative? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-narrative">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteNarrative} data-testid="button-confirm-delete-narrative">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Working Paper Dialog */}
+      <Dialog open={showAddWPDialog} onOpenChange={setShowAddWPDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Working Paper</DialogTitle>
+            <DialogDescription>Add a new working paper</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="wp-name">Working Paper Name</Label>
+              <Input
+                id="wp-name"
+                value={newWPName}
+                onChange={(e) => setNewWPName(e.target.value)}
+                placeholder="e.g., Fixed Assets Rollforward"
+                data-testid="input-wp-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wp-type">Type</Label>
+              <Select value={newWPType} onValueChange={(v) => setNewWPType(v as "ROLLFORWARD" | "AGING" | "LINEAR" | "CUSTOM")}>
+                <SelectTrigger data-testid="select-wp-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ROLLFORWARD">Rollforward</SelectItem>
+                  <SelectItem value="AGING">Aging</SelectItem>
+                  <SelectItem value="LINEAR">Linear</SelectItem>
+                  <SelectItem value="CUSTOM">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddWPDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddWorkingPaper} data-testid="button-save-wp">Create Working Paper</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Working Paper Dialog */}
+      <Dialog open={showEditWPDialog} onOpenChange={setShowEditWPDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Working Paper</DialogTitle>
+            <DialogDescription>Update working paper details</DialogDescription>
+          </DialogHeader>
+          {wpToEdit && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-wp-name">Working Paper Name</Label>
+                <Input
+                  id="edit-wp-name"
+                  value={wpToEdit.name}
+                  onChange={(e) => setWpToEdit({ ...wpToEdit, name: e.target.value })}
+                  data-testid="input-edit-wp-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-wp-type">Type</Label>
+                <Select 
+                  value={wpToEdit.type} 
+                  onValueChange={(v) => setWpToEdit({ ...wpToEdit, type: v as "ROLLFORWARD" | "AGING" | "LINEAR" | "CUSTOM" })}
+                >
+                  <SelectTrigger data-testid="select-edit-wp-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ROLLFORWARD">Rollforward</SelectItem>
+                    <SelectItem value="AGING">Aging</SelectItem>
+                    <SelectItem value="LINEAR">Linear</SelectItem>
+                    <SelectItem value="CUSTOM">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditWPDialog(false)}>Cancel</Button>
+            <Button onClick={handleEditWorkingPaper} data-testid="button-update-wp">Update Working Paper</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Working Paper AlertDialog */}
+      <AlertDialog open={showDeleteWPDialog} onOpenChange={setShowDeleteWPDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Working Paper</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{wpToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-wp">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteWorkingPaper} data-testid="button-confirm-delete-wp">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

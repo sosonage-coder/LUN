@@ -1641,7 +1641,7 @@ export type ScheduleLayoutType =
   | "RECONCILIATION";
 
 export type ColumnRole = "SYSTEM" | "USER";
-export type RowRole = "DATA" | "TOTAL" | "TEXT_BLOCK";
+export type RowRole = "DATA" | "SUBTOTAL" | "TOTAL" | "TEXT_BLOCK";
 export type TextBlockStyle = "SECTION_HEADER" | "SUBHEADER" | "NOTE";
 export type NarrativeStatus = "DRAFT" | "UNDER_REVIEW" | "APPROVED";
 export type ReviewApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
