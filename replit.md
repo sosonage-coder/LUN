@@ -61,10 +61,13 @@ The application uses a client-server architecture.
     - Statement lines link to disclosure notes for navigation and traceability.
     - **Trial Balance Workspace**:
         - Single-column net amount format (DR positive, CR negative in parentheses).
+        - **BS/PL Category**: Dropdown selector classifying accounts as Balance Sheet (BS) or Profit & Loss (PL).
         - FS Category tagging with dropdown selectors for account classification.
-        - Footnote tagging with multi-select capability.
+        - Footnote Number tagging with dropdown selector linking to disclosure notes.
+        - **Footnote Description**: Editable text field in TB Adjustments - flows to WP and Final TB View.
         - Column visibility toggles for adjustment columns.
         - Cross-reference hover trails showing source chain (GL → Split → WP → Note) with colored node indicators.
+        - **TB as Source of Truth**: BS/PL and Footnote Description defined in TB Adjustments, read-only in Final TB View.
     - **Split Declaration Panel**: Right drawer opened by clicking account codes, showing:
         - TB balance and breakdown with assigned/unassigned tracking.
         - Component list with source types (DECLARED, GL_BACKED, CALCULATED).

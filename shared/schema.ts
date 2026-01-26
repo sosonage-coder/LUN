@@ -2307,13 +2307,17 @@ export interface TBAdjustmentColumn {
   orderIndex: number;
 }
 
+export type BSPLCategory = "BS" | "PL" | null;
+
 export interface TBAdjustmentAccountLine {
   lineId: string;
   accountId: string;
   accountCode: string;
   accountName: string;
   fsCategory: FSCategory | null;
+  bsPlCategory: BSPLCategory; // Balance Sheet or Profit & Loss classification
   footnoteIds: string[];
+  footnoteDescription: string | null; // Editable description that flows to WP row labels
   normalBalance: "DEBIT" | "CREDIT";
   initialBalance: number; // from GL import (DR positive, CR negative)
   adjustments: Record<string, number>; // columnId -> amount (DR positive, CR negative)
@@ -2349,6 +2353,8 @@ export interface FinalTBLine {
   accountCode: string;
   accountName: string;
   fsCategory: FSCategory | null;
+  bsPlCategory: BSPLCategory; // looked up from TB Adjustments
+  footnoteDescription: string | null; // looked up from TB Adjustments
   priorYearClosing: number; // from prior period
   currentYearFinal: number; // looks up from Adjustments Workspace finalBalance
   variance: number;

@@ -88,7 +88,7 @@ import {
   sampleTBAdjustmentsWorkspace,
   sampleFinalTBView,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, BSPLCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { EyeOff } from "lucide-react";
 
@@ -3391,6 +3391,18 @@ export default function NetToolPage() {
       ));
     };
 
+    const handleAdjBsPlCategoryUpdate = (lineId: string, category: BSPLCategory) => {
+      setAdjLines(lines => lines.map(l => 
+        l.lineId === lineId ? { ...l, bsPlCategory: category } : l
+      ));
+    };
+
+    const handleAdjFootnoteDescUpdate = (lineId: string, description: string) => {
+      setAdjLines(lines => lines.map(l => 
+        l.lineId === lineId ? { ...l, footnoteDescription: description } : l
+      ));
+    };
+
     const getEntryStatusBadge = (status: TBAdjustmentEntry["status"]) => {
       switch (status) {
         case "APPROVED":
@@ -3491,9 +3503,10 @@ export default function NetToolPage() {
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
+                    <TableHead className="w-16">BS/PL</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
                     <TableHead className="w-24">Footnote No.</TableHead>
-                    <TableHead className="min-w-[150px]">Footnote Description</TableHead>
+                    <TableHead className="min-w-[150px]">Footnote Desc.</TableHead>
                     <TableHead className="text-center w-28 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">Initial TB</span>
@@ -3521,6 +3534,21 @@ export default function NetToolPage() {
                         {line.accountCode}
                       </TableCell>
                       <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
+                      {/* BS/PL Category */}
+                      <TableCell>
+                        <Select
+                          value={line.bsPlCategory || "BS"}
+                          onValueChange={(value) => handleAdjBsPlCategoryUpdate(line.lineId, value as BSPLCategory)}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-16" data-testid={`select-adj-bspl-${line.accountCode}`}>
+                            <SelectValue placeholder="BS" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="BS">BS</SelectItem>
+                            <SelectItem value="PL">PL</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       {/* FS Category */}
                       <TableCell>
                         {editingAdjFsCategory === line.lineId ? (
@@ -3568,12 +3596,15 @@ export default function NetToolPage() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      {/* Footnote Description - Read-only, looked up from selected footnote */}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {(() => {
-                          const linkedNote = notes.find(n => n.noteId === line.footnoteIds[0]);
-                          return linkedNote ? linkedNote.noteTitle : "-";
-                        })()}
+                      {/* Footnote Description - Editable text input */}
+                      <TableCell>
+                        <Input 
+                          value={line.footnoteDescription || ""}
+                          onChange={(e) => handleAdjFootnoteDescUpdate(line.lineId, e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Description..."
+                          data-testid={`input-adj-fndesc-${line.accountCode}`}
+                        />
                       </TableCell>
                       {/* Initial TB Balance */}
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.initialBalance < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
@@ -3592,6 +3623,7 @@ export default function NetToolPage() {
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
@@ -3754,9 +3786,10 @@ export default function NetToolPage() {
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-20 sticky left-0 bg-muted/50 z-10">Code</TableHead>
                     <TableHead className="min-w-[180px] sticky left-20 bg-muted/50 z-10">Account Name</TableHead>
+                    <TableHead className="w-16">BS/PL</TableHead>
                     <TableHead className="w-32">FS Category</TableHead>
                     <TableHead className="w-24">Footnote No.</TableHead>
-                    <TableHead className="min-w-[150px]">Footnote Description</TableHead>
+                    <TableHead className="min-w-[150px]">Footnote Desc.</TableHead>
                     <TableHead className="text-center w-32 bg-slate-100 dark:bg-slate-800">
                       <div className="flex flex-col items-center">
                         <span className="text-xs font-semibold">{sampleFinalTBView.priorPeriodLabel}</span>
@@ -3784,10 +3817,12 @@ export default function NetToolPage() {
                 </TableHeader>
                 <TableBody>
                   {finalTBLines.map(line => {
-                    // Look up footnote from adjLines to ensure consistency
+                    // Look up data from adjLines to ensure consistency (TB Adjustments is source of truth)
                     const adjLine = adjLines.find(al => al.accountCode === line.accountCode);
                     const footnoteId = adjLine?.footnoteIds[0];
                     const linkedNote = footnoteId ? notes.find(n => n.noteId === footnoteId) : null;
+                    const bsPlCategory = adjLine?.bsPlCategory || line.bsPlCategory;
+                    const footnoteDescription = adjLine?.footnoteDescription || line.footnoteDescription;
                     
                     return (
                     <TableRow key={line.lineId} className="hover-elevate" data-testid={`row-ftb-${line.accountCode}`}>
@@ -3795,6 +3830,12 @@ export default function NetToolPage() {
                         {line.accountCode}
                       </TableCell>
                       <TableCell className="sticky left-20 bg-background z-10 text-sm">{line.accountName}</TableCell>
+                      {/* BS/PL - Read-only from TB Adjustments */}
+                      <TableCell className="text-sm text-center" data-testid={`cell-ftb-bspl-${line.accountCode}`}>
+                        <Badge variant={bsPlCategory === "PL" ? "secondary" : "outline"} className="text-xs">
+                          {bsPlCategory || "BS"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`text-xs ${getFsCategoryColor(line.fsCategory)}`}>
                           {line.fsCategory ? fsCategoryLabels[line.fsCategory] : "-"}
@@ -3805,8 +3846,8 @@ export default function NetToolPage() {
                         {linkedNote ? `Note ${linkedNote.noteNumber}` : "-"}
                       </TableCell>
                       {/* Footnote Description - Looked up from TB Adjustments */}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {linkedNote ? linkedNote.noteTitle : "-"}
+                      <TableCell className="text-sm text-muted-foreground" data-testid={`cell-ftb-fndesc-${line.accountCode}`}>
+                        {footnoteDescription || "-"}
                       </TableCell>
                       <TableCell className={`text-right font-mono text-sm bg-slate-50 dark:bg-slate-900 ${line.priorYearClosing < 0 ? "text-red-600 dark:text-red-400" : ""}`}>
                         {formatNetAmount(line.priorYearClosing)}
@@ -3825,6 +3866,7 @@ export default function NetToolPage() {
                   {/* Totals Row */}
                   <TableRow className="bg-muted font-bold border-t-2">
                     <TableCell className="sticky left-0 bg-muted z-10" colSpan={2}>TOTALS</TableCell>
+                    <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
                     <TableCell></TableCell>
