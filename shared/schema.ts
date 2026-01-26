@@ -2025,9 +2025,27 @@ export interface AccountingPolicy {
   status: "DRAFT" | "ACTIVE" | "SUPERSEDED";
   linkedNotes: string[];
   isBoilerplate: boolean;
+  includeInPrint: boolean;
+  displayOrder: number;
+  isHidden: boolean;
+  industryTags: string[];
   createdAt: string;
   updatedAt: string;
   updatedBy: string;
+}
+
+// ASU (Accounting Standards Update) Adoption Tracker
+export interface ASUAdoption {
+  asuId: string;
+  asuNumber: string;
+  asuTitle: string;
+  topic: string;
+  effectiveDate: string;
+  adoptionDate: string | null;
+  adoptionStatus: "NOT_ADOPTED" | "EARLY_ADOPTED" | "ADOPTED" | "NOT_APPLICABLE";
+  impactAssessment: string;
+  transitionMethod: string | null;
+  isRequired: boolean;
 }
 
 // MD&A (Management Discussion & Analysis)

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText,
@@ -55,6 +55,11 @@ import {
   AlertTriangle,
   CircleDot,
   ArrowRight,
+  ChevronUp,
+  ChevronDown,
+  Printer,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
 import {
   sampleNotes,
@@ -84,14 +89,14 @@ import {
   sampleComprehensiveIncome,
   sampleBasisOfPreparation,
   sampleAccountingPolicies,
+  sampleASUAdoptions,
   sampleMDA,
   sampleTBAdjustmentsWorkspace,
   sampleFinalTBView,
 } from "@/lib/nettool-data";
-import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, BSPLCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
+import type { DisclosureNote, DisclosureSchedule, NarrativeBlock, DisclosureTemplate, ScheduleLayoutType, FSLineItem, TBLine, TBColumn, FSCategory, BSPLCategory, TBFootnote, SplitDeclaration, SplitComponent, WorkingPaper, WorkingPaperRow, WorkingPaperColumn, AccountingPolicy, ASUAdoption, MDASection, TBAdjustmentAccountLine, TBAdjustmentEntry, TBAdjustmentColumn, FinalTBLine } from "@shared/schema";
 import { lookupMasterMapping, getUniqueFootnoteDescriptions } from "@/lib/nettool-data";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { EyeOff } from "lucide-react";
 
 export default function NetToolPage() {
   const [, params] = useRoute("/nettool/:section");
@@ -215,6 +220,24 @@ export default function NetToolPage() {
     columns: string[];
     sampleData?: { [key: string]: string | number }[];
   } | null>(null);
+  
+  // Accounting Policies state
+  const [policies, setPolicies] = useState<AccountingPolicy[]>(sampleAccountingPolicies);
+  const [showAddPolicyDialog, setShowAddPolicyDialog] = useState(false);
+  const [showEditPolicyDialog, setShowEditPolicyDialog] = useState(false);
+  const [policyToEdit, setPolicyToEdit] = useState<AccountingPolicy | null>(null);
+  const [showDeletePolicyDialog, setShowDeletePolicyDialog] = useState(false);
+  const [policyToDelete, setPolicyToDelete] = useState<AccountingPolicy | null>(null);
+  const [newPolicyName, setNewPolicyName] = useState("");
+  const [newPolicyCategory, setNewPolicyCategory] = useState("General");
+  const [newPolicyText, setNewPolicyText] = useState("");
+  const [selectedPolicyCategory, setSelectedPolicyCategory] = useState<string | null>(null);
+  const [showNote1Preview, setShowNote1Preview] = useState(false);
+  const [isGeneratingPolicy, setIsGeneratingPolicy] = useState(false);
+  const [policyPrompt, setPolicyPrompt] = useState("");
+  
+  // ASU Adoption state
+  const [asuAdoptions] = useState<ASUAdoption[]>(sampleASUAdoptions);
   
   // Print/Export Engine state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -489,6 +512,131 @@ export default function NetToolPage() {
     setNewAttachmentDesc("");
     setShowAddAttachmentDialog(false);
     toast({ title: "Success", description: "Attachment uploaded successfully" });
+  };
+
+  // Accounting Policy handlers
+  const handleAddPolicy = () => {
+    if (!newPolicyName.trim()) {
+      toast({ title: "Error", description: "Policy name is required", variant: "destructive" });
+      return;
+    }
+    const newPolicy: AccountingPolicy = {
+      policyId: `pol-${Date.now()}`,
+      policyName: newPolicyName.trim(),
+      category: newPolicyCategory,
+      policyText: newPolicyText.trim(),
+      effectiveFrom: new Date().toISOString().split('T')[0],
+      version: 1,
+      status: "DRAFT",
+      linkedNotes: [],
+      isBoilerplate: false,
+      includeInPrint: true,
+      displayOrder: policies.length + 1,
+      isHidden: false,
+      industryTags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      updatedBy: "Current User",
+    };
+    setPolicies(prev => [...prev, newPolicy].sort((a, b) => a.displayOrder - b.displayOrder));
+    setShowAddPolicyDialog(false);
+    setNewPolicyName("");
+    setNewPolicyCategory("General");
+    setNewPolicyText("");
+    setPolicyPrompt("");
+    toast({ title: "Success", description: "Policy created successfully" });
+  };
+
+  const handleUpdatePolicy = () => {
+    if (!policyToEdit) return;
+    setPolicies(prev => prev.map(p => 
+      p.policyId === policyToEdit.policyId 
+        ? { ...policyToEdit, updatedAt: new Date().toISOString(), updatedBy: "Current User" }
+        : p
+    ));
+    setShowEditPolicyDialog(false);
+    setPolicyToEdit(null);
+    toast({ title: "Success", description: "Policy updated successfully" });
+  };
+
+  const handleDeletePolicy = () => {
+    if (!policyToDelete) return;
+    setPolicies(prev => prev.filter(p => p.policyId !== policyToDelete.policyId));
+    setShowDeletePolicyDialog(false);
+    setPolicyToDelete(null);
+    toast({ title: "Success", description: "Policy deleted successfully" });
+  };
+
+  const handleTogglePolicyVisibility = (policyId: string) => {
+    setPolicies(prev => prev.map(p => 
+      p.policyId === policyId ? { ...p, isHidden: !p.isHidden } : p
+    ));
+  };
+
+  const handleTogglePolicyPrint = (policyId: string) => {
+    setPolicies(prev => prev.map(p => 
+      p.policyId === policyId ? { ...p, includeInPrint: !p.includeInPrint } : p
+    ));
+  };
+
+  const handleMovePolicyUp = (policyId: string) => {
+    const index = policies.findIndex(p => p.policyId === policyId);
+    if (index <= 0) return;
+    const newPolicies = [...policies];
+    [newPolicies[index - 1], newPolicies[index]] = [newPolicies[index], newPolicies[index - 1]];
+    setPolicies(newPolicies.map((p, i) => ({ ...p, displayOrder: i + 1 })));
+  };
+
+  const handleMovePolicyDown = (policyId: string) => {
+    const index = policies.findIndex(p => p.policyId === policyId);
+    if (index < 0 || index >= policies.length - 1) return;
+    const newPolicies = [...policies];
+    [newPolicies[index], newPolicies[index + 1]] = [newPolicies[index + 1], newPolicies[index]];
+    setPolicies(newPolicies.map((p, i) => ({ ...p, displayOrder: i + 1 })));
+  };
+
+  const handleGeneratePolicyWithAI = async () => {
+    if (!policyPrompt.trim()) {
+      toast({ title: "Error", description: "Please describe what policy you need", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingPolicy(true);
+    try {
+      const response = await fetch('/api/generate-policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: policyPrompt }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNewPolicyText(data.policyText);
+        if (data.policyName) setNewPolicyName(data.policyName);
+        if (data.category) setNewPolicyCategory(data.category);
+        toast({ title: "Success", description: "Policy draft generated" });
+      } else {
+        toast({ title: "Error", description: "Failed to generate policy", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "AI service unavailable", variant: "destructive" });
+    } finally {
+      setIsGeneratingPolicy(false);
+    }
+  };
+
+  // Get policies filtered by category and sorted by displayOrder
+  const getFilteredPolicies = () => {
+    let filtered = [...policies].sort((a, b) => a.displayOrder - b.displayOrder);
+    if (selectedPolicyCategory) {
+      filtered = filtered.filter(p => p.category === selectedPolicyCategory);
+    }
+    return filtered;
+  };
+
+  // Get policies for Note 1 print (active, not hidden, included in print)
+  const getPrintablePolicies = () => {
+    return policies
+      .filter(p => p.status === "ACTIVE" && !p.isHidden && p.includeInPrint)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
   };
 
   const handleLinkTB = () => {
@@ -4076,33 +4224,75 @@ export default function NetToolPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="text-accounting-policies-title">Accounting Policies</h1>
-          <p className="text-muted-foreground">Significant accounting policies and methods</p>
+          <p className="text-muted-foreground">Significant accounting policies and methods - Note 1 content</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" data-testid="button-add-policy">
+          <Button size="sm" variant="outline" onClick={() => setShowNote1Preview(true)} data-testid="button-preview-note1">
+            <Eye className="h-4 w-4 mr-2" />
+            Preview Note 1
+          </Button>
+          <Button size="sm" onClick={() => setShowAddPolicyDialog(true)} data-testid="button-add-policy">
             <Plus className="h-4 w-4 mr-2" />
             Add Policy
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Summary Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm text-muted-foreground">Total Policies</div>
+            <div className="text-2xl font-bold">{policies.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm text-muted-foreground">Active</div>
+            <div className="text-2xl font-bold text-green-600">{policies.filter(p => p.status === "ACTIVE").length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm text-muted-foreground">In Print</div>
+            <div className="text-2xl font-bold">{getPrintablePolicies().length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-sm text-muted-foreground">Hidden</div>
+            <div className="text-2xl font-bold text-muted-foreground">{policies.filter(p => p.isHidden).length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
         <Card className="md:col-span-1 h-fit">
-          <CardHeader>
-            <CardTitle className="text-sm">Policy Categories</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Categories</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="space-y-1 p-2">
-              {Array.from(new Set(sampleAccountingPolicies.map(p => p.category))).map(category => (
+              <Button
+                variant={selectedPolicyCategory === null ? "secondary" : "ghost"}
+                className="w-full justify-start text-sm"
+                onClick={() => setSelectedPolicyCategory(null)}
+                data-testid="button-category-all"
+              >
+                All Policies
+                <Badge variant="secondary" className="ml-auto">{policies.length}</Badge>
+              </Button>
+              {Array.from(new Set(policies.map(p => p.category))).sort().map(category => (
                 <Button
                   key={category}
-                  variant="ghost"
+                  variant={selectedPolicyCategory === category ? "secondary" : "ghost"}
                   className="w-full justify-start text-sm"
-                  data-testid={`button-category-${category.toLowerCase()}`}
+                  onClick={() => setSelectedPolicyCategory(category)}
+                  data-testid={`button-category-${category.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {category}
                   <Badge variant="secondary" className="ml-auto">
-                    {sampleAccountingPolicies.filter(p => p.category === category).length}
+                    {policies.filter(p => p.category === category).length}
                   </Badge>
                 </Button>
               ))}
@@ -4110,33 +4300,102 @@ export default function NetToolPage() {
           </CardContent>
         </Card>
 
-        <div className="md:col-span-2 space-y-4">
-          {sampleAccountingPolicies.map(policy => (
-            <Card key={policy.policyId} data-testid={`card-policy-${policy.policyId}`}>
+        <div className="md:col-span-3 space-y-3">
+          {getFilteredPolicies().map((policy, index) => (
+            <Card 
+              key={policy.policyId} 
+              className={policy.isHidden ? "opacity-50" : ""}
+              data-testid={`card-policy-${policy.policyId}`}
+            >
               <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
+                <div className="flex-1">
+                  <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground font-normal">#{policy.displayOrder}</span>
                     {policy.policyName}
                     <Badge variant="secondary" className="text-xs">{policy.category}</Badge>
                     {policy.isBoilerplate && <Badge variant="outline" className="text-xs">Template</Badge>}
+                    {policy.isHidden && <Badge variant="outline" className="text-xs"><EyeOff className="w-3 h-3 mr-1" />Hidden</Badge>}
                   </CardTitle>
                   <CardDescription className="text-xs mt-1">
-                    Version {policy.version} - Effective from {policy.effectiveFrom}
+                    Version {policy.version} - Effective from {policy.effectiveFrom} - Updated by {policy.updatedBy}
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <Badge 
-                    variant={
-                      policy.status === "ACTIVE" ? "default" :
-                      policy.status === "DRAFT" ? "secondary" :
-                      "outline"
-                    }
+                    variant={policy.status === "ACTIVE" ? "default" : policy.status === "DRAFT" ? "secondary" : "outline"}
                     data-testid={`badge-policy-status-${policy.policyId}`}
                   >
                     {policy.status}
                   </Badge>
-                  <Button size="icon" variant="ghost" data-testid={`button-edit-policy-${policy.policyId}`}>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="icon" 
+                          variant={policy.includeInPrint ? "default" : "ghost"} 
+                          className="h-8 w-8"
+                          onClick={() => handleTogglePolicyPrint(policy.policyId)}
+                          data-testid={`button-toggle-print-${policy.policyId}`}
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{policy.includeInPrint ? "Included in print" : "Excluded from print"}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8"
+                          onClick={() => handleTogglePolicyVisibility(policy.policyId)}
+                          data-testid={`button-toggle-visibility-${policy.policyId}`}
+                        >
+                          {policy.isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{policy.isHidden ? "Show policy" : "Hide policy"}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8"
+                    onClick={() => handleMovePolicyUp(policy.policyId)}
+                    disabled={index === 0}
+                    data-testid={`button-move-up-${policy.policyId}`}
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8"
+                    onClick={() => handleMovePolicyDown(policy.policyId)}
+                    disabled={index === getFilteredPolicies().length - 1}
+                    data-testid={`button-move-down-${policy.policyId}`}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8"
+                    onClick={() => { setPolicyToEdit(policy); setShowEditPolicyDialog(true); }}
+                    data-testid={`button-edit-policy-${policy.policyId}`}
+                  >
                     <Edit3 className="w-4 h-4" />
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => { setPolicyToDelete(policy); setShowDeletePolicyDialog(true); }}
+                    data-testid={`button-delete-policy-${policy.policyId}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </CardHeader>
@@ -4144,21 +4403,26 @@ export default function NetToolPage() {
                 <div className="text-sm whitespace-pre-line text-muted-foreground line-clamp-4">
                   {policy.policyText}
                 </div>
-                {policy.linkedNotes.length > 0 && (
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                    <span className="text-xs text-muted-foreground">Linked to:</span>
-                    {policy.linkedNotes.map(noteId => (
-                      <Badge 
-                        key={noteId} 
-                        variant="outline" 
-                        className="text-xs cursor-pointer hover-elevate"
-                        data-testid={`badge-policy-note-${policy.policyId}-${noteId}`}
-                      >
-                        {sampleNotes.find(n => n.noteId === noteId)?.noteNumber || noteId}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t">
+                  {policy.linkedNotes.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Linked to:</span>
+                      {policy.linkedNotes.map(noteId => (
+                        <Badge key={noteId} variant="outline" className="text-xs cursor-pointer hover-elevate">
+                          {sampleNotes.find(n => n.noteId === noteId)?.noteNumber || noteId}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {policy.industryTags.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Industries:</span>
+                      {policy.industryTags.map(tag => (
+                        <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -5913,6 +6177,237 @@ export default function NetToolPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Policy Dialog */}
+      <Dialog open={showAddPolicyDialog} onOpenChange={setShowAddPolicyDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Accounting Policy</DialogTitle>
+            <DialogDescription>Create a new accounting policy for Note 1</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2">
+              <Label htmlFor="policy-name">Policy Name</Label>
+              <Input
+                id="policy-name"
+                placeholder="e.g., Revenue Recognition"
+                value={newPolicyName}
+                onChange={(e) => setNewPolicyName(e.target.value)}
+                data-testid="input-policy-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="policy-category">Category</Label>
+              <Select value={newPolicyCategory} onValueChange={setNewPolicyCategory}>
+                <SelectTrigger data-testid="select-policy-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">General</SelectItem>
+                  <SelectItem value="Assets">Assets</SelectItem>
+                  <SelectItem value="Liabilities">Liabilities</SelectItem>
+                  <SelectItem value="Revenue">Revenue</SelectItem>
+                  <SelectItem value="Taxes">Taxes</SelectItem>
+                  <SelectItem value="Financial Instruments">Financial Instruments</SelectItem>
+                  <SelectItem value="Leases">Leases</SelectItem>
+                  <SelectItem value="Compensation">Compensation</SelectItem>
+                  <SelectItem value="Standards">Standards</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <Label>AI Policy Assistant</Label>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Describe what policy you need (e.g., 'CECL policy for community bank')"
+                  value={policyPrompt}
+                  onChange={(e) => setPolicyPrompt(e.target.value)}
+                  data-testid="input-policy-prompt"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePolicyWithAI}
+                  disabled={isGeneratingPolicy || !policyPrompt.trim()}
+                  data-testid="button-generate-policy"
+                >
+                  {isGeneratingPolicy ? <Clock className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  Generate
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="policy-text">Policy Text</Label>
+              <Textarea
+                id="policy-text"
+                placeholder="Enter the policy text..."
+                value={newPolicyText}
+                onChange={(e) => setNewPolicyText(e.target.value)}
+                rows={10}
+                className="font-mono text-sm"
+                data-testid="input-policy-text"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAddPolicyDialog(false); setNewPolicyName(""); setNewPolicyCategory("General"); setNewPolicyText(""); setPolicyPrompt(""); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPolicy} disabled={!newPolicyName.trim()} data-testid="button-save-policy">
+              Create Policy
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Policy Dialog */}
+      <Dialog open={showEditPolicyDialog} onOpenChange={setShowEditPolicyDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Accounting Policy</DialogTitle>
+            <DialogDescription>Update the policy details</DialogDescription>
+          </DialogHeader>
+          {policyToEdit && (
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2">
+                <Label htmlFor="edit-policy-name">Policy Name</Label>
+                <Input
+                  id="edit-policy-name"
+                  value={policyToEdit.policyName}
+                  onChange={(e) => setPolicyToEdit({ ...policyToEdit, policyName: e.target.value })}
+                  data-testid="input-edit-policy-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-policy-category">Category</Label>
+                <Select value={policyToEdit.category} onValueChange={(v) => setPolicyToEdit({ ...policyToEdit, category: v })}>
+                  <SelectTrigger data-testid="select-edit-policy-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="General">General</SelectItem>
+                    <SelectItem value="Assets">Assets</SelectItem>
+                    <SelectItem value="Liabilities">Liabilities</SelectItem>
+                    <SelectItem value="Revenue">Revenue</SelectItem>
+                    <SelectItem value="Taxes">Taxes</SelectItem>
+                    <SelectItem value="Financial Instruments">Financial Instruments</SelectItem>
+                    <SelectItem value="Leases">Leases</SelectItem>
+                    <SelectItem value="Compensation">Compensation</SelectItem>
+                    <SelectItem value="Standards">Standards</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-policy-status">Status</Label>
+                <Select value={policyToEdit.status} onValueChange={(v) => setPolicyToEdit({ ...policyToEdit, status: v as "DRAFT" | "ACTIVE" | "SUPERSEDED" })}>
+                  <SelectTrigger data-testid="select-edit-policy-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="SUPERSEDED">Superseded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-policy-text">Policy Text</Label>
+                <Textarea
+                  id="edit-policy-text"
+                  value={policyToEdit.policyText}
+                  onChange={(e) => setPolicyToEdit({ ...policyToEdit, policyText: e.target.value })}
+                  rows={10}
+                  className="font-mono text-sm"
+                  data-testid="input-edit-policy-text"
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-include-print"
+                    checked={policyToEdit.includeInPrint}
+                    onChange={(e) => setPolicyToEdit({ ...policyToEdit, includeInPrint: e.target.checked })}
+                    className="w-4 h-4"
+                    data-testid="checkbox-edit-include-print"
+                  />
+                  <Label htmlFor="edit-include-print">Include in Print</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-is-hidden"
+                    checked={policyToEdit.isHidden}
+                    onChange={(e) => setPolicyToEdit({ ...policyToEdit, isHidden: e.target.checked })}
+                    className="w-4 h-4"
+                    data-testid="checkbox-edit-is-hidden"
+                  />
+                  <Label htmlFor="edit-is-hidden">Hidden</Label>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditPolicyDialog(false)}>Cancel</Button>
+            <Button onClick={handleUpdatePolicy} data-testid="button-update-policy">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Policy Confirmation */}
+      <AlertDialog open={showDeletePolicyDialog} onOpenChange={setShowDeletePolicyDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{policyToDelete?.policyName}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeletePolicy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" data-testid="button-confirm-delete-policy">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Note 1 Print Preview Dialog */}
+      <Sheet open={showNote1Preview} onOpenChange={setShowNote1Preview}>
+        <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Note 1 - Summary of Significant Accounting Policies</SheetTitle>
+            <SheetDescription>Preview of how Note 1 will appear in the printed financial statements</SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-6">
+            {/* Basis of Preparation */}
+            <div className="border-b pb-4">
+              <h3 className="font-semibold text-lg mb-2">Basis of Presentation</h3>
+              <p className="text-sm text-muted-foreground">{sampleBasisOfPreparation.frameworkStatement}</p>
+              <p className="text-sm text-muted-foreground mt-2">{sampleBasisOfPreparation.measurementBasis}</p>
+            </div>
+            
+            {/* Policies */}
+            {getPrintablePolicies().map((policy, index) => (
+              <div key={policy.policyId} className="border-b pb-4 last:border-b-0">
+                <h3 className="font-semibold mb-2">{String.fromCharCode(97 + index)}. {policy.policyName}</h3>
+                <div className="text-sm text-muted-foreground whitespace-pre-line">
+                  {policy.policyText}
+                </div>
+              </div>
+            ))}
+            
+            {getPrintablePolicies().length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No policies configured for print.</p>
+                <p className="text-sm mt-1">Mark policies as "Active" and "Include in Print" to see them here.</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

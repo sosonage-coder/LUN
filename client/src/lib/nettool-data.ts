@@ -15,6 +15,7 @@ import type {
   FSComprehensiveIncome,
   FSBasisOfPreparation,
   AccountingPolicy,
+  ASUAdoption,
   MDADocument,
   TBAdjustmentEntry,
   TBAdjustmentColumn,
@@ -2669,23 +2670,155 @@ export const sampleBasisOfPreparation: FSBasisOfPreparation = {
 // Accounting Policies Library
 export const sampleAccountingPolicies: AccountingPolicy[] = [
   {
+    policyId: "pol-basis",
+    policyName: "Basis of Presentation",
+    category: "General",
+    policyText: `The accompanying consolidated financial statements have been prepared in accordance with accounting principles generally accepted in the United States of America (US GAAP) and include the accounts of the Company and its wholly-owned subsidiaries. All significant intercompany balances and transactions have been eliminated in consolidation.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: [],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 1,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-estimates",
+    policyName: "Use of Estimates",
+    category: "General",
+    policyText: `The preparation of financial statements in conformity with US GAAP requires management to make estimates and assumptions that affect the reported amounts of assets and liabilities and disclosure of contingent assets and liabilities at the date of the financial statements and the reported amounts of revenues and expenses during the reporting period.
+
+Significant estimates include, but are not limited to, the allowance for credit losses, fair value measurements, valuation of deferred tax assets, useful lives of property and equipment, and impairment of long-lived assets. Actual results could differ from those estimates.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: [],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 2,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-cash",
+    policyName: "Cash and Cash Equivalents",
+    category: "Assets",
+    policyText: `Cash and cash equivalents include cash on hand, amounts due from banks, and highly liquid investments with original maturities of three months or less. The Company maintains cash balances at financial institutions that may exceed federally insured limits.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-cash"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 3,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-securities",
+    policyName: "Debt Securities",
+    category: "Assets",
+    policyText: `Debt securities are classified as held-to-maturity (HTM), available-for-sale (AFS), or trading based on management's intent and ability at the time of purchase.
+
+**Held-to-Maturity:** Securities that management has the positive intent and ability to hold until maturity are classified as HTM and carried at amortized cost.
+
+**Available-for-Sale:** Securities not classified as HTM or trading are classified as AFS and carried at fair value, with unrealized gains and losses reported in other comprehensive income, net of tax.
+
+**Trading:** Securities held principally for the purpose of selling in the near term are classified as trading and carried at fair value, with unrealized gains and losses reported in earnings.
+
+The Company evaluates AFS securities in an unrealized loss position to determine whether the decline in fair value has resulted from credit losses or other factors. Credit losses are recognized through an allowance.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-securities"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 4,
+    isHidden: false,
+    industryTags: ["financial-institutions", "banking"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-loans-acl",
+    policyName: "Loans and Allowance for Credit Losses",
+    category: "Assets",
+    policyText: `Loans are stated at their principal amount outstanding, net of deferred loan fees and costs and the allowance for credit losses (ACL).
+
+**Allowance for Credit Losses:** The ACL is a valuation account that is deducted from the amortized cost basis of the loans to present the net amount expected to be collected. The ACL is estimated using a current expected credit loss (CECL) model that considers historical loss experience, current conditions, and reasonable and supportable forecasts.
+
+The ACL is measured on a collective (pool) basis when similar risk characteristics exist. Loans that do not share similar risk characteristics are evaluated on an individual basis.
+
+**Nonaccrual Loans:** Loans are placed on nonaccrual status when management believes collection of interest is doubtful. Interest previously accrued but not collected is reversed against interest income.
+
+**Charge-offs:** Loans are charged off when management determines that collection of the principal balance is unlikely.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-loans"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 5,
+    isHidden: false,
+    industryTags: ["financial-institutions", "banking"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-fair-value",
+    policyName: "Fair Value Measurements",
+    category: "General",
+    policyText: `The Company measures certain financial instruments at fair value on a recurring basis. Fair value is the price that would be received to sell an asset or paid to transfer a liability in an orderly transaction between market participants at the measurement date.
+
+The Company uses a fair value hierarchy that prioritizes inputs to valuation techniques:
+
+**Level 1:** Quoted prices in active markets for identical assets or liabilities.
+**Level 2:** Observable inputs other than Level 1 prices, such as quoted prices for similar assets or liabilities, quoted prices in inactive markets, or model-derived valuations with observable inputs.
+**Level 3:** Unobservable inputs that are supported by little or no market activity and are significant to the fair value measurement.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-fair-value"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 6,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
     policyId: "pol-revenue",
     policyName: "Revenue Recognition",
     category: "Revenue",
     policyText: `Revenue is recognized when control of promised goods or services is transferred to customers in an amount that reflects the consideration expected to be entitled in exchange for those goods or services.
 
-The Company's revenue is derived primarily from software license sales, subscription services, and professional services. For each revenue stream:
+The Company identifies contracts with customers, identifies the performance obligations in the contract, determines the transaction price, allocates the transaction price to the performance obligations, and recognizes revenue when (or as) the entity satisfies a performance obligation.
 
-**Software Licenses:** Revenue from perpetual software licenses is recognized at the point in time when the software is delivered and the customer has the right to use the software.
-
-**Subscription Services:** Revenue from subscription services is recognized ratably over the subscription period as the services are provided.
-
-**Professional Services:** Revenue from professional services is recognized as services are rendered, typically using an input method based on hours incurred.`,
+**Interest Income:** Interest income on loans is recognized on the accrual basis using the effective interest method. Loan origination fees and certain direct origination costs are deferred and amortized as an adjustment of yield over the life of the loan.`,
     effectiveFrom: "2024-01-01",
     version: 2,
     status: "ACTIVE",
     linkedNotes: ["note-revenue"],
     isBoilerplate: false,
+    includeInPrint: true,
+    displayOrder: 7,
+    isHidden: false,
+    industryTags: ["all"],
     createdAt: "2023-01-01T00:00:00Z",
     updatedAt: "2024-01-15T10:00:00Z",
     updatedBy: "Controller",
@@ -2709,6 +2842,32 @@ Residual values and useful lives are reviewed, and adjusted if appropriate, at e
     status: "ACTIVE",
     linkedNotes: ["note-ppe"],
     isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 8,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-goodwill",
+    policyName: "Goodwill and Intangible Assets",
+    category: "Assets",
+    policyText: `**Goodwill:** Goodwill represents the excess of the purchase price over the fair value of net assets acquired in business combinations. Goodwill is not amortized but is tested for impairment at least annually or more frequently if events or changes in circumstances indicate that the asset might be impaired.
+
+The Company performs a qualitative assessment to determine whether it is more likely than not that the fair value of a reporting unit is less than its carrying amount. If the qualitative assessment indicates impairment, a quantitative test is performed.
+
+**Intangible Assets:** Intangible assets with finite lives are amortized over their estimated useful lives and reviewed for impairment when events or changes in circumstances indicate the carrying amount may not be recoverable. Intangible assets with indefinite lives are tested for impairment annually.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-intangibles"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 9,
+    isHidden: false,
+    industryTags: ["all"],
     createdAt: "2023-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
     updatedBy: "Controller",
@@ -2729,6 +2888,10 @@ The Company has elected not to recognize right-of-use assets and lease liabiliti
     status: "ACTIVE",
     linkedNotes: ["note-leases"],
     isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 10,
+    isHidden: false,
+    industryTags: ["all"],
     createdAt: "2023-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
     updatedBy: "Controller",
@@ -2747,6 +2910,58 @@ When inventories are sold, the carrying amount is recognized as an expense in th
     status: "ACTIVE",
     linkedNotes: ["note-inventory"],
     isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 11,
+    isHidden: false,
+    industryTags: ["manufacturing", "retail"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-derivatives",
+    policyName: "Derivatives and Hedging",
+    category: "Financial Instruments",
+    policyText: `Derivatives are recognized on the balance sheet at fair value. The accounting for changes in fair value depends on the intended use of the derivative and the resulting designation.
+
+**Cash Flow Hedges:** For derivatives designated as cash flow hedges, the effective portion of changes in fair value is recorded in other comprehensive income and reclassified to earnings when the hedged transaction affects earnings.
+
+**Fair Value Hedges:** For derivatives designated as fair value hedges, changes in fair value are recorded in earnings along with the change in fair value of the hedged item attributable to the hedged risk.
+
+**Derivatives Not Designated as Hedges:** Changes in fair value of derivatives not designated as hedges are recorded directly in earnings.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-derivatives"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 12,
+    isHidden: false,
+    industryTags: ["financial-institutions", "banking"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-stock-comp",
+    policyName: "Stock-Based Compensation",
+    category: "Compensation",
+    policyText: `The Company measures and recognizes compensation expense for all stock-based awards made to employees and directors based on the grant date fair value of the awards.
+
+**Stock Options:** The fair value of stock options is estimated using the Black-Scholes option-pricing model. Compensation expense is recognized on a straight-line basis over the requisite service period, which is generally the vesting period.
+
+**Restricted Stock:** The fair value of restricted stock awards is based on the market price of the Company's common stock on the date of grant. Compensation expense is recognized over the vesting period.
+
+Forfeitures are recognized as they occur.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-stock-comp"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 13,
+    isHidden: false,
+    industryTags: ["all"],
     createdAt: "2023-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
     updatedBy: "Controller",
@@ -2759,15 +2974,121 @@ When inventories are sold, the carrying amount is recognized as an expense in th
 
 Deferred tax assets and liabilities are measured using enacted tax rates expected to apply to taxable income in the years in which those temporary differences are expected to be recovered or settled.
 
-A valuation allowance is established when it is more likely than not that some or all of the deferred tax assets will not be realized.`,
+A valuation allowance is established when it is more likely than not that some or all of the deferred tax assets will not be realized.
+
+The Company recognizes the effect of income tax positions only if those positions are more likely than not of being sustained. Recognized income tax positions are measured at the largest amount that is greater than 50% likely of being realized.`,
     effectiveFrom: "2024-01-01",
     version: 1,
     status: "ACTIVE",
     linkedNotes: ["note-tax"],
     isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 14,
+    isHidden: false,
+    industryTags: ["all"],
     createdAt: "2023-01-01T00:00:00Z",
     updatedAt: "2024-01-01T00:00:00Z",
     updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-commitments",
+    policyName: "Commitments and Contingencies",
+    category: "Liabilities",
+    policyText: `Liabilities for loss contingencies arising from claims, assessments, litigation, fines, and penalties are recorded when it is probable that a liability has been incurred and the amount can be reasonably estimated.
+
+Legal costs incurred in connection with loss contingencies are expensed as incurred.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "ACTIVE",
+    linkedNotes: ["note-commitments"],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 15,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-recent-standards",
+    policyName: "Recently Adopted Accounting Standards",
+    category: "Standards",
+    policyText: `[This section should be updated to reflect standards adopted during the current period. Example:]
+
+In [Month Year], the Company adopted ASU 2023-XX, "[Title of ASU]," which [brief description of the standard]. The adoption of this standard [did/did not] have a material impact on the Company's consolidated financial statements.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "DRAFT",
+    linkedNotes: [],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 16,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+  {
+    policyId: "pol-pending-standards",
+    policyName: "Pending Accounting Standards",
+    category: "Standards",
+    policyText: `[This section should be updated to reflect standards not yet adopted. Example:]
+
+In [Month Year], the FASB issued ASU 2024-XX, "[Title of ASU]," which [brief description of the standard]. This ASU is effective for fiscal years beginning after [effective date]. The Company is currently evaluating the impact this guidance will have on its consolidated financial statements.`,
+    effectiveFrom: "2024-01-01",
+    version: 1,
+    status: "DRAFT",
+    linkedNotes: [],
+    isBoilerplate: true,
+    includeInPrint: true,
+    displayOrder: 17,
+    isHidden: false,
+    industryTags: ["all"],
+    createdAt: "2023-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+    updatedBy: "Controller",
+  },
+];
+
+// ASU Adoption Tracker Sample Data
+export const sampleASUAdoptions: ASUAdoption[] = [
+  {
+    asuId: "asu-2016-13",
+    asuNumber: "2016-13",
+    asuTitle: "Financial Instruments - Credit Losses (CECL)",
+    topic: "326",
+    effectiveDate: "2023-01-01",
+    adoptionDate: "2023-01-01",
+    adoptionStatus: "ADOPTED",
+    impactAssessment: "The adoption resulted in a cumulative-effect adjustment to retained earnings of $X million.",
+    transitionMethod: "Modified Retrospective",
+    isRequired: true,
+  },
+  {
+    asuId: "asu-2023-07",
+    asuNumber: "2023-07",
+    asuTitle: "Segment Reporting - Improvements to Reportable Segment Disclosures",
+    topic: "280",
+    effectiveDate: "2024-12-15",
+    adoptionDate: null,
+    adoptionStatus: "NOT_ADOPTED",
+    impactAssessment: "The Company is evaluating the impact on segment disclosures.",
+    transitionMethod: null,
+    isRequired: true,
+  },
+  {
+    asuId: "asu-2023-09",
+    asuNumber: "2023-09",
+    asuTitle: "Income Taxes - Improvements to Income Tax Disclosures",
+    topic: "740",
+    effectiveDate: "2025-12-15",
+    adoptionDate: null,
+    adoptionStatus: "NOT_ADOPTED",
+    impactAssessment: "The Company is evaluating the impact on income tax disclosures.",
+    transitionMethod: null,
+    isRequired: true,
   },
 ];
 

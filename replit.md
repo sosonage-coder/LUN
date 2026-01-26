@@ -46,6 +46,16 @@ The application employs a client-server architecture.
     - **TB Adjustments Workspace**: Grid for journal entries (RJE, AJE) with entry summary cards and account-level tagging.
     - **Final TB View**: Read-only comparative view of prior year vs. current year with variance analysis.
     - **Template Repository**: Centralized management for Disclosure, Working Paper, Reconciliation, and Close Control templates with CRUD operations and a preview feature.
+    - **Accounting Policies Module**: Comprehensive policy management for Note 1 (Summary of Significant Accounting Policies) with:
+      - 17 standard policy templates covering Basis of Presentation, Use of Estimates, Cash, Debt Securities, Loans/CECL, Fair Value, Revenue, PPE, Goodwill/Intangibles, Leases, Inventory, Derivatives, Stock Compensation, Income Taxes, Commitments, Recently Adopted Standards, and Pending Standards
+      - Policy CRUD operations with add/edit/delete functionality
+      - Show/hide toggle for hiding policies from view without deletion
+      - Print inclusion control (includeInPrint flag) for controlling what appears in printed Note 1
+      - Display order management with drag-and-drop reordering
+      - AI Policy Assistant powered by GPT-4o for generating policy drafts from natural language prompts
+      - Note 1 Print Preview showing Basis of Preparation combined with active, printable policies sorted by displayOrder
+      - ASU Adoption tracking for accounting standards updates
+      - Industry tagging for policy applicability
 - **One Compliance (Entity Governance & Compliance System)**: Structured into Dashboard, Entity Registry, Obligations, Board & Governance, and Startup Equity tabs. Includes health scores, risk overview, entity profiles, a library of 50+ regulatory filings across various industries, meeting management, and detailed tracking for funding rounds, convertibles, and options.
 
 ## External Dependencies

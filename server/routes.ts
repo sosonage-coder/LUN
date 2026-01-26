@@ -2067,5 +2067,83 @@ export async function registerRoutes(
     }
   });
 
+  // Generate accounting policy with AI
+  app.post("/api/generate-policy", async (req, res) => {
+    try {
+      const schema = z.object({
+        prompt: z.string().min(1, "Prompt is required"),
+      });
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ error: result.error.errors[0].message });
+      }
+      
+      const { prompt } = result.data;
+      
+      // Use OpenAI to generate policy text
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI();
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert financial reporting specialist who drafts accounting policies for financial statement disclosures. 
+            
+When given a description, generate a professional accounting policy following these guidelines:
+- Use formal financial reporting language
+- Reference relevant accounting standards (ASC topics for US GAAP, IFRS for international)
+- Include measurement bases, recognition criteria, and disclosure requirements
+- Structure with clear paragraphs and bullet points where appropriate
+- Be comprehensive but concise
+
+Respond with a JSON object containing:
+- policyName: A formal name for the policy
+- category: One of: General, Assets, Liabilities, Revenue, Taxes, Financial Instruments, Leases, Compensation, Standards
+- policyText: The full policy text (use markdown formatting for headers and bullets)`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+      });
+      
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        return res.status(500).json({ error: "No response from AI" });
+      }
+      
+      // Parse and validate AI response with Zod
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", content);
+        return res.status(500).json({ error: "Invalid AI response format" });
+      }
+      
+      const responseSchema = z.object({
+        policyName: z.string().default(""),
+        category: z.string().default("General"),
+        policyText: z.string().default(""),
+      });
+      
+      const validatedResponse = responseSchema.safeParse(parsed);
+      if (!validatedResponse.success) {
+        console.error("AI response validation failed:", validatedResponse.error);
+        return res.status(500).json({ error: "AI response does not match expected format" });
+      }
+      
+      res.json(validatedResponse.data);
+    } catch (error) {
+      console.error("Error generating policy:", error);
+      res.status(500).json({ error: "Failed to generate policy" });
+    }
+  });
+
   return httpServer;
 }
