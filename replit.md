@@ -77,6 +77,13 @@ The application uses a client-server architecture.
         - Row types: DATA, HEADER, SUBTOTAL, TOTAL with differentiated styling.
         - Text blocks for notes and annotations.
         - Breadcrumb navigation between list and detail views.
+        - **TB Linking & Tie-Out Validation**:
+            - Link to TB button opens account selector dialog.
+            - Auto-populates WP balances from selected TB accounts.
+            - Tie-Out Status Card shows TIED/VARIANCE/INCOMPLETE status with color-coded badges.
+            - Displays TB Source amount, WP Total, and Variance with linked account codes.
+        - **Analyst Notes**: Timestamped notes section with add capability for documenting observations, methodology, and follow-ups.
+        - **Attachments**: Supporting documents section with upload simulation (invoices, contracts, etc.), file list with view/download buttons.
         - **Comprehensive WP Coverage** (14 working papers):
             - Revenue Analysis (LINEAR) - revenue stream breakdown
             - COGS Analysis (LINEAR) - cost category breakdown
