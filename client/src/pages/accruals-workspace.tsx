@@ -21,7 +21,8 @@ import {
   Edit,
   TrendingUp,
   TrendingDown,
-  MoreHorizontal
+  MoreHorizontal,
+  FolderOpen
 } from "lucide-react";
 import type { 
   AccrualSchedule,
@@ -188,6 +189,12 @@ export default function AccrualsWorkspace() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/artifacts?entityId=${schedule.entityId}&linkedSchedule=${encodeURIComponent(schedule.name)}`}>
+            <Button variant="outline" size="sm" data-testid="button-view-artifacts">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Related Artifacts
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export

@@ -17,7 +17,8 @@ import {
   Paperclip,
   Shield,
   Edit,
-  TrendingDown
+  TrendingDown,
+  FolderOpen
 } from "lucide-react";
 import type { 
   FixedAsset,
@@ -164,6 +165,12 @@ export default function FixedAssetsWorkspace() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/artifacts?entityId=${asset.entityId}&linkedSchedule=${encodeURIComponent(asset.name)}`}>
+            <Button variant="outline" size="sm" data-testid="button-view-artifacts">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Related Artifacts
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export

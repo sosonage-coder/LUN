@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,14 +113,30 @@ function formatDate(dateString: string): string {
 
 export default function ArtifactRegistryPage() {
   const { toast } = useToast();
+  const searchString = useSearch();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [purposeFilter, setPurposeFilter] = useState<ArtifactPurpose | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState<ArtifactStatus | "ALL">("ALL");
   const [entityFilter, setEntityFilter] = useState<string>("ALL");
   const [periodFilter, setPeriodFilter] = useState<string>("");
+  const [linkedAccountFilter, setLinkedAccountFilter] = useState<string>("");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedArtifact, setSelectedArtifact] = useState<FinancialArtifact | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const accountCode = params.get("accountCode");
+    const linkedSchedule = params.get("linkedSchedule");
+    const entity = params.get("entityId");
+    const period = params.get("period");
+    
+    if (accountCode) setLinkedAccountFilter(accountCode);
+    if (linkedSchedule) setSearchQuery(linkedSchedule);
+    if (entity) setEntityFilter(entity);
+    if (period) setPeriodFilter(period);
+  }, [searchString]);
 
   const { data: artifacts, isLoading: artifactsLoading } = useQuery<FinancialArtifact[]>({
     queryKey: ["/api/artifacts"],
@@ -209,8 +226,16 @@ export default function ArtifactRegistryPage() {
       result = result.filter(a => a.period === periodFilter);
     }
 
+    if (linkedAccountFilter) {
+      const accountQuery = linkedAccountFilter.toLowerCase();
+      result = result.filter(a => {
+        const codes = a.linkedAccountCodes ?? [];
+        return codes.some(code => code.toLowerCase().includes(accountQuery));
+      });
+    }
+
     return result;
-  }, [artifacts, searchQuery, purposeFilter, statusFilter, entityFilter, periodFilter]);
+  }, [artifacts, searchQuery, purposeFilter, statusFilter, entityFilter, periodFilter, linkedAccountFilter]);
 
   return (
     <div className="p-6 space-y-6" data-testid="artifact-registry-page">
@@ -362,6 +387,16 @@ export default function ArtifactRegistryPage() {
               className="w-[160px]"
               data-testid="input-period-filter"
             />
+            <div className="relative min-w-[160px]">
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Linked account..."
+                value={linkedAccountFilter}
+                onChange={(e) => setLinkedAccountFilter(e.target.value)}
+                className="pl-9"
+                data-testid="input-linked-account-filter"
+              />
+            </div>
           </div>
 
           {artifactsLoading ? (
@@ -383,14 +418,15 @@ export default function ArtifactRegistryPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">File</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Owner</TableHead>
-                    <TableHead>Uploaded</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableHead className="w-[300px]" data-testid="th-file">File</TableHead>
+                    <TableHead data-testid="th-purpose">Purpose</TableHead>
+                    <TableHead data-testid="th-entity">Entity</TableHead>
+                    <TableHead data-testid="th-period">Period</TableHead>
+                    <TableHead data-testid="th-linked-accounts">Linked Accounts</TableHead>
+                    <TableHead data-testid="th-status">Status</TableHead>
+                    <TableHead data-testid="th-owner">Owner</TableHead>
+                    <TableHead data-testid="th-uploaded">Uploaded</TableHead>
+                    <TableHead className="w-[100px]" data-testid="th-actions">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -433,19 +469,34 @@ export default function ArtifactRegistryPage() {
                             <span className="text-sm">{entity?.name ?? artifact.entityId}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-testid={`cell-period-${artifact.artifactId}`}>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 text-muted-foreground" />
                             <span className="text-sm">{artifact.period}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-testid={`cell-linked-accounts-${artifact.artifactId}`}>
+                          {(artifact.linkedAccountCodes ?? []).length > 0 ? (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-sm text-muted-foreground">
+                                {(artifact.linkedAccountCodes ?? []).slice(0, 2).join(", ")}
+                                {(artifact.linkedAccountCodes ?? []).length > 2 && (
+                                  <span className="text-xs"> +{(artifact.linkedAccountCodes ?? []).length - 2}</span>
+                                )}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell data-testid={`cell-status-${artifact.artifactId}`}>
                           <Badge className={`${statusColors[artifact.status]} text-white text-xs`}>
                             {artifact.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{artifact.owner}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-sm" data-testid={`cell-owner-${artifact.artifactId}`}>{artifact.owner}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground" data-testid={`cell-uploaded-${artifact.artifactId}`}>
                           {formatDate(artifact.uploadedAt)}
                         </TableCell>
                         <TableCell>

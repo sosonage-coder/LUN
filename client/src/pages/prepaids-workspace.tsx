@@ -16,7 +16,8 @@ import {
   Paperclip,
   Shield,
   Edit,
-  TrendingDown
+  TrendingDown,
+  FolderOpen
 } from "lucide-react";
 import type { 
   PrepaidSchedule,
@@ -152,6 +153,12 @@ export default function PrepaidsWorkspace() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/artifacts?entityId=${schedule.entityId}&linkedSchedule=${encodeURIComponent(schedule.name)}`}>
+            <Button variant="outline" size="sm" data-testid="button-view-artifacts">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Related Artifacts
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export

@@ -18,7 +18,8 @@ import {
   Shield,
   Edit,
   Percent,
-  TrendingDown
+  TrendingDown,
+  FolderOpen
 } from "lucide-react";
 import type { 
   DebtSchedule,
@@ -167,6 +168,12 @@ export default function DebtWorkspace() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/artifacts?entityId=${schedule.entityId}&linkedSchedule=${encodeURIComponent(schedule.instrumentName)}`}>
+            <Button variant="outline" size="sm" data-testid="button-view-artifacts">
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Related Artifacts
+            </Button>
+          </Link>
           <Button variant="outline" size="sm" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export
