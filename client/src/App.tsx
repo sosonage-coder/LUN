@@ -62,6 +62,8 @@ import CloseTasksPage from "@/pages/close-tasks";
 import NetToolPage from "@/pages/nettool";
 import MasterMappingPage from "@/pages/master-mapping";
 import TBImportPage from "@/pages/tb-import";
+import ArtifactRegistryPage from "@/pages/artifact-registry";
+import ArtifactHealthDashboard from "@/pages/artifact-health-dashboard";
 
 function Router() {
   return (
@@ -83,6 +85,8 @@ function Router() {
       <Route path="/nettool/:section" component={NetToolPage} />
       <Route path="/master-mapping" component={MasterMappingPage} />
       <Route path="/tb-import" component={TBImportPage} />
+      <Route path="/artifacts" component={ArtifactRegistryPage} />
+      <Route path="/artifacts/health" component={ArtifactHealthDashboard} />
       <Route path="/close-control" component={CloseControlDashboard} />
       <Route path="/close-control/templates" component={CloseControlTemplatesPage} />
       <Route path="/close-control/templates/:id" component={CloseControlTemplateEditorPage} />

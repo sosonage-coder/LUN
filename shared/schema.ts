@@ -2474,5 +2474,210 @@ export const autoPopulateWorkingPapersSchema = z.object({
 
 export type InsertWorkingPaper = z.infer<typeof insertWorkingPaperSchema>;
 
+// =============================================
+// Financial Artifacts - Governed document registry
+// Replaces shared folder chaos with period-aware, accountable artifacts
+// =============================================
+
+/**
+ * Artifact Purpose Types - Why does this file exist?
+ * This is the key organizing principle, not folders.
+ */
+export type ArtifactPurpose = 
+  | "GENERAL"             // Ad-hoc analyses, one-off files
+  | "SUPPORTING_WORKPAPER" // Tied to schedules, accounts, reconciliations
+  | "CONTRACT"            // Contracts & agreements with key metadata
+  | "GOVERNANCE"          // Board minutes, resolutions, approvals
+  | "CORRESPONDENCE"      // Audit letters, confirmations, legal exchanges
+  | "EVIDENCE"            // Source documents, invoices, confirmations
+  | "CUSTOM";             // User-defined purpose
+
+/**
+ * Artifact Status - Where is it in the review lifecycle?
+ */
+export type ArtifactStatus = 
+  | "DRAFT"       // Just uploaded, not yet reviewed
+  | "PENDING"     // Awaiting review
+  | "REVIEWED"    // Reviewed but not final
+  | "APPROVED"    // Fully approved
+  | "ARCHIVED";   // Historical, no longer active
+
+/**
+ * File Type Categories - For filtering and display
+ */
+export type ArtifactFileType = 
+  | "EXCEL"
+  | "PDF" 
+  | "WORD"
+  | "IMAGE"
+  | "CSV"
+  | "TEXT"
+  | "LINK"
+  | "OTHER";
+
+/**
+ * Financial Artifact - A governed, period-aware document
+ * Every artifact must answer: period, entity, purpose, owner, status
+ */
+export interface FinancialArtifact {
+  artifactId: string;
+  
+  // Core identification
+  fileName: string;
+  fileType: ArtifactFileType;
+  fileSize: number; // bytes
+  filePath: string; // storage path or URL
+  mimeType: string | null;
+  
+  // Period & Entity scope (required for visibility)
+  period: string; // YYYY-MM format
+  entityId: string;
+  
+  // Purpose & Classification
+  purpose: ArtifactPurpose;
+  customPurposeLabel: string | null; // For CUSTOM purpose type
+  description: string;
+  tags: string[]; // Lightweight user-defined labels
+  
+  // Accountability
+  owner: string; // User who uploaded
+  status: ArtifactStatus;
+  isRequired: boolean; // Required vs supporting artifact
+  isAuditRelevant: boolean; // Flag for audit readiness views
+  
+  // Smart Linking (optional but encouraged)
+  linkedAccountCodes: string[]; // GL accounts this relates to
+  linkedScheduleIds: string[]; // Schedules this supports
+  linkedReconciliationIds: string[]; // Reconciliations this supports
+  linkedWorkingPaperIds: string[]; // Working papers this relates to
+  
+  // Contract-specific metadata (for CONTRACT purpose)
+  contractMetadata: {
+    counterparty: string | null;
+    expiryDate: string | null; // YYYY-MM-DD
+    contractValue: number | null;
+    renewalType: "AUTO" | "MANUAL" | null;
+  } | null;
+  
+  // Virtual folder path (for familiar folder navigation)
+  virtualFolderPath: string | null; // e.g., "/Prepaids/Insurance"
+  
+  // Review & audit trail
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  reviewNotes: string | null;
+  
+  // Timestamps
+  uploadedAt: string;
+  lastModifiedAt: string;
+  
+  // Prior period reference (for change tracking)
+  priorPeriodArtifactId: string | null;
+}
+
+// Zod schema for creating artifacts
+export const insertArtifactSchema = z.object({
+  fileName: z.string().min(1, "File name is required"),
+  fileType: z.enum(["EXCEL", "PDF", "WORD", "IMAGE", "CSV", "TEXT", "LINK", "OTHER"]),
+  fileSize: z.number().min(0),
+  filePath: z.string().min(1, "File path is required"),
+  mimeType: z.string().nullable().optional(),
+  
+  period: z.string().regex(/^\d{4}-\d{2}$/, "Must be YYYY-MM format"),
+  entityId: z.string().min(1, "Entity is required"),
+  
+  purpose: z.enum(["GENERAL", "SUPPORTING_WORKPAPER", "CONTRACT", "GOVERNANCE", "CORRESPONDENCE", "EVIDENCE", "CUSTOM"]),
+  customPurposeLabel: z.string().nullable().optional(),
+  description: z.string().min(1, "Description is required"),
+  tags: z.array(z.string()).optional().default([]),
+  
+  owner: z.string().min(1, "Owner is required"),
+  status: z.enum(["DRAFT", "PENDING", "REVIEWED", "APPROVED", "ARCHIVED"]).optional().default("DRAFT"),
+  isRequired: z.boolean().optional().default(false),
+  isAuditRelevant: z.boolean().optional().default(false),
+  
+  linkedAccountCodes: z.array(z.string()).optional().default([]),
+  linkedScheduleIds: z.array(z.string()).optional().default([]),
+  linkedReconciliationIds: z.array(z.string()).optional().default([]),
+  linkedWorkingPaperIds: z.array(z.string()).optional().default([]),
+  
+  contractMetadata: z.object({
+    counterparty: z.string().nullable(),
+    expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format").nullable(),
+    contractValue: z.number().nullable(),
+    renewalType: z.enum(["AUTO", "MANUAL"]).nullable(),
+  }).nullable().optional(),
+  
+  virtualFolderPath: z.string().nullable().optional(),
+});
+
+export type InsertArtifact = z.infer<typeof insertArtifactSchema>;
+
+// Schema for updating artifact (partial)
+export const updateArtifactSchema = insertArtifactSchema.partial().extend({
+  status: z.enum(["DRAFT", "PENDING", "REVIEWED", "APPROVED", "ARCHIVED"]).optional(),
+  reviewedBy: z.string().nullable().optional(),
+  reviewNotes: z.string().nullable().optional(),
+});
+
+export type UpdateArtifact = z.infer<typeof updateArtifactSchema>;
+
+// =============================================
+// Documentation Health Dashboard - Management Signals
+// =============================================
+
+/**
+ * Artifact Health Metrics - What management sees without opening files
+ */
+export interface ArtifactHealthMetrics {
+  // Period completeness
+  totalArtifacts: number;
+  requiredArtifacts: number;
+  requiredComplete: number;
+  supportingArtifacts: number;
+  
+  // Status breakdown
+  byStatus: Record<ArtifactStatus, number>;
+  
+  // Aging alerts
+  unreviewed: number;
+  staleArtifacts: number; // Not reviewed in 90+ days
+  recentlyModified: number; // Modified after close T-2
+  
+  // Audit readiness
+  auditRelevant: number;
+  auditRelevantApproved: number;
+  
+  // Contract alerts
+  expiringContracts: number; // Within 30 days
+  expiredContracts: number;
+}
+
+/**
+ * Period Coverage Summary - For management views
+ */
+export interface PeriodCoverageSummary {
+  period: string;
+  entityId: string;
+  entityName: string;
+  totalArtifacts: number;
+  requiredComplete: number;
+  requiredTotal: number;
+  completionPercent: number;
+  unreviewedCount: number;
+  hasGaps: boolean;
+}
+
+/**
+ * Entity Coverage Summary - Cross-entity comparison
+ */
+export interface EntityCoverageSummary {
+  entityId: string;
+  entityName: string;
+  periods: PeriodCoverageSummary[];
+  overallCompleteness: number;
+  criticalGaps: number;
+}
+
 // Export auth models for Replit Auth integration
 export * from "./models/auth";

@@ -82,7 +82,15 @@ import type {
   BSPLCategory,
   WorkingPaper,
   WorkingPaperRow,
-  WorkingPaperColumn
+  WorkingPaperColumn,
+  FinancialArtifact,
+  InsertArtifact,
+  UpdateArtifact,
+  ArtifactPurpose,
+  ArtifactStatus,
+  ArtifactHealthMetrics,
+  PeriodCoverageSummary,
+  EntityCoverageSummary
 } from "@shared/schema";
 
 // Trial Balance Import Entry
@@ -268,6 +276,31 @@ export interface IStorage {
     rowsPopulated: number; 
     workingPapers: WorkingPaper[] 
   }>;
+  
+  // Financial Artifacts (Document Registry)
+  getArtifacts(filters?: {
+    entityId?: string;
+    period?: string;
+    purpose?: ArtifactPurpose;
+    status?: ArtifactStatus;
+    isRequired?: boolean;
+    isAuditRelevant?: boolean;
+    linkedScheduleId?: string;
+    linkedAccountCode?: string;
+    virtualFolderPath?: string;
+  }): Promise<FinancialArtifact[]>;
+  getArtifact(id: string): Promise<FinancialArtifact | undefined>;
+  createArtifact(data: InsertArtifact): Promise<FinancialArtifact>;
+  updateArtifact(id: string, data: UpdateArtifact): Promise<FinancialArtifact>;
+  deleteArtifact(id: string): Promise<boolean>;
+  
+  // Artifact Health Metrics (Management Dashboard)
+  getArtifactHealthMetrics(entityId?: string, period?: string): Promise<ArtifactHealthMetrics>;
+  getPeriodCoverageSummary(entityId: string): Promise<PeriodCoverageSummary[]>;
+  getEntityCoverageSummary(): Promise<EntityCoverageSummary[]>;
+  
+  // Virtual Folder Navigation
+  getVirtualFolderPaths(entityId?: string, period?: string): Promise<string[]>;
 }
 
 // Helper functions
@@ -319,6 +352,7 @@ export class MemStorage implements IStorage {
   private glMasterMappings: Map<string, GLMasterMapping>;
   private tbImportBatches: Map<string, TBImportBatch>;
   private workingPapers: Map<string, WorkingPaper>;
+  private financialArtifacts: Map<string, FinancialArtifact>;
 
   constructor() {
     this.schedules = new Map();
@@ -341,6 +375,7 @@ export class MemStorage implements IStorage {
     this.glMasterMappings = new Map();
     this.tbImportBatches = new Map();
     this.workingPapers = new Map();
+    this.financialArtifacts = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -6509,6 +6544,304 @@ export class MemStorage implements IStorage {
       rowsPopulated: totalRowsPopulated,
       workingPapers: createdWPs,
     };
+  }
+
+  // =============================================
+  // Financial Artifacts (Document Registry)
+  // =============================================
+
+  async getArtifacts(filters?: {
+    entityId?: string;
+    period?: string;
+    purpose?: ArtifactPurpose;
+    status?: ArtifactStatus;
+    isRequired?: boolean;
+    isAuditRelevant?: boolean;
+    linkedScheduleId?: string;
+    linkedAccountCode?: string;
+    virtualFolderPath?: string;
+  }): Promise<FinancialArtifact[]> {
+    let results = Array.from(this.financialArtifacts.values());
+    
+    if (filters) {
+      if (filters.entityId) {
+        results = results.filter(a => a.entityId === filters.entityId);
+      }
+      if (filters.period) {
+        results = results.filter(a => a.period === filters.period);
+      }
+      if (filters.purpose) {
+        results = results.filter(a => a.purpose === filters.purpose);
+      }
+      if (filters.status) {
+        results = results.filter(a => a.status === filters.status);
+      }
+      if (filters.isRequired !== undefined) {
+        results = results.filter(a => a.isRequired === filters.isRequired);
+      }
+      if (filters.isAuditRelevant !== undefined) {
+        results = results.filter(a => a.isAuditRelevant === filters.isAuditRelevant);
+      }
+      if (filters.linkedScheduleId) {
+        results = results.filter(a => a.linkedScheduleIds.includes(filters.linkedScheduleId!));
+      }
+      if (filters.linkedAccountCode) {
+        results = results.filter(a => a.linkedAccountCodes.includes(filters.linkedAccountCode!));
+      }
+      if (filters.virtualFolderPath) {
+        results = results.filter(a => 
+          a.virtualFolderPath?.startsWith(filters.virtualFolderPath!) ?? false
+        );
+      }
+    }
+    
+    // Sort by upload date descending
+    return results.sort((a, b) => 
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+  }
+
+  async getArtifact(id: string): Promise<FinancialArtifact | undefined> {
+    return this.financialArtifacts.get(id);
+  }
+
+  async createArtifact(data: InsertArtifact): Promise<FinancialArtifact> {
+    const now = new Date().toISOString();
+    const artifact: FinancialArtifact = {
+      artifactId: randomUUID(),
+      fileName: data.fileName,
+      fileType: data.fileType,
+      fileSize: data.fileSize,
+      filePath: data.filePath,
+      mimeType: data.mimeType ?? null,
+      period: data.period,
+      entityId: data.entityId,
+      purpose: data.purpose,
+      customPurposeLabel: data.customPurposeLabel ?? null,
+      description: data.description,
+      tags: data.tags ?? [],
+      owner: data.owner,
+      status: data.status ?? "DRAFT",
+      isRequired: data.isRequired ?? false,
+      isAuditRelevant: data.isAuditRelevant ?? false,
+      linkedAccountCodes: data.linkedAccountCodes ?? [],
+      linkedScheduleIds: data.linkedScheduleIds ?? [],
+      linkedReconciliationIds: data.linkedReconciliationIds ?? [],
+      linkedWorkingPaperIds: data.linkedWorkingPaperIds ?? [],
+      contractMetadata: data.contractMetadata ?? null,
+      virtualFolderPath: data.virtualFolderPath ?? null,
+      reviewedBy: null,
+      reviewedAt: null,
+      reviewNotes: null,
+      uploadedAt: now,
+      lastModifiedAt: now,
+      priorPeriodArtifactId: null,
+    };
+    
+    this.financialArtifacts.set(artifact.artifactId, artifact);
+    return artifact;
+  }
+
+  async updateArtifact(id: string, data: UpdateArtifact): Promise<FinancialArtifact> {
+    const existing = this.financialArtifacts.get(id);
+    if (!existing) {
+      throw new Error(`Artifact with ID ${id} not found`);
+    }
+    
+    const now = new Date().toISOString();
+    const updated: FinancialArtifact = {
+      ...existing,
+      ...data,
+      artifactId: existing.artifactId, // Preserve ID
+      uploadedAt: existing.uploadedAt, // Preserve original upload time
+      lastModifiedAt: now,
+      // Handle review fields
+      reviewedBy: data.reviewedBy !== undefined ? data.reviewedBy : existing.reviewedBy,
+      reviewedAt: data.reviewedBy ? now : existing.reviewedAt,
+      reviewNotes: data.reviewNotes !== undefined ? data.reviewNotes : existing.reviewNotes,
+    };
+    
+    this.financialArtifacts.set(id, updated);
+    return updated;
+  }
+
+  async deleteArtifact(id: string): Promise<boolean> {
+    return this.financialArtifacts.delete(id);
+  }
+
+  async getArtifactHealthMetrics(entityId?: string, period?: string): Promise<ArtifactHealthMetrics> {
+    const artifacts = await this.getArtifacts({ entityId, period });
+    const now = new Date();
+    const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const byStatus: Record<ArtifactStatus, number> = {
+      DRAFT: 0,
+      PENDING: 0,
+      REVIEWED: 0,
+      APPROVED: 0,
+      ARCHIVED: 0,
+    };
+    
+    let requiredArtifacts = 0;
+    let requiredComplete = 0;
+    let supportingArtifacts = 0;
+    let unreviewed = 0;
+    let staleArtifacts = 0;
+    let recentlyModified = 0;
+    let auditRelevant = 0;
+    let auditRelevantApproved = 0;
+    let expiringContracts = 0;
+    let expiredContracts = 0;
+    
+    for (const artifact of artifacts) {
+      byStatus[artifact.status]++;
+      
+      if (artifact.isRequired) {
+        requiredArtifacts++;
+        if (artifact.status === "APPROVED") {
+          requiredComplete++;
+        }
+      } else {
+        supportingArtifacts++;
+      }
+      
+      // Unreviewed = DRAFT or PENDING
+      if (artifact.status === "DRAFT" || artifact.status === "PENDING") {
+        unreviewed++;
+      }
+      
+      // Stale = not reviewed in 90+ days
+      const lastActivity = artifact.reviewedAt 
+        ? new Date(artifact.reviewedAt) 
+        : new Date(artifact.uploadedAt);
+      if (lastActivity < ninetyDaysAgo && artifact.status !== "ARCHIVED") {
+        staleArtifacts++;
+      }
+      
+      // Recently modified check
+      const modified = new Date(artifact.lastModifiedAt);
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      if (modified > threeDaysAgo) {
+        recentlyModified++;
+      }
+      
+      // Audit relevance
+      if (artifact.isAuditRelevant) {
+        auditRelevant++;
+        if (artifact.status === "APPROVED") {
+          auditRelevantApproved++;
+        }
+      }
+      
+      // Contract expiry checks
+      if (artifact.purpose === "CONTRACT" && artifact.contractMetadata?.expiryDate) {
+        const expiry = new Date(artifact.contractMetadata.expiryDate);
+        if (expiry < now) {
+          expiredContracts++;
+        } else if (expiry < thirtyDaysFromNow) {
+          expiringContracts++;
+        }
+      }
+    }
+    
+    return {
+      totalArtifacts: artifacts.length,
+      requiredArtifacts,
+      requiredComplete,
+      supportingArtifacts,
+      byStatus,
+      unreviewed,
+      staleArtifacts,
+      recentlyModified,
+      auditRelevant,
+      auditRelevantApproved,
+      expiringContracts,
+      expiredContracts,
+    };
+  }
+
+  async getPeriodCoverageSummary(entityId: string): Promise<PeriodCoverageSummary[]> {
+    const artifacts = await this.getArtifacts({ entityId });
+    const entity = this.entities.get(entityId);
+    const entityName = entity?.name ?? entityId;
+    
+    // Group by period
+    const periodMap = new Map<string, FinancialArtifact[]>();
+    for (const artifact of artifacts) {
+      const existing = periodMap.get(artifact.period) ?? [];
+      existing.push(artifact);
+      periodMap.set(artifact.period, existing);
+    }
+    
+    const summaries: PeriodCoverageSummary[] = [];
+    for (const [period, periodArtifacts] of Array.from(periodMap.entries())) {
+      const required = periodArtifacts.filter((a: FinancialArtifact) => a.isRequired);
+      const requiredComplete = required.filter((a: FinancialArtifact) => a.status === "APPROVED").length;
+      const unreviewedCount = periodArtifacts.filter(
+        (a: FinancialArtifact) => a.status === "DRAFT" || a.status === "PENDING"
+      ).length;
+      
+      summaries.push({
+        period,
+        entityId,
+        entityName,
+        totalArtifacts: periodArtifacts.length,
+        requiredComplete,
+        requiredTotal: required.length,
+        completionPercent: required.length > 0 
+          ? Math.round((requiredComplete / required.length) * 100) 
+          : 100,
+        unreviewedCount,
+        hasGaps: required.length > 0 && requiredComplete < required.length,
+      });
+    }
+    
+    // Sort by period descending
+    return summaries.sort((a, b) => b.period.localeCompare(a.period));
+  }
+
+  async getEntityCoverageSummary(): Promise<EntityCoverageSummary[]> {
+    const entities = await this.getEntities();
+    const summaries: EntityCoverageSummary[] = [];
+    
+    for (const entity of entities) {
+      const periods = await this.getPeriodCoverageSummary(entity.id);
+      const totalRequired = periods.reduce((sum, p) => sum + p.requiredTotal, 0);
+      const totalComplete = periods.reduce((sum, p) => sum + p.requiredComplete, 0);
+      const criticalGaps = periods.filter(p => p.hasGaps).length;
+      
+      summaries.push({
+        entityId: entity.id,
+        entityName: entity.name,
+        periods,
+        overallCompleteness: totalRequired > 0 
+          ? Math.round((totalComplete / totalRequired) * 100) 
+          : 100,
+        criticalGaps,
+      });
+    }
+    
+    return summaries;
+  }
+
+  async getVirtualFolderPaths(entityId?: string, period?: string): Promise<string[]> {
+    const artifacts = await this.getArtifacts({ entityId, period });
+    const paths = new Set<string>();
+    
+    for (const artifact of artifacts) {
+      if (artifact.virtualFolderPath) {
+        // Add the path and all parent paths
+        const parts = artifact.virtualFolderPath.split('/').filter(Boolean);
+        let currentPath = '';
+        for (const part of parts) {
+          currentPath += '/' + part;
+          paths.add(currentPath);
+        }
+      }
+    }
+    
+    return Array.from(paths).sort();
   }
 }
 

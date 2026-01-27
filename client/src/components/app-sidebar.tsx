@@ -76,6 +76,11 @@ const scheduleStudioNav = [
   { title: "Entities", url: "/entities", icon: Building2 },
 ];
 
+const artifactNav = [
+  { title: "Artifact Registry", url: "/artifacts", icon: FolderOpen },
+  { title: "Documentation Health", url: "/artifacts/health", icon: Activity },
+];
+
 const scheduleStudioCategories = [
   {
     title: "Prepaids",
@@ -335,6 +340,32 @@ export function AppSidebar() {
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </Collapsible>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarGroup>
+        <SidebarGroupLabel>Document Registry</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {artifactNav.map((item) => {
+              const isActive = location === item.url || 
+                (item.url !== "/" && location.startsWith(item.url) && !location.includes("/health") || location === item.url);
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location === item.url}
+                    data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               );
             })}

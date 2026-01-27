@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, insertCloseTemplateSchema, insertCloseTemplateTaskSchema, updateCloseTemplateSchema, updateCloseTemplateTaskSchema, insertWorkingPaperSchema, autoPopulateWorkingPapersSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, insertCloseTemplateSchema, insertCloseTemplateTaskSchema, updateCloseTemplateSchema, updateCloseTemplateTaskSchema, insertWorkingPaperSchema, autoPopulateWorkingPapersSchema, insertArtifactSchema, updateArtifactSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory, type ArtifactPurpose, type ArtifactStatus } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -2773,6 +2773,143 @@ Respond with a JSON object containing:
     } catch (error) {
       console.error("Error fetching user role:", error);
       res.status(500).json({ error: "Failed to fetch user role" });
+    }
+  });
+
+  // =============================================
+  // Financial Artifacts (Document Registry)
+  // =============================================
+
+  // Get artifacts with filters
+  app.get("/api/artifacts", async (req, res) => {
+    try {
+      const { entityId, period, purpose, status, isRequired, isAuditRelevant, linkedScheduleId, linkedAccountCode, virtualFolderPath } = req.query;
+      
+      const artifacts = await storage.getArtifacts({
+        entityId: entityId as string | undefined,
+        period: period as string | undefined,
+        purpose: purpose as ArtifactPurpose | undefined,
+        status: status as ArtifactStatus | undefined,
+        isRequired: isRequired === "true" ? true : isRequired === "false" ? false : undefined,
+        isAuditRelevant: isAuditRelevant === "true" ? true : isAuditRelevant === "false" ? false : undefined,
+        linkedScheduleId: linkedScheduleId as string | undefined,
+        linkedAccountCode: linkedAccountCode as string | undefined,
+        virtualFolderPath: virtualFolderPath as string | undefined,
+      });
+      res.json(artifacts);
+    } catch (error) {
+      console.error("Error fetching artifacts:", error);
+      res.status(500).json({ error: "Failed to fetch artifacts" });
+    }
+  });
+
+  // Get single artifact
+  app.get("/api/artifacts/:id", async (req, res) => {
+    try {
+      const artifact = await storage.getArtifact(req.params.id);
+      if (!artifact) {
+        return res.status(404).json({ error: "Artifact not found" });
+      }
+      res.json(artifact);
+    } catch (error) {
+      console.error("Error fetching artifact:", error);
+      res.status(500).json({ error: "Failed to fetch artifact" });
+    }
+  });
+
+  // Create artifact
+  app.post("/api/artifacts", async (req, res) => {
+    try {
+      const validation = insertArtifactSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.errors });
+      }
+      const artifact = await storage.createArtifact(validation.data);
+      res.status(201).json(artifact);
+    } catch (error) {
+      console.error("Error creating artifact:", error);
+      res.status(500).json({ error: "Failed to create artifact" });
+    }
+  });
+
+  // Update artifact
+  app.patch("/api/artifacts/:id", async (req, res) => {
+    try {
+      const validation = updateArtifactSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.errors });
+      }
+      const artifact = await storage.updateArtifact(req.params.id, validation.data);
+      res.json(artifact);
+    } catch (error) {
+      console.error("Error updating artifact:", error);
+      res.status(500).json({ error: "Failed to update artifact" });
+    }
+  });
+
+  // Delete artifact
+  app.delete("/api/artifacts/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteArtifact(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Artifact not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting artifact:", error);
+      res.status(500).json({ error: "Failed to delete artifact" });
+    }
+  });
+
+  // Get artifact health metrics (Management Dashboard)
+  app.get("/api/artifacts/health", async (req, res) => {
+    try {
+      const { entityId, period } = req.query;
+      const metrics = await storage.getArtifactHealthMetrics(
+        entityId as string | undefined,
+        period as string | undefined
+      );
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching artifact health metrics:", error);
+      res.status(500).json({ error: "Failed to fetch health metrics" });
+    }
+  });
+
+  // Get period coverage summary
+  app.get("/api/artifacts/coverage/periods/:entityId", async (req, res) => {
+    try {
+      const summary = await storage.getPeriodCoverageSummary(req.params.entityId);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching period coverage:", error);
+      res.status(500).json({ error: "Failed to fetch period coverage" });
+    }
+  });
+
+  // Get entity coverage summary
+  app.get("/api/artifacts/coverage/entities", async (req, res) => {
+    try {
+      const summary = await storage.getEntityCoverageSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching entity coverage:", error);
+      res.status(500).json({ error: "Failed to fetch entity coverage" });
+    }
+  });
+
+  // Get virtual folder paths for navigation
+  app.get("/api/artifacts/folders", async (req, res) => {
+    try {
+      const { entityId, period } = req.query;
+      const paths = await storage.getVirtualFolderPaths(
+        entityId as string | undefined,
+        period as string | undefined
+      );
+      res.json(paths);
+    } catch (error) {
+      console.error("Error fetching folder paths:", error);
+      res.status(500).json({ error: "Failed to fetch folder paths" });
     }
   });
 
