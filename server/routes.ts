@@ -2491,10 +2491,23 @@ Respond with a JSON object containing:
   // Create GL Master Mapping
   app.post("/api/gl-mappings", async (req, res) => {
     try {
+      const { glAccountNumber, glDescriptionCategory, footnoteDescription } = req.body;
+      
+      // Server-side validation
+      if (!glAccountNumber || !glDescriptionCategory || !footnoteDescription) {
+        return res.status(400).json({ 
+          error: "Missing required fields: glAccountNumber, glDescriptionCategory, footnoteDescription" 
+        });
+      }
+      
       const mapping = await storage.createGLMasterMapping(req.body);
       res.status(201).json(mapping);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating GL mapping:", error);
+      // Handle duplicate GL number error
+      if (error.message?.includes("already exists")) {
+        return res.status(400).json({ error: error.message });
+      }
       res.status(500).json({ error: "Failed to create GL mapping" });
     }
   });

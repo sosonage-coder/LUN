@@ -6191,26 +6191,26 @@ export class MemStorage implements IStorage {
   // Seed GL Master Mappings
   private seedGLMasterMappings() {
     const sampleMappings: GLMasterMapping[] = [
-      { mappingId: "MAP-001", glDescriptionCategory: "Cash", bsPlCategory: "BS", footnoteNumber: "3", footnoteDescription: "Cash and cash equivalents", subNote: null, wpName: "Cash and cash equivalents", isActive: true, orderIndex: 1 },
-      { mappingId: "MAP-002", glDescriptionCategory: "Trade Receivables", bsPlCategory: "BS", footnoteNumber: "4", footnoteDescription: "Trade receivables", subNote: null, wpName: "Trade receivables", isActive: true, orderIndex: 2 },
-      { mappingId: "MAP-003", glDescriptionCategory: "Inventory", bsPlCategory: "BS", footnoteNumber: "5", footnoteDescription: "Inventories", subNote: null, wpName: "Inventories", isActive: true, orderIndex: 3 },
-      { mappingId: "MAP-004", glDescriptionCategory: "Prepaid Expenses", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Insurance", wpName: "Prepaid expenses", isActive: true, orderIndex: 4 },
-      { mappingId: "MAP-005", glDescriptionCategory: "Prepaid Software", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Software", wpName: "Prepaid expenses", isActive: true, orderIndex: 5 },
-      { mappingId: "MAP-006", glDescriptionCategory: "Fixed Assets", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Buildings", wpName: "Property, plant and equipment", isActive: true, orderIndex: 6 },
-      { mappingId: "MAP-007", glDescriptionCategory: "Accumulated Depreciation", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Accumulated Depreciation", wpName: "Property, plant and equipment", isActive: true, orderIndex: 7 },
-      { mappingId: "MAP-008", glDescriptionCategory: "Intangible Assets", bsPlCategory: "BS", footnoteNumber: "8", footnoteDescription: "Intangible assets", subNote: null, wpName: "Intangible assets", isActive: true, orderIndex: 8 },
-      { mappingId: "MAP-009", glDescriptionCategory: "Trade Payables", bsPlCategory: "BS", footnoteNumber: "9", footnoteDescription: "Trade and other payables", subNote: null, wpName: "Trade and other payables", isActive: true, orderIndex: 9 },
-      { mappingId: "MAP-010", glDescriptionCategory: "Accrued Expenses", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Bonus", wpName: "Accrued expenses", isActive: true, orderIndex: 10 },
-      { mappingId: "MAP-011", glDescriptionCategory: "Accrued Vacation", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Vacation", wpName: "Accrued expenses", isActive: true, orderIndex: 11 },
-      { mappingId: "MAP-012", glDescriptionCategory: "Deferred Revenue", bsPlCategory: "BS", footnoteNumber: "11", footnoteDescription: "Deferred revenue", subNote: null, wpName: "Deferred revenue", isActive: true, orderIndex: 12 },
-      { mappingId: "MAP-013", glDescriptionCategory: "Long-term Debt", bsPlCategory: "BS", footnoteNumber: "12", footnoteDescription: "Long-term borrowings", subNote: null, wpName: "Long-term borrowings", isActive: true, orderIndex: 13 },
-      { mappingId: "MAP-014", glDescriptionCategory: "Share Capital", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Share capital", subNote: null, wpName: "Share capital", isActive: true, orderIndex: 14 },
-      { mappingId: "MAP-015", glDescriptionCategory: "Retained Earnings", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Retained earnings", subNote: null, wpName: "Retained earnings", isActive: true, orderIndex: 15 },
-      { mappingId: "MAP-016", glDescriptionCategory: "Revenue", bsPlCategory: "PL", footnoteNumber: "14", footnoteDescription: "Revenue", subNote: null, wpName: "Revenue", isActive: true, orderIndex: 16 },
-      { mappingId: "MAP-017", glDescriptionCategory: "Cost of Sales", bsPlCategory: "PL", footnoteNumber: "15", footnoteDescription: "Cost of sales", subNote: null, wpName: "Cost of sales", isActive: true, orderIndex: 17 },
-      { mappingId: "MAP-018", glDescriptionCategory: "Salaries & Wages", bsPlCategory: "PL", footnoteNumber: "16", footnoteDescription: "Employee costs", subNote: "Salaries", wpName: "Employee costs", isActive: true, orderIndex: 18 },
-      { mappingId: "MAP-019", glDescriptionCategory: "Depreciation Expense", bsPlCategory: "PL", footnoteNumber: "7", footnoteDescription: "Depreciation expense", subNote: null, wpName: "Depreciation expense", isActive: true, orderIndex: 19 },
-      { mappingId: "MAP-020", glDescriptionCategory: "Interest Expense", bsPlCategory: "PL", footnoteNumber: "17", footnoteDescription: "Finance costs", subNote: null, wpName: "Finance costs", isActive: true, orderIndex: 20 },
+      { mappingId: "MAP-001", glAccountNumber: "1000", glDescriptionCategory: "Cash", bsPlCategory: "BS", footnoteNumber: "3", footnoteDescription: "Cash and cash equivalents", subNote: null, wpName: "Cash and cash equivalents", isActive: true, orderIndex: 1 },
+      { mappingId: "MAP-002", glAccountNumber: "1100", glDescriptionCategory: "Trade Receivables", bsPlCategory: "BS", footnoteNumber: "4", footnoteDescription: "Trade receivables", subNote: null, wpName: "Trade receivables", isActive: true, orderIndex: 2 },
+      { mappingId: "MAP-003", glAccountNumber: "1200", glDescriptionCategory: "Inventory", bsPlCategory: "BS", footnoteNumber: "5", footnoteDescription: "Inventories", subNote: null, wpName: "Inventories", isActive: true, orderIndex: 3 },
+      { mappingId: "MAP-004", glAccountNumber: "1300", glDescriptionCategory: "Prepaid Expenses", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Insurance", wpName: "Prepaid expenses", isActive: true, orderIndex: 4 },
+      { mappingId: "MAP-005", glAccountNumber: "1310", glDescriptionCategory: "Prepaid Software", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Software", wpName: "Prepaid expenses", isActive: true, orderIndex: 5 },
+      { mappingId: "MAP-006", glAccountNumber: "1500", glDescriptionCategory: "Fixed Assets", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Buildings", wpName: "Property, plant and equipment", isActive: true, orderIndex: 6 },
+      { mappingId: "MAP-007", glAccountNumber: "1590", glDescriptionCategory: "Accumulated Depreciation", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Accumulated Depreciation", wpName: "Property, plant and equipment", isActive: true, orderIndex: 7 },
+      { mappingId: "MAP-008", glAccountNumber: "1600", glDescriptionCategory: "Intangible Assets", bsPlCategory: "BS", footnoteNumber: "8", footnoteDescription: "Intangible assets", subNote: null, wpName: "Intangible assets", isActive: true, orderIndex: 8 },
+      { mappingId: "MAP-009", glAccountNumber: "2000", glDescriptionCategory: "Trade Payables", bsPlCategory: "BS", footnoteNumber: "9", footnoteDescription: "Trade and other payables", subNote: null, wpName: "Trade and other payables", isActive: true, orderIndex: 9 },
+      { mappingId: "MAP-010", glAccountNumber: "2100", glDescriptionCategory: "Accrued Expenses", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Bonus", wpName: "Accrued expenses", isActive: true, orderIndex: 10 },
+      { mappingId: "MAP-011", glAccountNumber: "2110", glDescriptionCategory: "Accrued Vacation", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Vacation", wpName: "Accrued expenses", isActive: true, orderIndex: 11 },
+      { mappingId: "MAP-012", glAccountNumber: "2200", glDescriptionCategory: "Deferred Revenue", bsPlCategory: "BS", footnoteNumber: "11", footnoteDescription: "Deferred revenue", subNote: null, wpName: "Deferred revenue", isActive: true, orderIndex: 12 },
+      { mappingId: "MAP-013", glAccountNumber: "2500", glDescriptionCategory: "Long-term Debt", bsPlCategory: "BS", footnoteNumber: "12", footnoteDescription: "Long-term borrowings", subNote: null, wpName: "Long-term borrowings", isActive: true, orderIndex: 13 },
+      { mappingId: "MAP-014", glAccountNumber: "3000", glDescriptionCategory: "Share Capital", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Share capital", subNote: null, wpName: "Share capital", isActive: true, orderIndex: 14 },
+      { mappingId: "MAP-015", glAccountNumber: "3100", glDescriptionCategory: "Retained Earnings", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Retained earnings", subNote: null, wpName: "Retained earnings", isActive: true, orderIndex: 15 },
+      { mappingId: "MAP-016", glAccountNumber: "4000", glDescriptionCategory: "Revenue", bsPlCategory: "PL", footnoteNumber: "14", footnoteDescription: "Revenue", subNote: null, wpName: "Revenue", isActive: true, orderIndex: 16 },
+      { mappingId: "MAP-017", glAccountNumber: "5000", glDescriptionCategory: "Cost of Sales", bsPlCategory: "PL", footnoteNumber: "15", footnoteDescription: "Cost of sales", subNote: null, wpName: "Cost of sales", isActive: true, orderIndex: 17 },
+      { mappingId: "MAP-018", glAccountNumber: "6000", glDescriptionCategory: "Salaries & Wages", bsPlCategory: "PL", footnoteNumber: "16", footnoteDescription: "Employee costs", subNote: "Salaries", wpName: "Employee costs", isActive: true, orderIndex: 18 },
+      { mappingId: "MAP-019", glAccountNumber: "6100", glDescriptionCategory: "Depreciation Expense", bsPlCategory: "PL", footnoteNumber: "7", footnoteDescription: "Depreciation expense", subNote: null, wpName: "Depreciation expense", isActive: true, orderIndex: 19 },
+      { mappingId: "MAP-020", glAccountNumber: "7000", glDescriptionCategory: "Interest Expense", bsPlCategory: "PL", footnoteNumber: "17", footnoteDescription: "Finance costs", subNote: null, wpName: "Finance costs", isActive: true, orderIndex: 20 },
     ];
     
     for (const mapping of sampleMappings) {
@@ -6228,6 +6228,19 @@ export class MemStorage implements IStorage {
   }
 
   async createGLMasterMapping(data: Omit<GLMasterMapping, 'mappingId'>): Promise<GLMasterMapping> {
+    // Validate required fields
+    if (!data.glAccountNumber || !data.glDescriptionCategory || !data.footnoteDescription) {
+      throw new Error("Missing required fields: glAccountNumber, glDescriptionCategory, footnoteDescription");
+    }
+    
+    // Check for duplicate GL Number
+    const existing = Array.from(this.glMasterMappings.values()).find(
+      m => m.glAccountNumber === data.glAccountNumber
+    );
+    if (existing) {
+      throw new Error(`GL Account Number ${data.glAccountNumber} already exists`);
+    }
+    
     const mappingId = `MAP-${randomUUID().slice(0, 8).toUpperCase()}`;
     const mapping: GLMasterMapping = {
       ...data,
@@ -6377,7 +6390,7 @@ export class MemStorage implements IStorage {
     const assignedAccountCodes = new Set<string>();
     
     // For each WP name, find matching TB entries and create/update working papers
-    for (const [wpName, wpMappings] of wpNameToMappings) {
+    for (const [wpName, wpMappings] of Array.from(wpNameToMappings.entries())) {
       // Find TB entries that match any of the GL description categories for this WP
       // Only include entries that haven't been assigned to another WP
       const matchingEntries: TBImportEntry[] = [];

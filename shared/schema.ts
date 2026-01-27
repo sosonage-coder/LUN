@@ -2408,6 +2408,7 @@ export interface FinalTBView {
  */
 export interface GLMasterMapping {
   mappingId: string;
+  glAccountNumber: string; // Unique GL account number identifier (e.g., "1000", "2100")
   glDescriptionCategory: string; // The GL description pattern/category to match
   bsPlCategory: BSPLCategory; // Balance Sheet or Profit & Loss
   footnoteNumber: string | null; // e.g., "1", "2", "3" - the footnote reference

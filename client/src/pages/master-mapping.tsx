@@ -22,6 +22,7 @@ export default function MasterMappingPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedMapping, setSelectedMapping] = useState<GLMasterMapping | null>(null);
   const [formData, setFormData] = useState<Partial<GLMasterMapping>>({
+    glAccountNumber: "",
     glDescriptionCategory: "",
     bsPlCategory: "BS",
     footnoteNumber: "",
@@ -31,6 +32,7 @@ export default function MasterMappingPage() {
     isActive: true,
     orderIndex: 0,
   });
+  const [useExistingClassification, setUseExistingClassification] = useState(false);
 
   const { data: mappings = [], isLoading } = useQuery<GLMasterMapping[]>({
     queryKey: ["/api/gl-mappings"],
@@ -41,16 +43,22 @@ export default function MasterMappingPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Partial<GLMasterMapping>) => 
-      apiRequest("POST", "/api/gl-mappings", data),
+    mutationFn: async (data: Partial<GLMasterMapping>) => {
+      const res = await apiRequest("POST", "/api/gl-mappings", data);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to create mapping");
+      }
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/gl-mappings"] });
       setShowAddDialog(false);
       resetForm();
       toast({ title: "Success", description: "Mapping created successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create mapping", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -83,6 +91,7 @@ export default function MasterMappingPage() {
 
   const resetForm = () => {
     setFormData({
+      glAccountNumber: "",
       glDescriptionCategory: "",
       bsPlCategory: "BS",
       footnoteNumber: "",
@@ -92,11 +101,13 @@ export default function MasterMappingPage() {
       isActive: true,
       orderIndex: 0,
     });
+    setUseExistingClassification(false);
   };
 
   const handleEdit = (mapping: GLMasterMapping) => {
     setSelectedMapping(mapping);
     setFormData({
+      glAccountNumber: mapping.glAccountNumber || "",
       glDescriptionCategory: mapping.glDescriptionCategory,
       bsPlCategory: mapping.bsPlCategory,
       footnoteNumber: mapping.footnoteNumber || "",
@@ -106,12 +117,38 @@ export default function MasterMappingPage() {
       isActive: mapping.isActive,
       orderIndex: mapping.orderIndex,
     });
+    setUseExistingClassification(false);
     setShowEditDialog(true);
   };
 
+  // Get unique existing classifications (footnoteDescription + wpName combinations)
+  const existingClassifications = Array.from(
+    new Map(
+      mappings.map(m => [m.footnoteDescription, { 
+        footnoteDescription: m.footnoteDescription, 
+        wpName: m.wpName,
+        footnoteNumber: m.footnoteNumber,
+        bsPlCategory: m.bsPlCategory
+      }])
+    ).values()
+  );
+
+  const handleSelectExistingClassification = (footnoteDesc: string) => {
+    const classification = existingClassifications.find(c => c.footnoteDescription === footnoteDesc);
+    if (classification) {
+      setFormData(prev => ({
+        ...prev,
+        footnoteDescription: classification.footnoteDescription,
+        wpName: classification.wpName || classification.footnoteDescription,
+        footnoteNumber: classification.footnoteNumber || prev.footnoteNumber,
+        bsPlCategory: classification.bsPlCategory,
+      }));
+    }
+  };
+
   const handleSubmit = () => {
-    if (!formData.glDescriptionCategory || !formData.footnoteDescription) {
-      toast({ title: "Error", description: "Please fill required fields", variant: "destructive" });
+    if (!formData.glAccountNumber || !formData.glDescriptionCategory || !formData.footnoteDescription) {
+      toast({ title: "Error", description: "Please fill required fields (GL Number, Description, Classification)", variant: "destructive" });
       return;
     }
     const data = {
@@ -127,6 +164,7 @@ export default function MasterMappingPage() {
 
   const filteredMappings = mappings.filter(m => {
     const matchesSearch = searchTerm === "" || 
+      (m.glAccountNumber && m.glAccountNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       m.glDescriptionCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
       m.footnoteDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (m.wpName && m.wpName.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -221,10 +259,11 @@ export default function MasterMappingPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>GL Number</TableHead>
                   <TableHead>GL Description</TableHead>
                   <TableHead>BS/PL</TableHead>
                   <TableHead>Note #</TableHead>
-                  <TableHead>Footnote Description</TableHead>
+                  <TableHead>Classification</TableHead>
                   <TableHead>Sub-Note</TableHead>
                   <TableHead>WP Name</TableHead>
                   <TableHead>Active</TableHead>
@@ -234,6 +273,7 @@ export default function MasterMappingPage() {
               <TableBody>
                 {filteredMappings.map((mapping) => (
                   <TableRow key={mapping.mappingId}>
+                    <TableCell className="font-mono text-sm">{mapping.glAccountNumber || "-"}</TableCell>
                     <TableCell className="font-medium">{mapping.glDescriptionCategory}</TableCell>
                     <TableCell>
                       <Badge variant={mapping.bsPlCategory === "BS" ? "default" : "secondary"}>
@@ -273,7 +313,7 @@ export default function MasterMappingPage() {
                 ))}
                 {filteredMappings.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                       No mappings found
                     </TableCell>
                   </TableRow>
@@ -300,16 +340,72 @@ export default function MasterMappingPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="glDesc">GL Description Category *</Label>
-              <Input
-                id="glDesc"
-                value={formData.glDescriptionCategory || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, glDescriptionCategory: e.target.value }))}
-                placeholder="e.g., Cash, Trade Receivables"
-                data-testid="input-gl-description"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="glNum">GL Number *</Label>
+                <Input
+                  id="glNum"
+                  value={formData.glAccountNumber || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, glAccountNumber: e.target.value }))}
+                  placeholder="e.g., 1000, 2100"
+                  data-testid="input-gl-number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="glDesc">GL Description *</Label>
+                <Input
+                  id="glDesc"
+                  value={formData.glDescriptionCategory || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, glDescriptionCategory: e.target.value }))}
+                  placeholder="e.g., Cash, Trade Receivables"
+                  data-testid="input-gl-description"
+                />
+              </div>
             </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Classification *</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">Use existing</Label>
+                  <Switch
+                    checked={useExistingClassification}
+                    onCheckedChange={(checked) => {
+                      setUseExistingClassification(checked);
+                      if (!checked) {
+                        setFormData(prev => ({ ...prev, footnoteDescription: "", wpName: "" }));
+                      }
+                    }}
+                    data-testid="switch-use-existing"
+                  />
+                </div>
+              </div>
+              {useExistingClassification ? (
+                <Select
+                  value={formData.footnoteDescription || ""}
+                  onValueChange={handleSelectExistingClassification}
+                >
+                  <SelectTrigger data-testid="select-existing-classification">
+                    <SelectValue placeholder="Select existing classification" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingClassifications.map(c => (
+                      <SelectItem key={c.footnoteDescription} value={c.footnoteDescription}>
+                        {c.footnoteDescription} ({c.bsPlCategory})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={formData.footnoteDescription || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, footnoteDescription: e.target.value }))}
+                  placeholder="e.g., Cash and cash equivalents"
+                  data-testid="input-footnote-description"
+                />
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="bspl">BS / PL Category *</Label>
@@ -336,16 +432,6 @@ export default function MasterMappingPage() {
                   data-testid="input-footnote-number"
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="footnoteDesc">Footnote Description *</Label>
-              <Input
-                id="footnoteDesc"
-                value={formData.footnoteDescription || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, footnoteDescription: e.target.value }))}
-                placeholder="e.g., Cash and cash equivalents"
-                data-testid="input-footnote-description"
-              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="subNote">Sub-Note (Optional)</Label>
