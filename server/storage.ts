@@ -76,8 +76,37 @@ import type {
   InsertReconciliationLineItem,
   ReconciliationLineItem,
   ReconciliationAccountType,
-  ReconciliationStatus
+  ReconciliationStatus,
+  GLMasterMapping,
+  GLMasterMappingRegistry,
+  BSPLCategory
 } from "@shared/schema";
+
+// Trial Balance Import Entry
+export interface TBImportEntry {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  openingBalance: number;
+  closingBalance: number;
+  debitAmount: number;
+  creditAmount: number;
+  fsCategory: string | null;
+  normalBalance: "DEBIT" | "CREDIT";
+  importedAt: string;
+  periodId: string;
+}
+
+export interface TBImportBatch {
+  batchId: string;
+  periodId: string;
+  entityId: string;
+  importedAt: string;
+  importedBy: string;
+  fileName: string;
+  recordCount: number;
+  entries: TBImportEntry[];
+}
 
 export interface IStorage {
   // Schedules
@@ -208,6 +237,20 @@ export interface IStorage {
   
   // Reconciliation Dashboard
   getReconciliationKPIs(entityId?: string, period?: string): Promise<ReconciliationKPIs>;
+  
+  // GL Master Mapping
+  getGLMasterMappings(): Promise<GLMasterMapping[]>;
+  getGLMasterMapping(id: string): Promise<GLMasterMapping | undefined>;
+  createGLMasterMapping(data: Omit<GLMasterMapping, 'mappingId'>): Promise<GLMasterMapping>;
+  updateGLMasterMapping(id: string, data: Partial<GLMasterMapping>): Promise<GLMasterMapping>;
+  deleteGLMasterMapping(id: string): Promise<boolean>;
+  getUniqueWPNames(): Promise<string[]>;
+  
+  // Trial Balance Import
+  getTBImportBatches(entityId?: string, periodId?: string): Promise<TBImportBatch[]>;
+  getTBImportBatch(batchId: string): Promise<TBImportBatch | undefined>;
+  createTBImportBatch(data: Omit<TBImportBatch, 'batchId' | 'importedAt'>): Promise<TBImportBatch>;
+  deleteTBImportBatch(batchId: string): Promise<boolean>;
 }
 
 // Helper functions
@@ -256,6 +299,8 @@ export class MemStorage implements IStorage {
   private reconciliationTemplates: Map<string, ReconciliationTemplate>;
   private reconciliationAccounts: Map<string, ReconciliationAccount>;
   private reconciliations: Map<string, Reconciliation>;
+  private glMasterMappings: Map<string, GLMasterMapping>;
+  private tbImportBatches: Map<string, TBImportBatch>;
 
   constructor() {
     this.schedules = new Map();
@@ -275,11 +320,14 @@ export class MemStorage implements IStorage {
     this.reconciliationTemplates = new Map();
     this.reconciliationAccounts = new Map();
     this.reconciliations = new Map();
+    this.glMasterMappings = new Map();
+    this.tbImportBatches = new Map();
     
     // Seed with default entities
     this.seedData();
     this.seedCloseTasks();
     this.seedReconciliationData();
+    this.seedGLMasterMappings();
   }
 
   private seedData() {
@@ -6119,6 +6167,111 @@ export class MemStorage implements IStorage {
       varianceTotal,
       completionPercentage: accounts.length > 0 ? Math.round((reconciledCount / accounts.length) * 100) : 0,
     };
+  }
+
+  // Seed GL Master Mappings
+  private seedGLMasterMappings() {
+    const sampleMappings: GLMasterMapping[] = [
+      { mappingId: "MAP-001", glDescriptionCategory: "Cash", bsPlCategory: "BS", footnoteNumber: "3", footnoteDescription: "Cash and cash equivalents", subNote: null, wpName: "Cash and cash equivalents", isActive: true, orderIndex: 1 },
+      { mappingId: "MAP-002", glDescriptionCategory: "Trade Receivables", bsPlCategory: "BS", footnoteNumber: "4", footnoteDescription: "Trade receivables", subNote: null, wpName: "Trade receivables", isActive: true, orderIndex: 2 },
+      { mappingId: "MAP-003", glDescriptionCategory: "Inventory", bsPlCategory: "BS", footnoteNumber: "5", footnoteDescription: "Inventories", subNote: null, wpName: "Inventories", isActive: true, orderIndex: 3 },
+      { mappingId: "MAP-004", glDescriptionCategory: "Prepaid Expenses", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Insurance", wpName: "Prepaid expenses", isActive: true, orderIndex: 4 },
+      { mappingId: "MAP-005", glDescriptionCategory: "Prepaid Software", bsPlCategory: "BS", footnoteNumber: "6", footnoteDescription: "Prepaid expenses", subNote: "Software", wpName: "Prepaid expenses", isActive: true, orderIndex: 5 },
+      { mappingId: "MAP-006", glDescriptionCategory: "Fixed Assets", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Buildings", wpName: "Property, plant and equipment", isActive: true, orderIndex: 6 },
+      { mappingId: "MAP-007", glDescriptionCategory: "Accumulated Depreciation", bsPlCategory: "BS", footnoteNumber: "7", footnoteDescription: "Property, plant and equipment", subNote: "Accumulated Depreciation", wpName: "Property, plant and equipment", isActive: true, orderIndex: 7 },
+      { mappingId: "MAP-008", glDescriptionCategory: "Intangible Assets", bsPlCategory: "BS", footnoteNumber: "8", footnoteDescription: "Intangible assets", subNote: null, wpName: "Intangible assets", isActive: true, orderIndex: 8 },
+      { mappingId: "MAP-009", glDescriptionCategory: "Trade Payables", bsPlCategory: "BS", footnoteNumber: "9", footnoteDescription: "Trade and other payables", subNote: null, wpName: "Trade and other payables", isActive: true, orderIndex: 9 },
+      { mappingId: "MAP-010", glDescriptionCategory: "Accrued Expenses", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Bonus", wpName: "Accrued expenses", isActive: true, orderIndex: 10 },
+      { mappingId: "MAP-011", glDescriptionCategory: "Accrued Vacation", bsPlCategory: "BS", footnoteNumber: "10", footnoteDescription: "Accrued expenses", subNote: "Vacation", wpName: "Accrued expenses", isActive: true, orderIndex: 11 },
+      { mappingId: "MAP-012", glDescriptionCategory: "Deferred Revenue", bsPlCategory: "BS", footnoteNumber: "11", footnoteDescription: "Deferred revenue", subNote: null, wpName: "Deferred revenue", isActive: true, orderIndex: 12 },
+      { mappingId: "MAP-013", glDescriptionCategory: "Long-term Debt", bsPlCategory: "BS", footnoteNumber: "12", footnoteDescription: "Long-term borrowings", subNote: null, wpName: "Long-term borrowings", isActive: true, orderIndex: 13 },
+      { mappingId: "MAP-014", glDescriptionCategory: "Share Capital", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Share capital", subNote: null, wpName: "Share capital", isActive: true, orderIndex: 14 },
+      { mappingId: "MAP-015", glDescriptionCategory: "Retained Earnings", bsPlCategory: "BS", footnoteNumber: "13", footnoteDescription: "Retained earnings", subNote: null, wpName: "Retained earnings", isActive: true, orderIndex: 15 },
+      { mappingId: "MAP-016", glDescriptionCategory: "Revenue", bsPlCategory: "PL", footnoteNumber: "14", footnoteDescription: "Revenue", subNote: null, wpName: "Revenue", isActive: true, orderIndex: 16 },
+      { mappingId: "MAP-017", glDescriptionCategory: "Cost of Sales", bsPlCategory: "PL", footnoteNumber: "15", footnoteDescription: "Cost of sales", subNote: null, wpName: "Cost of sales", isActive: true, orderIndex: 17 },
+      { mappingId: "MAP-018", glDescriptionCategory: "Salaries & Wages", bsPlCategory: "PL", footnoteNumber: "16", footnoteDescription: "Employee costs", subNote: "Salaries", wpName: "Employee costs", isActive: true, orderIndex: 18 },
+      { mappingId: "MAP-019", glDescriptionCategory: "Depreciation Expense", bsPlCategory: "PL", footnoteNumber: "7", footnoteDescription: "Depreciation expense", subNote: null, wpName: "Depreciation expense", isActive: true, orderIndex: 19 },
+      { mappingId: "MAP-020", glDescriptionCategory: "Interest Expense", bsPlCategory: "PL", footnoteNumber: "17", footnoteDescription: "Finance costs", subNote: null, wpName: "Finance costs", isActive: true, orderIndex: 20 },
+    ];
+    
+    for (const mapping of sampleMappings) {
+      this.glMasterMappings.set(mapping.mappingId, mapping);
+    }
+  }
+
+  // GL Master Mapping Methods
+  async getGLMasterMappings(): Promise<GLMasterMapping[]> {
+    return Array.from(this.glMasterMappings.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  async getGLMasterMapping(id: string): Promise<GLMasterMapping | undefined> {
+    return this.glMasterMappings.get(id);
+  }
+
+  async createGLMasterMapping(data: Omit<GLMasterMapping, 'mappingId'>): Promise<GLMasterMapping> {
+    const mappingId = `MAP-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const mapping: GLMasterMapping = {
+      ...data,
+      mappingId,
+    };
+    this.glMasterMappings.set(mappingId, mapping);
+    return mapping;
+  }
+
+  async updateGLMasterMapping(id: string, data: Partial<GLMasterMapping>): Promise<GLMasterMapping> {
+    const existing = this.glMasterMappings.get(id);
+    if (!existing) {
+      throw new Error("GL Master Mapping not found");
+    }
+    const updated: GLMasterMapping = { ...existing, ...data, mappingId: id };
+    this.glMasterMappings.set(id, updated);
+    return updated;
+  }
+
+  async deleteGLMasterMapping(id: string): Promise<boolean> {
+    return this.glMasterMappings.delete(id);
+  }
+
+  async getUniqueWPNames(): Promise<string[]> {
+    const mappings = Array.from(this.glMasterMappings.values());
+    const wpNames = new Set<string>();
+    for (const mapping of mappings) {
+      if (mapping.wpName && mapping.isActive) {
+        wpNames.add(mapping.wpName);
+      }
+    }
+    return Array.from(wpNames).sort();
+  }
+
+  // Trial Balance Import Methods
+  async getTBImportBatches(entityId?: string, periodId?: string): Promise<TBImportBatch[]> {
+    let batches = Array.from(this.tbImportBatches.values());
+    if (entityId) {
+      batches = batches.filter(b => b.entityId === entityId);
+    }
+    if (periodId) {
+      batches = batches.filter(b => b.periodId === periodId);
+    }
+    return batches.sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+  }
+
+  async getTBImportBatch(batchId: string): Promise<TBImportBatch | undefined> {
+    return this.tbImportBatches.get(batchId);
+  }
+
+  async createTBImportBatch(data: Omit<TBImportBatch, 'batchId' | 'importedAt'>): Promise<TBImportBatch> {
+    const batchId = `TB-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const batch: TBImportBatch = {
+      ...data,
+      batchId,
+      importedAt: new Date().toISOString(),
+    };
+    this.tbImportBatches.set(batchId, batch);
+    return batch;
+  }
+
+  async deleteTBImportBatch(batchId: string): Promise<boolean> {
+    return this.tbImportBatches.delete(batchId);
   }
 }
 

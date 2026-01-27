@@ -46,6 +46,20 @@ The application employs a client-server architecture.
     - **TB Adjustments Workspace**: Grid for journal entries (RJE, AJE) with entry summary cards and account-level tagging.
     - **Final TB View**: Read-only comparative view of prior year vs. current year with variance analysis.
     - **Template Repository**: Centralized management for Disclosure, Working Paper, Reconciliation, and Close Control templates with CRUD operations and a preview feature.
+    - **GL Master Mapping**: Configuration system for mapping GL account descriptions to footnotes and Working Papers:
+      - Maps GL description categories to BS/PL classification, footnote numbers, footnote descriptions, sub-notes, and WP names
+      - 20 pre-seeded sample mappings covering common account types (Cash, Trade Receivables, Fixed Assets, Accruals, Revenue, etc.)
+      - CRUD operations for adding, editing, and deleting mappings
+      - Active/inactive toggle for mappings
+      - Search and filter by BS/PL category
+      - Used for Working Paper auto-population based on TB data
+    - **Trial Balance Import**: File upload system for importing trial balance data:
+      - CSV file parsing with automatic column detection (Account Code, Name, Opening, Closing, Debit, Credit)
+      - Data preview before import with validation
+      - Import batch tracking with history view
+      - Entity and period selection for import targeting
+      - Normal balance (DEBIT/CREDIT) auto-detection
+      - Batch management with view and delete operations
     - **Accounting Policies Module**: Comprehensive policy management for Note 1 (Summary of Significant Accounting Policies) with:
       - 17 standard policy templates covering Basis of Presentation, Use of Estimates, Cash, Debt Securities, Loans/CECL, Fair Value, Revenue, PPE, Goodwill/Intangibles, Leases, Inventory, Derivatives, Stock Compensation, Income Taxes, Commitments, Recently Adopted Standards, and Pending Standards
       - Policy CRUD operations with add/edit/delete functionality

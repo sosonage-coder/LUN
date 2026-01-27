@@ -46,6 +46,8 @@ import {
   Table2,
   Edit3,
   FolderOpen,
+  Upload,
+  GitBranch,
 } from "lucide-react";
 import {
   Sidebar,
@@ -632,6 +634,8 @@ export function AppSidebar() {
   // Working Papers & Data section
   const workingPapersNav = [
     { title: "Templates", url: "/nettool/templates", icon: FolderOpen },
+    { title: "TB Import", url: "/tb-import", icon: Upload },
+    { title: "Master Mapping", url: "/master-mapping", icon: GitBranch },
     { title: "TB Adjustments", url: "/nettool/tb-adjustments-workspace", icon: Edit3 },
     { title: "Final TB", url: "/nettool/fs/trial-balance", icon: Calculator },
     { title: "Working Papers", url: "/nettool/working-papers", icon: Table2 },
@@ -662,7 +666,9 @@ export function AppSidebar() {
     location.includes("working-papers") || 
     location.includes("disclosures") || 
     location.includes("schedules") || 
-    location.includes("narratives")
+    location.includes("narratives") ||
+    location.includes("tb-import") ||
+    location.includes("master-mapping")
   );
   const [notesExpanded, setNotesExpanded] = useState(location.startsWith("/nettool/notes"));
   const [reviewExpanded, setReviewExpanded] = useState(

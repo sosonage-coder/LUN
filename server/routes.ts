@@ -2450,6 +2450,164 @@ Respond with a JSON object containing:
     }
   });
 
+  // ===== GL MASTER MAPPING ROUTES =====
+  
+  // Get all GL Master Mappings
+  app.get("/api/gl-mappings", async (req, res) => {
+    try {
+      const mappings = await storage.getGLMasterMappings();
+      res.json(mappings);
+    } catch (error) {
+      console.error("Error fetching GL mappings:", error);
+      res.status(500).json({ error: "Failed to fetch GL mappings" });
+    }
+  });
+
+  // Get unique WP names from mappings
+  app.get("/api/gl-mappings/wp-names", async (req, res) => {
+    try {
+      const wpNames = await storage.getUniqueWPNames();
+      res.json(wpNames);
+    } catch (error) {
+      console.error("Error fetching WP names:", error);
+      res.status(500).json({ error: "Failed to fetch WP names" });
+    }
+  });
+
+  // Get single GL Master Mapping
+  app.get("/api/gl-mappings/:id", async (req, res) => {
+    try {
+      const mapping = await storage.getGLMasterMapping(req.params.id);
+      if (!mapping) {
+        return res.status(404).json({ error: "Mapping not found" });
+      }
+      res.json(mapping);
+    } catch (error) {
+      console.error("Error fetching GL mapping:", error);
+      res.status(500).json({ error: "Failed to fetch GL mapping" });
+    }
+  });
+
+  // Create GL Master Mapping
+  app.post("/api/gl-mappings", async (req, res) => {
+    try {
+      const mapping = await storage.createGLMasterMapping(req.body);
+      res.status(201).json(mapping);
+    } catch (error) {
+      console.error("Error creating GL mapping:", error);
+      res.status(500).json({ error: "Failed to create GL mapping" });
+    }
+  });
+
+  // Update GL Master Mapping
+  app.patch("/api/gl-mappings/:id", async (req, res) => {
+    try {
+      const mapping = await storage.updateGLMasterMapping(req.params.id, req.body);
+      res.json(mapping);
+    } catch (error) {
+      console.error("Error updating GL mapping:", error);
+      res.status(500).json({ error: "Failed to update GL mapping" });
+    }
+  });
+
+  // Delete GL Master Mapping
+  app.delete("/api/gl-mappings/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteGLMasterMapping(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Mapping not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting GL mapping:", error);
+      res.status(500).json({ error: "Failed to delete GL mapping" });
+    }
+  });
+
+  // ===== TRIAL BALANCE IMPORT ROUTES =====
+  
+  // Get all TB Import Batches
+  app.get("/api/tb-imports", async (req, res) => {
+    try {
+      const { entityId, periodId } = req.query;
+      const batches = await storage.getTBImportBatches(
+        entityId as string | undefined,
+        periodId as string | undefined
+      );
+      res.json(batches);
+    } catch (error) {
+      console.error("Error fetching TB imports:", error);
+      res.status(500).json({ error: "Failed to fetch TB imports" });
+    }
+  });
+
+  // Get single TB Import Batch
+  app.get("/api/tb-imports/:batchId", async (req, res) => {
+    try {
+      const batch = await storage.getTBImportBatch(req.params.batchId);
+      if (!batch) {
+        return res.status(404).json({ error: "Import batch not found" });
+      }
+      res.json(batch);
+    } catch (error) {
+      console.error("Error fetching TB import:", error);
+      res.status(500).json({ error: "Failed to fetch TB import" });
+    }
+  });
+
+  // Create TB Import Batch (from parsed data)
+  app.post("/api/tb-imports", async (req, res) => {
+    try {
+      const { periodId, entityId, fileName, entries, importedBy } = req.body;
+      
+      if (!periodId || !entityId || !entries || !Array.isArray(entries)) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const processedEntries = entries.map((entry: any, index: number) => ({
+        id: `TBE-${Date.now()}-${index}`,
+        accountCode: entry.accountCode || "",
+        accountName: entry.accountName || "",
+        openingBalance: parseFloat(entry.openingBalance) || 0,
+        closingBalance: parseFloat(entry.closingBalance) || 0,
+        debitAmount: parseFloat(entry.debitAmount) || 0,
+        creditAmount: parseFloat(entry.creditAmount) || 0,
+        fsCategory: entry.fsCategory || null,
+        normalBalance: entry.normalBalance || "DEBIT",
+        importedAt: new Date().toISOString(),
+        periodId,
+      }));
+
+      const batch = await storage.createTBImportBatch({
+        periodId,
+        entityId,
+        fileName: fileName || "manual-entry",
+        importedBy: importedBy || "Current User",
+        recordCount: processedEntries.length,
+        entries: processedEntries,
+      });
+
+      res.status(201).json(batch);
+    } catch (error) {
+      console.error("Error creating TB import:", error);
+      res.status(500).json({ error: "Failed to create TB import" });
+    }
+  });
+
+  // Delete TB Import Batch
+  app.delete("/api/tb-imports/:batchId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteTBImportBatch(req.params.batchId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Import batch not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting TB import:", error);
+      res.status(500).json({ error: "Failed to delete TB import" });
+    }
+  });
+
   // Get user role for current entity
   app.get("/api/user/role", async (req, res) => {
     try {

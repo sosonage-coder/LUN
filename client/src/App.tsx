@@ -60,6 +60,8 @@ import ReconciliationWorkspacePage from "@/pages/reconciliation-workspace";
 import OneCompliancePage from "@/pages/one-compliance";
 import CloseTasksPage from "@/pages/close-tasks";
 import NetToolPage from "@/pages/nettool";
+import MasterMappingPage from "@/pages/master-mapping";
+import TBImportPage from "@/pages/tb-import";
 
 function Router() {
   return (
@@ -79,6 +81,8 @@ function Router() {
       <Route path="/nettool/fs/:fsSection" component={NetToolPage} />
       <Route path="/nettool/notes/:notesSection" component={NetToolPage} />
       <Route path="/nettool/:section" component={NetToolPage} />
+      <Route path="/master-mapping" component={MasterMappingPage} />
+      <Route path="/tb-import" component={TBImportPage} />
       <Route path="/close-control" component={CloseControlDashboard} />
       <Route path="/close-control/templates" component={CloseControlTemplatesPage} />
       <Route path="/close-control/templates/:id" component={CloseControlTemplateEditorPage} />
