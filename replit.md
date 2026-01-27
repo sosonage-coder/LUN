@@ -1,517 +1,63 @@
 # Lunari - Financial Accounting Platform
 
-## Table of Contents
-1. [Overview](#overview)
-2. [Developer Setup Guide](#developer-setup-guide)
-3. [Environment Variables](#environment-variables)
-4. [Database Setup](#database-setup)
-5. [Running the Application](#running-the-application)
-6. [Project Structure](#project-structure)
-7. [Key Modules](#key-modules)
-8. [API Reference](#api-reference)
-9. [Troubleshooting](#troubleshooting)
-
----
-
 ## Overview
-
-Lunari is a comprehensive financial accounting application for managing:
-- Prepaid expenses, fixed assets, accruals
-- Revenue recognition, investment income, debt amortization
-- Financial statement preparation and working papers
-- Entity governance and compliance
-
----
-
-## Developer Setup Guide
-
-### Prerequisites
-
-Before you start, you need to install the following software on your computer:
-
-#### 1. Node.js (Required)
-- **Version**: 20.x or higher
-- **Download**: https://nodejs.org/
-- **How to check if installed**: Open terminal and run:
-  ```bash
-  node --version
-  ```
-  You should see something like `v20.10.0`
-
-#### 2. npm (Comes with Node.js)
-- **Version**: 10.x or higher
-- **How to check if installed**:
-  ```bash
-  npm --version
-  ```
-  You should see something like `10.2.0`
-
-#### 3. PostgreSQL Database (Required)
-- **Version**: 14.x or higher
-- **Download**: https://www.postgresql.org/download/
-- **How to check if installed**:
-  ```bash
-  psql --version
-  ```
-  You should see something like `psql (PostgreSQL) 14.9`
-
-#### 4. Git (Required)
-- **Download**: https://git-scm.com/downloads
-- **How to check if installed**:
-  ```bash
-  git --version
-  ```
-
-### Step-by-Step Setup
-
-#### Step 1: Clone the Repository
-
-Open your terminal and run:
-```bash
-git clone https://github.com/YOUR_USERNAME/lunari.git
-cd lunari
-```
-
-Replace `YOUR_USERNAME` with the actual GitHub username or organization.
-
-#### Step 2: Install Dependencies
-
-This downloads all the code packages the app needs:
-```bash
-npm install
-```
-
-**Wait for this to complete.** It may take 2-5 minutes depending on your internet speed.
-
-#### Step 3: Create Environment File
-
-Create a file called `.env` in the root folder of the project:
-```bash
-touch .env
-```
-
-Then open `.env` in your code editor and add the required variables (see next section).
-
-#### Step 4: Set Up Database
-
-See the [Database Setup](#database-setup) section below.
-
-#### Step 5: Run the Application
-
-```bash
-npm run dev
-```
-
-The app will start at `http://localhost:5000`
-
----
-
-## Environment Variables
-
-Create a `.env` file in the root directory with these variables:
-
-### Required Variables
-
-```env
-# Database Connection
-# Format: postgresql://USERNAME:PASSWORD@HOST:PORT/DATABASE_NAME
-DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/lunari
-
-# Session Security (Generate a random string - at least 32 characters)
-SESSION_SECRET=your-super-secret-session-key-change-this-in-production
-```
-
-### How to Generate SESSION_SECRET
-
-Run this command in your terminal to generate a secure random string:
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Copy the output and paste it as your SESSION_SECRET value.
-
-### Optional Variables (for AI Features)
-
-```env
-# OpenAI API Key (only needed for AI Policy Assistant feature)
-OPENAI_API_KEY=sk-your-openai-api-key
-```
-
-### Example Complete .env File
-
-```env
-DATABASE_URL=postgresql://postgres:mypassword123@localhost:5432/lunari
-SESSION_SECRET=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
-OPENAI_API_KEY=sk-proj-abc123xyz789
-```
-
----
-
-## Database Setup
-
-### Option A: Local PostgreSQL Installation
-
-#### Step 1: Install PostgreSQL
-
-**On macOS (using Homebrew):**
-```bash
-brew install postgresql@14
-brew services start postgresql@14
-```
-
-**On Ubuntu/Debian Linux:**
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo systemctl start postgresql
-```
-
-**On Windows:**
-Download and run the installer from https://www.postgresql.org/download/windows/
-
-#### Step 2: Create a Database
-
-Open PostgreSQL command line:
-```bash
-psql -U postgres
-```
-
-Create the database:
-```sql
-CREATE DATABASE lunari;
-```
-
-Exit PostgreSQL:
-```sql
-\q
-```
-
-#### Step 3: Update Your .env File
-
-Make sure your DATABASE_URL matches your PostgreSQL setup:
-```env
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/lunari
-```
-
-#### Step 4: Push Database Schema
-
-This creates all the required tables:
-```bash
-npm run db:push
-```
-
-If you get errors, try:
-```bash
-npm run db:push --force
-```
-
-### Option B: Using Replit's Built-in Database
-
-If you're running on Replit, the database is already configured. The `DATABASE_URL` environment variable is automatically set.
-
----
-
-## Running the Application
-
-### Development Mode (Recommended for Development)
-
-```bash
-npm run dev
-```
-
-This starts:
-- Backend server on port 5000
-- Frontend with hot-reload (changes appear instantly)
-- Open http://localhost:5000 in your browser
-
-### What You Should See
-
-1. Terminal shows: `serving on port 5000`
-2. Browser shows the Lunari dashboard
-3. No red errors in the terminal
-
-### Stopping the Application
-
-Press `Ctrl + C` in the terminal.
-
----
-
-## Project Structure
-
-```
-lunari/
-├── client/                    # Frontend (React application)
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── ui/            # Base UI components (Button, Card, etc.)
-│   │   │   └── app-sidebar.tsx # Main navigation sidebar
-│   │   ├── pages/             # Application pages
-│   │   │   ├── dashboard.tsx  # Main dashboard
-│   │   │   ├── master-mapping.tsx  # GL Master Mapping page
-│   │   │   ├── tb-import.tsx  # Trial Balance Import page
-│   │   │   └── ...            # Other pages
-│   │   ├── hooks/             # Custom React hooks
-│   │   ├── lib/               # Utility functions
-│   │   ├── contexts/          # React context providers
-│   │   ├── App.tsx            # Main application component
-│   │   └── index.css          # Global styles
-│   └── index.html             # HTML entry point
-│
-├── server/                    # Backend (Express server)
-│   ├── index.ts               # Server entry point
-│   ├── routes.ts              # API route definitions
-│   ├── storage.ts             # Data storage layer
-│   └── vite.ts                # Vite configuration for dev server
-│
-├── shared/                    # Code shared between frontend and backend
-│   ├── schema.ts              # Data types and validation schemas
-│   └── models/                # Data model definitions
-│
-├── .env                       # Environment variables (you create this)
-├── package.json               # Project dependencies and scripts
-├── tsconfig.json              # TypeScript configuration
-├── tailwind.config.ts         # Tailwind CSS configuration
-├── drizzle.config.ts          # Database ORM configuration
-└── replit.md                  # This file - project documentation
-```
-
-### Key Files Explained
-
-| File | Purpose |
-|------|---------|
-| `client/src/App.tsx` | Main React component, defines all page routes |
-| `client/src/components/app-sidebar.tsx` | Navigation sidebar with all menu items |
-| `server/routes.ts` | All API endpoints (GET, POST, PATCH, DELETE) |
-| `server/storage.ts` | Data storage methods (CRUD operations) |
-| `shared/schema.ts` | TypeScript types and Zod validation schemas |
-| `package.json` | Lists all npm packages and scripts |
-
----
-
-## Key Modules
-
-### 1. Schedule Studio
-Manages financial instruments (prepaids, fixed assets, accruals, revenue, investments, debt).
-
-**Location**: `/schedules`, `/prepaids`, `/fixed-assets`, `/accruals`, `/revenue`, `/investment-income`, `/debt`
-
-### 2. Cash Scheduler
-Cash flow tracking with category summaries.
-
-**Location**: `/cash-scheduler`
-
-### 3. OneClose
-Close management with certification workflows and task tracking.
-
-**Location**: `/oneclose`
-
-### 4. Reconciliations
-Balance sheet account reconciliation workspaces.
-
-**Location**: `/reconciliations`
-
-### 5. NetTool (Financial Statements)
-Complete financial reporting suite:
-- **Trial Balance**: `/nettool/fs/trial-balance`
-- **Balance Sheet**: `/nettool/fs/balance-sheet`
-- **Income Statement**: `/nettool/fs/income-statement`
-- **Working Papers**: `/nettool/working-papers`
-- **GL Master Mapping**: `/master-mapping`
-- **TB Import**: `/tb-import`
-
-### 6. One Compliance
-Entity governance and regulatory compliance tracking.
-
-**Location**: `/compliance`
-
----
-
-## API Reference
-
-### Base URL
-All API endpoints start with `/api/`
-
-### Main Endpoints
-
-#### Schedules
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/schedules` | Get all schedules |
-| GET | `/api/schedules/:id` | Get single schedule |
-| POST | `/api/schedules` | Create new schedule |
-| PATCH | `/api/schedules/:id` | Update schedule |
-| DELETE | `/api/schedules/:id` | Delete schedule |
-
-#### GL Master Mapping
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/gl-mappings` | Get all GL mappings |
-| GET | `/api/gl-mappings/:id` | Get single mapping |
-| POST | `/api/gl-mappings` | Create new mapping (requires: glAccountNumber, glDescriptionCategory, footnoteDescription) |
-| PATCH | `/api/gl-mappings/:id` | Update mapping |
-| DELETE | `/api/gl-mappings/:id` | Delete mapping |
-
-#### Trial Balance Import
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/tb-import/batches` | Get import history |
-| POST | `/api/tb-import` | Import TB data |
-| DELETE | `/api/tb-import/batches/:id` | Delete import batch |
-
-#### Working Papers
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/working-papers` | Get all working papers |
-| POST | `/api/working-papers` | Create working paper |
-| POST | `/api/working-papers/auto-populate` | Auto-populate from TB data |
-| PATCH | `/api/working-papers/:id` | Update working paper |
-| DELETE | `/api/working-papers/:id` | Delete working paper |
-
-#### Entities
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/entities` | Get all entities |
-| POST | `/api/entities` | Create entity |
-
-#### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/auth/user` | Get current logged-in user |
-| POST | `/api/auth/logout` | Log out current user |
-
----
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### 1. "npm install" fails
-
-**Problem**: Errors during package installation
-
-**Solution**:
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Delete node_modules and try again
-rm -rf node_modules
-npm install
-```
-
-#### 2. "Cannot connect to database"
-
-**Problem**: DATABASE_URL is incorrect or PostgreSQL is not running
-
-**Solutions**:
-1. Check PostgreSQL is running:
-   ```bash
-   # macOS
-   brew services list
-   
-   # Linux
-   sudo systemctl status postgresql
-   ```
-
-2. Verify your DATABASE_URL format:
-   ```
-   postgresql://USERNAME:PASSWORD@HOST:PORT/DATABASE_NAME
-   ```
-
-3. Test connection manually:
-   ```bash
-   psql $DATABASE_URL
-   ```
-
-#### 3. "Port 5000 already in use"
-
-**Problem**: Another application is using port 5000
-
-**Solution**:
-```bash
-# Find what's using port 5000
-lsof -i :5000
-
-# Kill that process (replace PID with the number shown)
-kill -9 PID
-```
-
-#### 4. "Module not found" errors
-
-**Problem**: Missing dependencies
-
-**Solution**:
-```bash
-npm install
-```
-
-#### 5. Database tables don't exist
-
-**Problem**: Schema not pushed to database
-
-**Solution**:
-```bash
-npm run db:push
-```
-
-#### 6. Changes not appearing in browser
-
-**Problem**: Browser cache or server needs restart
-
-**Solutions**:
-1. Hard refresh browser: `Ctrl + Shift + R` (Windows/Linux) or `Cmd + Shift + R` (Mac)
-2. Restart the server: Press `Ctrl + C` then run `npm run dev` again
-
-#### 7. TypeScript errors
-
-**Problem**: Type mismatches in code
-
-**Solution**:
-Check the terminal for specific error messages. The error will tell you:
-- Which file has the problem
-- Which line number
-- What type was expected vs. received
-
----
+Lunari is a comprehensive financial accounting application designed to streamline and automate complex financial processes. It manages prepaid expenses, fixed assets, accruals, revenue recognition, investment income, and debt amortization. The platform supports financial statement preparation, working papers, entity governance, and compliance, aiming to provide a robust solution for modern financial management.
+
+Key capabilities include:
+- Management of financial instruments (prepaids, fixed assets, accruals, revenue, investments, debt).
+- Cash flow tracking with detailed category summaries.
+- Close management with certification workflows and task tracking.
+- Balance sheet account reconciliation workspaces.
+- A complete financial reporting suite including Trial Balance, Balance Sheet, Income Statement, and Working Papers.
+- Entity governance and regulatory compliance tracking.
 
 ## User Preferences
-
 - Financial application styling with professional appearance
 - Clear currency formatting with proper decimal places
 - Dark mode support
 - Period state visual indicators (badges with colors)
 
----
+## System Architecture
+Lunari employs a full-stack architecture with a React frontend and an Express.js backend, communicating via a RESTful API. TypeScript is used across the entire codebase for type safety.
+
+**UI/UX Decisions:**
+- Frontend built with React, utilizing TanStack Query for data fetching and caching, and Wouter for client-side routing.
+- Styling is managed with Tailwind CSS, complemented by shadcn/ui for pre-built, accessible UI components, ensuring a professional and consistent user experience.
+- Features like dark mode support and clear currency formatting are prioritized for user experience.
+
+**Technical Implementations:**
+- **Frontend (`client/`):** Organizes components, pages, hooks, and utility functions for a modular React application.
+- **Backend (`server/`):** An Express.js server handles API requests, database interactions, and business logic. It includes defined routes, storage mechanisms, database connection (`db.ts`), and middleware for authentication and authorization.
+- **Shared Code (`shared/`):** Contains common definitions like Zod schemas for data validation and TypeScript types, ensuring consistency between frontend and backend.
+
+**Feature Specifications:**
+- **Schedule Studio:** Manages financial instruments with dedicated sections for prepaids, fixed assets, accruals, revenue, investments, and debt.
+- **Cash Scheduler:** Provides tools for cash flow tracking and summarization.
+- **OneClose:** Facilitates financial close processes with certification workflows and task management.
+- **Reconciliations:** Offers workspaces for balance sheet account reconciliations.
+- **NetTool (Financial Statements):** A comprehensive reporting suite including Trial Balance, Balance Sheet, Income Statement, Working Papers, GL Master Mapping, and TB Import functionalities.
+- **One Compliance:** Focuses on entity governance and regulatory compliance tracking.
+
+**System Design Choices:**
+- **Database:** PostgreSQL is used as the relational database, accessed via Drizzle ORM for type-safe query building.
+- **Environment Management:** Utilizes `.env` files for configuration, including `DATABASE_URL` and `SESSION_SECRET`.
+- **API Design:** All API endpoints are prefixed with `/api/` and follow REST principles for interacting with various modules such as Schedules, GL Master Mapping, Trial Balance Import, Working Papers, Entities & Periods, Reconciliations, and Close Control.
+- **Data Precision:** Decimal.js is integrated for precise financial calculations, avoiding floating-point inaccuracies.
+- **File Handling:** `xlsx` for Excel operations, `pdfkit` for PDF generation, and `multer` for file uploads.
 
 ## External Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| React | Frontend UI library |
-| TypeScript | Type-safe JavaScript |
-| TanStack Query | Data fetching and caching |
-| Wouter | Client-side routing |
-| Tailwind CSS | Utility-first styling |
-| shadcn/ui | Pre-built UI components |
-| Express | Backend web server |
-| Drizzle ORM | Database access |
-| Zod | Data validation |
-| Decimal.js | Precise financial calculations |
-| xlsx | Excel file handling |
-| pdfkit | PDF generation |
-| multer | File upload handling |
-
----
-
-## Getting Help
-
-If you encounter issues not covered here:
-
-1. Check the terminal for error messages
-2. Look at the browser console (F12 > Console tab)
-3. Review recent code changes
-4. Search the codebase for similar implementations
-
----
-
-*Last updated: January 2026*
+- **React:** Frontend UI library.
+- **TypeScript:** For type-safe development.
+- **TanStack Query:** Data fetching, caching, and state management for the frontend.
+- **Wouter:** Client-side routing for React applications.
+- **Tailwind CSS:** Utility-first CSS framework for styling.
+- **shadcn/ui:** Re-usable UI components.
+- **Express:** Backend web server framework.
+- **PostgreSQL:** Primary database.
+- **Drizzle ORM:** TypeScript ORM for PostgreSQL.
+- **Zod:** Schema declaration and validation library.
+- **Decimal.js:** High-precision decimal arithmetic library.
+- **xlsx:** Library for reading and writing Excel files.
+- **pdfkit:** JavaScript PDF generation library.
+- **multer:** Middleware for handling `multipart/form-data`, primarily for file uploads.
+- **OpenAI API:** (Optional) Used for AI Policy Assistant features.
