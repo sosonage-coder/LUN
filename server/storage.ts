@@ -79,7 +79,10 @@ import type {
   ReconciliationStatus,
   GLMasterMapping,
   GLMasterMappingRegistry,
-  BSPLCategory
+  BSPLCategory,
+  WorkingPaper,
+  WorkingPaperRow,
+  WorkingPaperColumn
 } from "@shared/schema";
 
 // Trial Balance Import Entry
@@ -251,6 +254,20 @@ export interface IStorage {
   getTBImportBatch(batchId: string): Promise<TBImportBatch | undefined>;
   createTBImportBatch(data: Omit<TBImportBatch, 'batchId' | 'importedAt'>): Promise<TBImportBatch>;
   deleteTBImportBatch(batchId: string): Promise<boolean>;
+  
+  // Working Papers
+  getWorkingPapers(entityId?: string, periodId?: string): Promise<WorkingPaper[]>;
+  getWorkingPaper(id: string): Promise<WorkingPaper | undefined>;
+  createWorkingPaper(data: Omit<WorkingPaper, 'workingPaperId' | 'createdAt' | 'lastUpdated'>): Promise<WorkingPaper>;
+  updateWorkingPaper(id: string, data: Partial<WorkingPaper>): Promise<WorkingPaper>;
+  deleteWorkingPaper(id: string): Promise<boolean>;
+  
+  // Auto-populate Working Papers from TB data using GL Master Mapping
+  autoPopulateWorkingPapers(entityId: string, periodId: string): Promise<{ 
+    wpCount: number; 
+    rowsPopulated: number; 
+    workingPapers: WorkingPaper[] 
+  }>;
 }
 
 // Helper functions
@@ -301,6 +318,7 @@ export class MemStorage implements IStorage {
   private reconciliations: Map<string, Reconciliation>;
   private glMasterMappings: Map<string, GLMasterMapping>;
   private tbImportBatches: Map<string, TBImportBatch>;
+  private workingPapers: Map<string, WorkingPaper>;
 
   constructor() {
     this.schedules = new Map();
@@ -322,6 +340,7 @@ export class MemStorage implements IStorage {
     this.reconciliations = new Map();
     this.glMasterMappings = new Map();
     this.tbImportBatches = new Map();
+    this.workingPapers = new Map();
     
     // Seed with default entities
     this.seedData();
@@ -6272,6 +6291,211 @@ export class MemStorage implements IStorage {
 
   async deleteTBImportBatch(batchId: string): Promise<boolean> {
     return this.tbImportBatches.delete(batchId);
+  }
+
+  // Working Papers Methods
+  async getWorkingPapers(entityId?: string, periodId?: string): Promise<WorkingPaper[]> {
+    let papers = Array.from(this.workingPapers.values());
+    if (entityId) {
+      papers = papers.filter(wp => wp.entityId === entityId);
+    }
+    if (periodId) {
+      papers = papers.filter(wp => wp.periodId === periodId);
+    }
+    return papers.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async getWorkingPaper(id: string): Promise<WorkingPaper | undefined> {
+    return this.workingPapers.get(id);
+  }
+
+  async createWorkingPaper(data: Omit<WorkingPaper, 'workingPaperId' | 'createdAt' | 'lastUpdated'>): Promise<WorkingPaper> {
+    const workingPaperId = `WP-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const now = new Date().toISOString();
+    const wp: WorkingPaper = {
+      ...data,
+      workingPaperId,
+      createdAt: now,
+      lastUpdated: now,
+    };
+    this.workingPapers.set(workingPaperId, wp);
+    return wp;
+  }
+
+  async updateWorkingPaper(id: string, data: Partial<WorkingPaper>): Promise<WorkingPaper> {
+    const existing = this.workingPapers.get(id);
+    if (!existing) throw new Error("Working paper not found");
+    const updated: WorkingPaper = {
+      ...existing,
+      ...data,
+      workingPaperId: id,
+      lastUpdated: new Date().toISOString(),
+    };
+    this.workingPapers.set(id, updated);
+    return updated;
+  }
+
+  async deleteWorkingPaper(id: string): Promise<boolean> {
+    return this.workingPapers.delete(id);
+  }
+
+  // Auto-populate Working Papers from TB data using GL Master Mapping
+  async autoPopulateWorkingPapers(entityId: string, periodId: string): Promise<{ 
+    wpCount: number; 
+    rowsPopulated: number; 
+    workingPapers: WorkingPaper[] 
+  }> {
+    // Get GL Master Mappings
+    const mappings = await this.getGLMasterMappings();
+    const activeMappings = mappings.filter(m => m.isActive);
+    
+    // Get TB Import data for this period/entity
+    const batches = await this.getTBImportBatches(entityId, periodId);
+    if (batches.length === 0) {
+      return { wpCount: 0, rowsPopulated: 0, workingPapers: [] };
+    }
+    
+    // Use the most recent batch
+    const latestBatch = batches[0];
+    const tbEntries = latestBatch.entries;
+    
+    // Group mappings by WP name (sorted by orderIndex for precedence)
+    const sortedMappings = [...activeMappings].sort((a, b) => a.orderIndex - b.orderIndex);
+    const wpNameToMappings: Map<string, GLMasterMapping[]> = new Map();
+    for (const mapping of sortedMappings) {
+      const wpName = mapping.wpName || mapping.footnoteDescription;
+      if (!wpNameToMappings.has(wpName)) {
+        wpNameToMappings.set(wpName, []);
+      }
+      wpNameToMappings.get(wpName)!.push(mapping);
+    }
+    
+    const createdWPs: WorkingPaper[] = [];
+    let totalRowsPopulated = 0;
+    
+    // Track which TB entries have been assigned to prevent duplicates
+    const assignedAccountCodes = new Set<string>();
+    
+    // For each WP name, find matching TB entries and create/update working papers
+    for (const [wpName, wpMappings] of wpNameToMappings) {
+      // Find TB entries that match any of the GL description categories for this WP
+      // Only include entries that haven't been assigned to another WP
+      const matchingEntries: TBImportEntry[] = [];
+      for (const entry of tbEntries) {
+        // Skip if already assigned to another WP
+        if (assignedAccountCodes.has(entry.accountCode)) continue;
+        
+        for (const mapping of wpMappings) {
+          // Match by account name containing the GL description category (case-insensitive)
+          const pattern = mapping.glDescriptionCategory.toLowerCase().trim();
+          const accountName = entry.accountName.toLowerCase().trim();
+          if (accountName.includes(pattern)) {
+            matchingEntries.push(entry);
+            assignedAccountCodes.add(entry.accountCode);
+            break;
+          }
+        }
+      }
+      
+      if (matchingEntries.length === 0) continue;
+      
+      // Check if WP already exists for this entity, period and name
+      const existingWPs = await this.getWorkingPapers(entityId, periodId);
+      let wp = existingWPs.find(w => w.name === wpName);
+      
+      // Determine WP type based on mapping characteristics
+      const bsPlCategory = wpMappings[0].bsPlCategory;
+      const wpType = bsPlCategory === "BS" ? "ROLLFORWARD" : "LINEAR";
+      
+      // Create rows from matching TB entries
+      const rows: WorkingPaperRow[] = matchingEntries.map((entry, idx) => ({
+        rowId: `row-${idx}`,
+        rowType: "DATA" as const,
+        orderIndex: idx,
+        values: {
+          "col-desc": entry.accountName,
+          "col-code": entry.accountCode,
+          "col-opening": entry.openingBalance,
+          "col-closing": entry.closingBalance,
+          "col-debit": entry.debitAmount,
+          "col-credit": entry.creditAmount,
+        },
+        isLocked: false,
+      }));
+      
+      // Add total row
+      const totalOpening = matchingEntries.reduce((sum, e) => sum + e.openingBalance, 0);
+      const totalClosing = matchingEntries.reduce((sum, e) => sum + e.closingBalance, 0);
+      rows.push({
+        rowId: `row-total`,
+        rowType: "TOTAL",
+        orderIndex: rows.length,
+        values: {
+          "col-desc": "Total",
+          "col-code": "",
+          "col-opening": totalOpening,
+          "col-closing": totalClosing,
+          "col-debit": matchingEntries.reduce((sum, e) => sum + e.debitAmount, 0),
+          "col-credit": matchingEntries.reduce((sum, e) => sum + e.creditAmount, 0),
+        },
+        isLocked: true,
+      });
+      
+      // Define columns
+      const columns: WorkingPaperColumn[] = [
+        { columnId: "col-desc", label: "Description", widthPx: 200, orderIndex: 0, isLocked: false, formula: null },
+        { columnId: "col-code", label: "Account Code", widthPx: 100, orderIndex: 1, isLocked: false, formula: null },
+        { columnId: "col-opening", label: "Opening", widthPx: 120, orderIndex: 2, isLocked: true, formula: null },
+        { columnId: "col-closing", label: "Closing", widthPx: 120, orderIndex: 3, isLocked: true, formula: null },
+        { columnId: "col-debit", label: "Debit", widthPx: 100, orderIndex: 4, isLocked: false, formula: null },
+        { columnId: "col-credit", label: "Credit", widthPx: 100, orderIndex: 5, isLocked: false, formula: null },
+      ];
+      
+      if (wp) {
+        // Update existing WP with new data
+        wp = await this.updateWorkingPaper(wp.workingPaperId, {
+          rows,
+          linkedAccountCodes: matchingEntries.map(e => e.accountCode),
+          tbSourceAmount: totalClosing,
+          wpTotalAmount: totalClosing,
+          variance: 0,
+          tieOutStatus: "TIED",
+        });
+      } else {
+        // Create new WP with entityId
+        wp = await this.createWorkingPaper({
+          entityId,
+          name: wpName,
+          type: wpType,
+          periodId,
+          linkedFsLines: [],
+          linkedNotes: [wpMappings[0].footnoteNumber || ""],
+          columns,
+          rows,
+          textBlocks: [],
+          frozenRows: 1,
+          status: "DRAFT",
+          linkedAccountCodes: matchingEntries.map(e => e.accountCode),
+          tbSourceAmount: totalClosing,
+          wpTotalAmount: totalClosing,
+          variance: 0,
+          tieOutStatus: "TIED",
+          wpNotes: [],
+          attachments: [],
+          createdBy: "system",
+          updatedBy: "system",
+        });
+      }
+      
+      createdWPs.push(wp);
+      totalRowsPopulated += matchingEntries.length;
+    }
+    
+    return {
+      wpCount: createdWPs.length,
+      rowsPopulated: totalRowsPopulated,
+      workingPapers: createdWPs,
+    };
   }
 }
 

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Trash2, CheckCircle, AlertCircle, Download, Eye, Plus, File } from "lucide-react";
+import { Upload, FileSpreadsheet, Trash2, CheckCircle, AlertCircle, Download, Eye, Plus, File, Wand2 } from "lucide-react";
 import type { Entity } from "@shared/schema";
 
 interface TBImportEntry {
@@ -94,6 +94,29 @@ export default function TBImportPage() {
       toast({ title: "Error", description: "Failed to delete import batch", variant: "destructive" });
     },
   });
+
+  const autoPopulateMutation = useMutation({
+    mutationFn: (data: { periodId: string; entityId: string }) =>
+      apiRequest("POST", "/api/working-papers/auto-populate", data),
+    onSuccess: async (response) => {
+      const result = await response.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/working-papers"] });
+      toast({ 
+        title: "Working Papers Populated", 
+        description: result.message || `Created ${result.wpCount} working papers` 
+      });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to populate working papers", variant: "destructive" });
+    },
+  });
+
+  const handleAutoPopulate = () => {
+    autoPopulateMutation.mutate({
+      periodId: selectedPeriod,
+      entityId: selectedEntityId,
+    });
+  };
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -397,13 +420,27 @@ export default function TBImportPage() {
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5" />
-                Import History
-              </CardTitle>
-              <CardDescription>
-                Previously imported trial balance batches
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Import History
+                  </CardTitle>
+                  <CardDescription>
+                    Previously imported trial balance batches
+                  </CardDescription>
+                </div>
+                {batches.length > 0 && (
+                  <Button
+                    onClick={handleAutoPopulate}
+                    disabled={autoPopulateMutation.isPending}
+                    data-testid="button-auto-populate"
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    {autoPopulateMutation.isPending ? "Populating..." : "Auto-Populate Working Papers"}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {loadingBatches ? (

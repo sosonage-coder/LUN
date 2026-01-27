@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, insertCloseTemplateSchema, insertCloseTemplateTaskSchema, updateCloseTemplateSchema, updateCloseTemplateTaskSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
+import { insertScheduleMasterSchema, insertScheduleEventSchema, insertPrepaidScheduleSchema, insertFixedAssetSchema, insertAccrualScheduleSchema, insertRevenueScheduleSchema, insertInvestmentIncomeScheduleSchema, insertDebtScheduleSchema, insertCloseTemplateSchema, insertCloseTemplateTaskSchema, updateCloseTemplateSchema, updateCloseTemplateTaskSchema, insertWorkingPaperSchema, autoPopulateWorkingPapersSchema, type PrepaidSubcategory, type AssetClass, type AccrualCategory, type RevenueCategory, type InvestmentCategory, type DebtCategory } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -2605,6 +2605,111 @@ Respond with a JSON object containing:
     } catch (error) {
       console.error("Error deleting TB import:", error);
       res.status(500).json({ error: "Failed to delete TB import" });
+    }
+  });
+
+  // ===== WORKING PAPERS ROUTES =====
+  
+  // Get all Working Papers
+  app.get("/api/working-papers", async (req, res) => {
+    try {
+      const { entityId, periodId } = req.query;
+      const papers = await storage.getWorkingPapers(
+        entityId as string | undefined,
+        periodId as string | undefined
+      );
+      res.json(papers);
+    } catch (error) {
+      console.error("Error fetching working papers:", error);
+      res.status(500).json({ error: "Failed to fetch working papers" });
+    }
+  });
+
+  // Get single Working Paper
+  app.get("/api/working-papers/:id", async (req, res) => {
+    try {
+      const paper = await storage.getWorkingPaper(req.params.id);
+      if (!paper) {
+        return res.status(404).json({ error: "Working paper not found" });
+      }
+      res.json(paper);
+    } catch (error) {
+      console.error("Error fetching working paper:", error);
+      res.status(500).json({ error: "Failed to fetch working paper" });
+    }
+  });
+
+  // Create Working Paper - with Zod validation
+  app.post("/api/working-papers", async (req, res) => {
+    try {
+      const parseResult = insertWorkingPaperSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: parseResult.error.flatten() 
+        });
+      }
+      const paper = await storage.createWorkingPaper(parseResult.data as any);
+      res.status(201).json(paper);
+    } catch (error) {
+      console.error("Error creating working paper:", error);
+      res.status(500).json({ error: "Failed to create working paper" });
+    }
+  });
+
+  // Update Working Paper - with partial validation
+  app.patch("/api/working-papers/:id", async (req, res) => {
+    try {
+      const parseResult = insertWorkingPaperSchema.partial().safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: parseResult.error.flatten() 
+        });
+      }
+      const paper = await storage.updateWorkingPaper(req.params.id, parseResult.data as any);
+      res.json(paper);
+    } catch (error) {
+      console.error("Error updating working paper:", error);
+      res.status(500).json({ error: "Failed to update working paper" });
+    }
+  });
+
+  // Delete Working Paper
+  app.delete("/api/working-papers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteWorkingPaper(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Working paper not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting working paper:", error);
+      res.status(500).json({ error: "Failed to delete working paper" });
+    }
+  });
+
+  // Auto-populate Working Papers from TB data using GL Master Mapping - with Zod validation
+  app.post("/api/working-papers/auto-populate", async (req, res) => {
+    try {
+      const parseResult = autoPopulateWorkingPapersSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          error: "Validation failed", 
+          details: parseResult.error.flatten() 
+        });
+      }
+      
+      const { entityId, periodId } = parseResult.data;
+      const result = await storage.autoPopulateWorkingPapers(entityId, periodId);
+      res.json({
+        success: true,
+        message: `Created/updated ${result.wpCount} working papers with ${result.rowsPopulated} rows`,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error auto-populating working papers:", error);
+      res.status(500).json({ error: "Failed to auto-populate working papers" });
     }
   });
 

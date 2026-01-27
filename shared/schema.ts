@@ -2254,6 +2254,7 @@ export interface WorkingPaperTextBlock {
 
 export interface WorkingPaper {
   workingPaperId: string;
+  entityId: string;
   name: string;
   type: WorkingPaperType;
   periodId: string;
@@ -2424,6 +2425,53 @@ export interface GLMasterMappingRegistry {
   lastUpdated: string;
   updatedBy: string;
 }
+
+// Working Paper validation schemas
+export const workingPaperRowSchema = z.object({
+  rowId: z.string(),
+  accountCode: z.string().nullable(),
+  accountName: z.string(),
+  cells: z.record(z.number().nullable()),
+  rowType: z.enum(["DATA", "SUBTOTAL", "TOTAL", "HEADER"]),
+  level: z.number(),
+  parentRowId: z.string().nullable(),
+  isExpanded: z.boolean(),
+  formula: z.string().nullable(),
+});
+
+export const insertWorkingPaperSchema = z.object({
+  entityId: z.string().min(1, "Entity ID is required"),
+  name: z.string().min(1, "Name is required"),
+  type: z.enum(["ROLLFORWARD", "AGING", "LINEAR", "CUSTOM"]),
+  periodId: z.string().min(1, "Period ID is required"),
+  linkedFsLines: z.array(z.string()).optional().default([]),
+  linkedNotes: z.array(z.string()).optional().default([]),
+  columns: z.array(z.object({
+    columnId: z.string(),
+    header: z.string(),
+    type: z.enum(["ACCOUNT_CODE", "ACCOUNT_NAME", "OPENING", "ADDITIONS", "DISPOSALS", "DEPRECIATION", "TRANSFERS", "REVALUATIONS", "CLOSING", "CUSTOM"]),
+    width: z.number(),
+    isEditable: z.boolean(),
+    formula: z.string().nullable(),
+  })).optional().default([]),
+  rows: z.array(workingPaperRowSchema).optional().default([]),
+  textBlocks: z.array(z.object({
+    blockId: z.string(),
+    content: z.string(),
+    orderIndex: z.number(),
+    style: z.enum(["HEADING", "SUBHEADING", "NOTE"]),
+  })).optional().default([]),
+  frozenRows: z.number().optional().default(1),
+  status: z.enum(["DRAFT", "IN_REVIEW", "APPROVED", "LOCKED"]).optional().default("DRAFT"),
+  linkedAccountCodes: z.array(z.string()).optional().default([]),
+});
+
+export const autoPopulateWorkingPapersSchema = z.object({
+  entityId: z.string().min(1, "Entity ID is required"),
+  periodId: z.string().min(1, "Period ID is required"),
+});
+
+export type InsertWorkingPaper = z.infer<typeof insertWorkingPaperSchema>;
 
 // Export auth models for Replit Auth integration
 export * from "./models/auth";
