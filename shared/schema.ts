@@ -1374,12 +1374,98 @@ export interface ReconciliationTemplateField {
   formula?: string; // for calculated fields
 }
 
+// Account Groups for reconciliation hierarchy (Type → Group → Account)
+export type ReconciliationAccountGroup = 
+  | "OPERATING_CASH"
+  | "RESTRICTED_CASH"
+  | "TRADE_RECEIVABLES"
+  | "OTHER_RECEIVABLES"
+  | "TRADE_PAYABLES"
+  | "OTHER_PAYABLES"
+  | "SHORT_TERM_PREPAIDS"
+  | "LONG_TERM_PREPAIDS"
+  | "LAND_AND_BUILDINGS"
+  | "EQUIPMENT"
+  | "INTANGIBLES"
+  | "ACCUMULATED_DEPRECIATION"
+  | "COMPENSATION_ACCRUALS"
+  | "TAX_ACCRUALS"
+  | "OTHER_ACCRUALS"
+  | "RAW_MATERIALS"
+  | "FINISHED_GOODS"
+  | "WORK_IN_PROGRESS"
+  | "IC_RECEIVABLES"
+  | "IC_PAYABLES"
+  | "SHORT_TERM_DEBT"
+  | "LONG_TERM_DEBT"
+  | "CAPITAL_STOCK"
+  | "RETAINED_EARNINGS"
+  | "MISCELLANEOUS";
+
+export const accountGroupLabels: Record<ReconciliationAccountGroup, string> = {
+  OPERATING_CASH: "Operating Cash",
+  RESTRICTED_CASH: "Restricted Cash",
+  TRADE_RECEIVABLES: "Trade Receivables",
+  OTHER_RECEIVABLES: "Other Receivables",
+  TRADE_PAYABLES: "Trade Payables",
+  OTHER_PAYABLES: "Other Payables",
+  SHORT_TERM_PREPAIDS: "Short-term Prepaids",
+  LONG_TERM_PREPAIDS: "Long-term Prepaids",
+  LAND_AND_BUILDINGS: "Land & Buildings",
+  EQUIPMENT: "Equipment",
+  INTANGIBLES: "Intangibles",
+  ACCUMULATED_DEPRECIATION: "Accumulated Depreciation",
+  COMPENSATION_ACCRUALS: "Compensation Accruals",
+  TAX_ACCRUALS: "Tax Accruals",
+  OTHER_ACCRUALS: "Other Accruals",
+  RAW_MATERIALS: "Raw Materials",
+  FINISHED_GOODS: "Finished Goods",
+  WORK_IN_PROGRESS: "Work in Progress",
+  IC_RECEIVABLES: "IC Receivables",
+  IC_PAYABLES: "IC Payables",
+  SHORT_TERM_DEBT: "Short-term Debt",
+  LONG_TERM_DEBT: "Long-term Debt",
+  CAPITAL_STOCK: "Capital Stock",
+  RETAINED_EARNINGS: "Retained Earnings",
+  MISCELLANEOUS: "Miscellaneous",
+};
+
+// Map account groups to their parent types
+export const accountGroupToType: Record<ReconciliationAccountGroup, ReconciliationAccountType> = {
+  OPERATING_CASH: "CASH",
+  RESTRICTED_CASH: "CASH",
+  TRADE_RECEIVABLES: "ACCOUNTS_RECEIVABLE",
+  OTHER_RECEIVABLES: "ACCOUNTS_RECEIVABLE",
+  TRADE_PAYABLES: "ACCOUNTS_PAYABLE",
+  OTHER_PAYABLES: "ACCOUNTS_PAYABLE",
+  SHORT_TERM_PREPAIDS: "PREPAID",
+  LONG_TERM_PREPAIDS: "PREPAID",
+  LAND_AND_BUILDINGS: "FIXED_ASSET",
+  EQUIPMENT: "FIXED_ASSET",
+  INTANGIBLES: "FIXED_ASSET",
+  ACCUMULATED_DEPRECIATION: "FIXED_ASSET",
+  COMPENSATION_ACCRUALS: "ACCRUAL",
+  TAX_ACCRUALS: "ACCRUAL",
+  OTHER_ACCRUALS: "ACCRUAL",
+  RAW_MATERIALS: "INVENTORY",
+  FINISHED_GOODS: "INVENTORY",
+  WORK_IN_PROGRESS: "INVENTORY",
+  IC_RECEIVABLES: "INTERCOMPANY",
+  IC_PAYABLES: "INTERCOMPANY",
+  SHORT_TERM_DEBT: "DEBT",
+  LONG_TERM_DEBT: "DEBT",
+  CAPITAL_STOCK: "EQUITY",
+  RETAINED_EARNINGS: "EQUITY",
+  MISCELLANEOUS: "OTHER",
+};
+
 // GL Account for reconciliation
 export interface ReconciliationAccount {
   accountId: string;
   accountCode: string;
   accountName: string;
   accountType: ReconciliationAccountType;
+  accountGroup: ReconciliationAccountGroup;
   entityId: string;
   currency: string;
   defaultTemplateId: string | null; // preferred template
@@ -1594,10 +1680,33 @@ export const insertReconciliationAccountSchema = z.object({
     "CASH", "ACCOUNTS_RECEIVABLE", "ACCOUNTS_PAYABLE", "PREPAID",
     "FIXED_ASSET", "ACCRUAL", "INVENTORY", "INTERCOMPANY", "DEBT", "EQUITY", "OTHER"
   ]),
+  accountGroup: z.enum([
+    "OPERATING_CASH", "RESTRICTED_CASH", "TRADE_RECEIVABLES", "OTHER_RECEIVABLES",
+    "TRADE_PAYABLES", "OTHER_PAYABLES", "SHORT_TERM_PREPAIDS", "LONG_TERM_PREPAIDS",
+    "LAND_AND_BUILDINGS", "EQUIPMENT", "INTANGIBLES", "ACCUMULATED_DEPRECIATION",
+    "COMPENSATION_ACCRUALS", "TAX_ACCRUALS", "OTHER_ACCRUALS", "RAW_MATERIALS",
+    "FINISHED_GOODS", "WORK_IN_PROGRESS", "IC_RECEIVABLES", "IC_PAYABLES",
+    "SHORT_TERM_DEBT", "LONG_TERM_DEBT", "CAPITAL_STOCK", "RETAINED_EARNINGS", "MISCELLANEOUS"
+  ]).optional(),
   entityId: z.string().min(1, "Entity is required"),
   currency: z.string().length(3, "Currency must be 3 characters"),
   defaultTemplateId: z.string().nullable().optional(),
 });
+
+// Default account group mapping based on account type (for backward compatibility)
+export const defaultAccountGroupForType: Record<ReconciliationAccountType, ReconciliationAccountGroup> = {
+  CASH: "OPERATING_CASH",
+  ACCOUNTS_RECEIVABLE: "TRADE_RECEIVABLES",
+  ACCOUNTS_PAYABLE: "TRADE_PAYABLES",
+  PREPAID: "SHORT_TERM_PREPAIDS",
+  FIXED_ASSET: "EQUIPMENT",
+  ACCRUAL: "OTHER_ACCRUALS",
+  INVENTORY: "FINISHED_GOODS",
+  INTERCOMPANY: "IC_RECEIVABLES",
+  DEBT: "LONG_TERM_DEBT",
+  EQUITY: "RETAINED_EARNINGS",
+  OTHER: "MISCELLANEOUS",
+};
 
 export type InsertReconciliationAccount = z.infer<typeof insertReconciliationAccountSchema>;
 

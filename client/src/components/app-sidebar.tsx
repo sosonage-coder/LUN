@@ -71,7 +71,8 @@ import type { ReconciliationAccount } from "@shared/schema";
 
 const scheduleStudioNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Schedules", url: "/schedules", icon: Clock },
+  { title: "All Schedules", url: "/schedule-studio", icon: Layers },
+  { title: "Schedules List", url: "/schedules", icon: Clock },
   { title: "Prepaid Calculator", url: "/prepaid-calculator", icon: Calculator },
   { title: "Entities", url: "/entities", icon: Building2 },
 ];

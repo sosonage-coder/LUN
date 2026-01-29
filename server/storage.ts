@@ -77,6 +77,7 @@ import type {
   ReconciliationLineItem,
   ReconciliationAccountType,
   ReconciliationStatus,
+  defaultAccountGroupForType,
   GLMasterMapping,
   GLMasterMappingRegistry,
   BSPLCategory,
@@ -5443,20 +5444,32 @@ export class MemStorage implements IStorage {
       this.reconciliationTemplates.set(tpl.templateId, tpl);
     }
 
-    // Seed Reconciliation Accounts
+    // Seed Reconciliation Accounts with accountGroup for 3-tier hierarchy
     const accounts: ReconciliationAccount[] = [
-      { accountId: "ACCT-1010", accountCode: "1010", accountName: "Cash - Operating Account", accountType: "CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
-      { accountId: "ACCT-1020", accountCode: "1020", accountName: "Cash - Payroll Account", accountType: "CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
-      { accountId: "ACCT-1100", accountCode: "1100", accountName: "Accounts Receivable", accountType: "ACCOUNTS_RECEIVABLE", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AR", isActive: true, createdAt: now },
-      { accountId: "ACCT-1200", accountCode: "1200", accountName: "Prepaid Insurance", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
-      { accountId: "ACCT-1210", accountCode: "1210", accountName: "Prepaid Rent", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
-      { accountId: "ACCT-1220", accountCode: "1220", accountName: "Prepaid Software", accountType: "PREPAID", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
-      { accountId: "ACCT-1500", accountCode: "1500", accountName: "Fixed Assets - Equipment", accountType: "FIXED_ASSET", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
-      { accountId: "ACCT-1510", accountCode: "1510", accountName: "Fixed Assets - Furniture", accountType: "FIXED_ASSET", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
-      { accountId: "ACCT-2000", accountCode: "2000", accountName: "Accounts Payable", accountType: "ACCOUNTS_PAYABLE", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AP", isActive: true, createdAt: now },
-      { accountId: "ACCT-2100", accountCode: "2100", accountName: "Accrued Expenses", accountType: "ACCRUAL", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
-      { accountId: "ACCT-2110", accountCode: "2110", accountName: "Accrued Payroll", accountType: "ACCRUAL", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
-      { accountId: "ACCT-2200", accountCode: "2200", accountName: "Intercompany - US Sub", accountType: "INTERCOMPANY", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-1010", accountCode: "1010", accountName: "Cash - Operating Account", accountType: "CASH", accountGroup: "OPERATING_CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
+      { accountId: "ACCT-1020", accountCode: "1020", accountName: "Cash - Payroll Account", accountType: "CASH", accountGroup: "OPERATING_CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
+      { accountId: "ACCT-1030", accountCode: "1030", accountName: "Cash - Restricted Escrow", accountType: "CASH", accountGroup: "RESTRICTED_CASH", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-CASH-SINGLE", isActive: true, createdAt: now },
+      { accountId: "ACCT-1100", accountCode: "1100", accountName: "Trade Accounts Receivable", accountType: "ACCOUNTS_RECEIVABLE", accountGroup: "TRADE_RECEIVABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AR", isActive: true, createdAt: now },
+      { accountId: "ACCT-1110", accountCode: "1110", accountName: "Employee Advances", accountType: "ACCOUNTS_RECEIVABLE", accountGroup: "OTHER_RECEIVABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AR", isActive: true, createdAt: now },
+      { accountId: "ACCT-1200", accountCode: "1200", accountName: "Prepaid Insurance", accountType: "PREPAID", accountGroup: "SHORT_TERM_PREPAIDS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1210", accountCode: "1210", accountName: "Prepaid Rent", accountType: "PREPAID", accountGroup: "SHORT_TERM_PREPAIDS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1220", accountCode: "1220", accountName: "Prepaid Software", accountType: "PREPAID", accountGroup: "SHORT_TERM_PREPAIDS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1230", accountCode: "1230", accountName: "Long-term Deposits", accountType: "PREPAID", accountGroup: "LONG_TERM_PREPAIDS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-PREPAID", isActive: true, createdAt: now },
+      { accountId: "ACCT-1500", accountCode: "1500", accountName: "Equipment", accountType: "FIXED_ASSET", accountGroup: "EQUIPMENT", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-1510", accountCode: "1510", accountName: "Furniture & Fixtures", accountType: "FIXED_ASSET", accountGroup: "EQUIPMENT", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-1520", accountCode: "1520", accountName: "Buildings", accountType: "FIXED_ASSET", accountGroup: "LAND_AND_BUILDINGS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-1600", accountCode: "1600", accountName: "Accumulated Depreciation", accountType: "FIXED_ASSET", accountGroup: "ACCUMULATED_DEPRECIATION", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-FIXED-ASSET", isActive: true, createdAt: now },
+      { accountId: "ACCT-2000", accountCode: "2000", accountName: "Trade Accounts Payable", accountType: "ACCOUNTS_PAYABLE", accountGroup: "TRADE_PAYABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AP", isActive: true, createdAt: now },
+      { accountId: "ACCT-2010", accountCode: "2010", accountName: "Other Payables", accountType: "ACCOUNTS_PAYABLE", accountGroup: "OTHER_PAYABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-AP", isActive: true, createdAt: now },
+      { accountId: "ACCT-2100", accountCode: "2100", accountName: "Accrued Expenses", accountType: "ACCRUAL", accountGroup: "OTHER_ACCRUALS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
+      { accountId: "ACCT-2110", accountCode: "2110", accountName: "Accrued Payroll", accountType: "ACCRUAL", accountGroup: "COMPENSATION_ACCRUALS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
+      { accountId: "ACCT-2120", accountCode: "2120", accountName: "Accrued Taxes", accountType: "ACCRUAL", accountGroup: "TAX_ACCRUALS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-ACCRUAL", isActive: true, createdAt: now },
+      { accountId: "ACCT-2200", accountCode: "2200", accountName: "Intercompany - US Sub Receivable", accountType: "INTERCOMPANY", accountGroup: "IC_RECEIVABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-2210", accountCode: "2210", accountName: "Intercompany - EU Sub Payable", accountType: "INTERCOMPANY", accountGroup: "IC_PAYABLES", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-2300", accountCode: "2300", accountName: "Short-term Notes Payable", accountType: "DEBT", accountGroup: "SHORT_TERM_DEBT", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-2400", accountCode: "2400", accountName: "Long-term Debt", accountType: "DEBT", accountGroup: "LONG_TERM_DEBT", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-3000", accountCode: "3000", accountName: "Common Stock", accountType: "EQUITY", accountGroup: "CAPITAL_STOCK", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
+      { accountId: "ACCT-3100", accountCode: "3100", accountName: "Retained Earnings", accountType: "EQUITY", accountGroup: "RETAINED_EARNINGS", entityId: "CORP-001", currency: "USD", defaultTemplateId: "RTPL-INTERCO", isActive: true, createdAt: now },
     ];
 
     for (const acct of accounts) {
@@ -6008,6 +6021,7 @@ export class MemStorage implements IStorage {
       accountCode: data.accountCode,
       accountName: data.accountName,
       accountType: data.accountType,
+      accountGroup: data.accountGroup || defaultAccountGroupForType[data.accountType],
       entityId: data.entityId,
       currency: data.currency,
       defaultTemplateId: data.defaultTemplateId || null,

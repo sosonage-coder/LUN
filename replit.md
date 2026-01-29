@@ -31,12 +31,33 @@ Lunari employs a full-stack architecture with a React frontend and an Express.js
 - **Shared Code (`shared/`):** Contains common definitions like Zod schemas for data validation and TypeScript types, ensuring consistency between frontend and backend.
 
 **Feature Specifications:**
-- **Schedule Studio:** Manages financial instruments with dedicated sections for prepaids, fixed assets, accruals, revenue, investments, and debt.
+- **Schedule Studio:** Manages financial instruments with dedicated sections for prepaids, fixed assets, accruals, revenue, investments, and debt. Entry point is a FileGRID-style unified pivot grid at `/schedule-studio` providing 5 pivot views (By Type, By Entity, By Period, By Owner, By Evidence).
 - **Cash Scheduler:** Provides tools for cash flow tracking and summarization.
 - **OneClose:** Facilitates financial close processes with certification workflows and task management.
-- **Reconciliations:** Offers workspaces for balance sheet account reconciliations.
+- **Reconciliations:** Offers workspaces for balance sheet account reconciliations. Entry point is a FileGRID-style pivot grid at `/reconciliations` with 3-tier hierarchy (Type → Account Group → Individual Account) and 5 pivot views (By Type, By Group, By Status, By Preparer, By Variance).
 - **NetTool (Financial Statements):** A comprehensive reporting suite including Trial Balance, Balance Sheet, Income Statement, Working Papers, GL Master Mapping, and TB Import functionalities.
 - **One Compliance:** Focuses on entity governance and regulatory compliance tracking.
+
+**FileGRID Pivot System:**
+The platform uses reusable pivot grid components (`client/src/components/pivot/`) for Excel-like data exploration:
+- `PivotViewSelector.tsx`: Toggle buttons for switching between different grouping perspectives
+- `CollapsibleGridRow.tsx`: Expandable tree rows with counts, progress bars, and totals
+- `DashboardKPICards.tsx`: Grid of metric cards with trend indicators
+- `FilterBar.tsx`: Search + select filter controls
+- `GridItemRow.tsx`: Individual item links within collapsed sections
+
+Reconciliation Account Groups (25 sub-categories organized by type):
+- Cash: Operating Cash, Restricted Cash
+- Accounts Receivable: Trade Receivables, Other Receivables
+- Accounts Payable: Trade Payables, Other Payables
+- Prepaid: Short-term Prepaids, Long-term Prepaids
+- Fixed Asset: Land & Buildings, Equipment, Intangibles, Accumulated Depreciation
+- Accrual: Compensation Accruals, Tax Accruals, Other Accruals
+- Inventory: Raw Materials, Finished Goods, Work in Progress
+- Intercompany: IC Receivables, IC Payables
+- Debt: Short-term Debt, Long-term Debt
+- Equity: Capital Stock, Retained Earnings
+- Other: Miscellaneous
 
 **System Design Choices:**
 - **Database:** PostgreSQL is used as the relational database, accessed via Drizzle ORM for type-safe query building.

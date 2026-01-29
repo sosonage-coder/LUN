@@ -64,12 +64,16 @@ import MasterMappingPage from "@/pages/master-mapping";
 import TBImportPage from "@/pages/tb-import";
 import ArtifactRegistryPage from "@/pages/artifact-registry";
 import ArtifactHealthDashboard from "@/pages/artifact-health-dashboard";
+import ScheduleStudioGrid from "@/pages/schedule-studio-grid";
+import ReconciliationGrid from "@/pages/reconciliation-grid";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/reconciliations" component={ReconciliationsPage} />
+      <Route path="/schedule-studio" component={ScheduleStudioGrid} />
+      <Route path="/reconciliations" component={ReconciliationGrid} />
+      <Route path="/reconciliations/legacy" component={ReconciliationsPage} />
       <Route path="/reconciliations/templates" component={ReconciliationTemplatesPage} />
       <Route path="/reconciliations/workspace/:id" component={ReconciliationWorkspacePage} />
       <Route path="/compliance" component={OneCompliancePage} />
