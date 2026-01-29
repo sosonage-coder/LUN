@@ -66,6 +66,7 @@ import ArtifactRegistryPage from "@/pages/artifact-registry";
 import ArtifactHealthDashboard from "@/pages/artifact-health-dashboard";
 import ScheduleStudioGrid from "@/pages/schedule-studio-grid";
 import ReconciliationGrid from "@/pages/reconciliation-grid";
+import ReconciliationAccountGroupPage from "@/pages/reconciliation-account-group";
 
 function Router() {
   return (
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/schedule-studio" component={ScheduleStudioGrid} />
       <Route path="/reconciliations" component={ReconciliationGrid} />
+      <Route path="/reconciliations/group/:group" component={ReconciliationAccountGroupPage} />
       <Route path="/reconciliations/legacy" component={ReconciliationsPage} />
       <Route path="/reconciliations/templates" component={ReconciliationTemplatesPage} />
       <Route path="/reconciliations/workspace/:id" component={ReconciliationWorkspacePage} />

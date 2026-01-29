@@ -216,52 +216,45 @@ export default function ReconciliationWorkspacePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">GL Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono" data-testid="gl-balance">
-              {formatCurrency(reconciliation.glBalance)}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-6 md:gap-8">
+            <div className="flex-1 min-w-[120px]">
+              <p className="text-sm text-muted-foreground mb-1">GL Balance</p>
+              <div className="text-xl font-bold font-mono" data-testid="gl-balance">
+                {formatCurrency(reconciliation.glBalance)}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Reconciled Balance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold font-mono" data-testid="reconciled-balance">
-              {formatCurrency(reconciliation.reconciledBalance)}
+            <div className="text-2xl text-muted-foreground font-light">=</div>
+            <div className="flex-1 min-w-[120px]">
+              <p className="text-sm text-muted-foreground mb-1">Reconciled Balance</p>
+              <div className="text-xl font-bold font-mono" data-testid="reconciled-balance">
+                {formatCurrency(reconciliation.reconciledBalance)}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className={hasVariance ? "border-red-200 dark:border-red-800" : ""}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Variance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold font-mono ${hasVariance ? "text-red-600" : "text-green-600"}`} data-testid="variance">
-              {formatCurrency(reconciliation.variance)}
+            <div className="text-2xl text-muted-foreground font-light">+</div>
+            <div className={`flex-1 min-w-[120px] ${hasVariance ? "p-3 -m-3 rounded-md bg-red-50 dark:bg-red-950" : ""}`}>
+              <p className="text-sm text-muted-foreground mb-1">Variance</p>
+              <div className={`text-xl font-bold font-mono ${hasVariance ? "text-red-600" : "text-green-600"}`} data-testid="variance">
+                {formatCurrency(reconciliation.variance)}
+              </div>
+              {hasVariance && (
+                <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Requires investigation
+                </p>
+              )}
             </div>
-            {hasVariance && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Requires investigation
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Attachments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="attachment-count">{reconciliation.attachmentCount}</div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="border-l pl-6 ml-2">
+              <p className="text-sm text-muted-foreground mb-1">Attachments</p>
+              <div className="text-xl font-bold flex items-center gap-2" data-testid="attachment-count">
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                {reconciliation.attachmentCount}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">

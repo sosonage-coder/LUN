@@ -67,7 +67,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useProduct } from "@/contexts/product-context";
-import type { ReconciliationAccount } from "@shared/schema";
+import type { ReconciliationAccount, ReconciliationAccountGroup } from "@shared/schema";
+import { accountGroupLabels, accountGroupToType } from "@shared/schema";
 
 const scheduleStudioNav = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -195,6 +196,20 @@ const accountCategories = [
   { title: "Intercompany", key: "INTERCOMPANY", icon: Users },
   { title: "Debt", key: "DEBT", icon: Landmark },
 ];
+
+const accountGroupsByType: Record<string, ReconciliationAccountGroup[]> = {
+  CASH: ["OPERATING_CASH", "RESTRICTED_CASH"],
+  ACCOUNTS_RECEIVABLE: ["TRADE_RECEIVABLES", "OTHER_RECEIVABLES"],
+  ACCOUNTS_PAYABLE: ["TRADE_PAYABLES", "OTHER_PAYABLES"],
+  PREPAID: ["SHORT_TERM_PREPAIDS", "LONG_TERM_PREPAIDS"],
+  FIXED_ASSET: ["LAND_AND_BUILDINGS", "EQUIPMENT", "INTANGIBLES", "ACCUMULATED_DEPRECIATION"],
+  ACCRUAL: ["COMPENSATION_ACCRUALS", "TAX_ACCRUALS", "OTHER_ACCRUALS"],
+  INVENTORY: ["RAW_MATERIALS", "FINISHED_GOODS", "WORK_IN_PROGRESS"],
+  INTERCOMPANY: ["IC_RECEIVABLES", "IC_PAYABLES"],
+  DEBT: ["SHORT_TERM_DEBT", "LONG_TERM_DEBT"],
+  EQUITY: ["CAPITAL_STOCK", "RETAINED_EARNINGS"],
+  OTHER: ["MISCELLANEOUS"],
+};
 
 const systemItems = [
   { title: "Period Status", url: "/periods", icon: Clock },
@@ -505,6 +520,7 @@ export function AppSidebar() {
         <SidebarGroupContent>
           <SidebarMenu>
             {accountCategories.map((category) => {
+              const groups = accountGroupsByType[category.key] || [];
               const categoryAccounts = getAccountsForCategory(category.key);
               const accountCount = categoryAccounts.length;
               
@@ -527,39 +543,31 @@ export function AppSidebar() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {accountsLoading ? (
-                          <SidebarMenuSubItem>
-                            <span className="text-xs text-muted-foreground px-2 py-1 flex items-center gap-1">
-                              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
-                            </span>
-                          </SidebarMenuSubItem>
-                        ) : accountsError ? (
-                          <SidebarMenuSubItem>
-                            <span className="text-xs text-muted-foreground px-2 py-1">
-                              Error loading accounts
-                            </span>
-                          </SidebarMenuSubItem>
-                        ) : categoryAccounts.length === 0 ? (
-                          <SidebarMenuSubItem>
-                            <span className="text-xs text-muted-foreground px-2 py-1">
-                              No accounts
-                            </span>
-                          </SidebarMenuSubItem>
-                        ) : (
-                          categoryAccounts.map((account) => (
-                            <SidebarMenuSubItem key={account.accountId}>
+                        {groups.map((groupKey) => {
+                          const groupLabel = accountGroupLabels[groupKey] || groupKey;
+                          const groupAccounts = allAccounts.filter(acc => acc.accountGroup === groupKey);
+                          const groupUrl = `/reconciliations/group/${groupKey.toLowerCase().replace(/_/g, "-")}`;
+                          const isGroupActive = location === groupUrl;
+                          
+                          return (
+                            <SidebarMenuSubItem key={groupKey}>
                               <SidebarMenuSubButton 
                                 asChild
-                                data-testid={`nav-account-${account.accountCode}`}
+                                isActive={isGroupActive}
+                                data-testid={`nav-group-${groupKey.toLowerCase()}`}
                               >
-                                <Link href={`/reconciliations?account=${account.accountId}`}>
-                                  <span className="font-mono text-xs">{account.accountCode}</span>
-                                  <span className="truncate">{account.accountName}</span>
+                                <Link href={groupUrl}>
+                                  <span className="truncate">{groupLabel}</span>
+                                  {groupAccounts.length > 0 && (
+                                    <Badge variant="outline" className="ml-auto">
+                                      {groupAccounts.length}
+                                    </Badge>
+                                  )}
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
-                          ))
-                        )}
+                          );
+                        })}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
